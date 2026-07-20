@@ -10,19 +10,30 @@ type ThemeParams = {
   secondary_bg_color?: string;
 };
 
+type SafeAreaInset = {
+  top: number;
+  bottom: number;
+  left: number;
+  right: number;
+};
+
+type WebAppEvent = "themeChanged" | "safeAreaChanged" | "contentSafeAreaChanged" | "fullscreenChanged";
+
 declare global {
   interface Window {
     Telegram?: {
       WebApp?: {
         initData: string;
         themeParams: ThemeParams;
+        safeAreaInset: SafeAreaInset;
+        contentSafeAreaInset: SafeAreaInset;
         ready: () => void;
         expand: () => void;
         requestFullscreen?: () => void;
         setHeaderColor?: (color: string) => void;
         setBackgroundColor?: (color: string) => void;
-        onEvent: (event: "themeChanged", callback: () => void) => void;
-        offEvent: (event: "themeChanged", callback: () => void) => void;
+        onEvent: (event: WebAppEvent, callback: () => void) => void;
+        offEvent: (event: WebAppEvent, callback: () => void) => void;
       };
     };
   }

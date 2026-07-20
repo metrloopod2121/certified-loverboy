@@ -39,7 +39,12 @@ export default function RootLayout({
       <body className="min-h-full flex flex-col">
         <Script src="https://telegram.org/js/telegram-web-app.js" strategy="beforeInteractive" />
         <TelegramInit />
-        <main className="flex-1 overflow-y-auto">{children}</main>
+        <main
+          className="flex-1 overflow-y-auto"
+          style={{ paddingTop: "calc(var(--safe-top) + 8px)" }}
+        >
+          {children}
+        </main>
         <NavBar />
       </body>
     </html>

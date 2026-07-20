@@ -39,9 +39,27 @@ export default function TelegramInit() {
       }
     }
 
+    function applySafeArea() {
+      if (!webApp) return;
+      const root = document.documentElement.style;
+      const device = webApp.safeAreaInset ?? { top: 0, bottom: 0, left: 0, right: 0 };
+      const content = webApp.contentSafeAreaInset ?? { top: 0, bottom: 0, left: 0, right: 0 };
+      root.setProperty("--safe-top", `${Math.max(device.top, content.top)}px`);
+      root.setProperty("--safe-bottom", `${Math.max(device.bottom, content.bottom)}px`);
+    }
+
     applyTheme();
+    applySafeArea();
     webApp.onEvent("themeChanged", applyTheme);
-    return () => webApp.offEvent("themeChanged", applyTheme);
+    webApp.onEvent("safeAreaChanged", applySafeArea);
+    webApp.onEvent("contentSafeAreaChanged", applySafeArea);
+    webApp.onEvent("fullscreenChanged", applySafeArea);
+    return () => {
+      webApp.offEvent("themeChanged", applyTheme);
+      webApp.offEvent("safeAreaChanged", applySafeArea);
+      webApp.offEvent("contentSafeAreaChanged", applySafeArea);
+      webApp.offEvent("fullscreenChanged", applySafeArea);
+    };
   }, []);
 
   return null;

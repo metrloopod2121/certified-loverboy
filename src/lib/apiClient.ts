@@ -1,5 +1,9 @@
 export function getInitData(): string {
   if (typeof window === "undefined") return "";
+  // ?debug_init=<initData> lets you open the app in a plain browser for debugging —
+  // still requires a validly HMAC-signed initData string, no new attack surface.
+  const debugInit = new URLSearchParams(window.location.search).get("debug_init");
+  if (debugInit) return debugInit;
   return window.Telegram?.WebApp?.initData ?? "";
 }
 

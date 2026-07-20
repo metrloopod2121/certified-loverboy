@@ -19,11 +19,6 @@ export default function TelegramInit() {
 
     webApp.ready();
     webApp.expand();
-    try {
-      webApp.requestFullscreen?.();
-    } catch {
-      // older Telegram clients don't support fullscreen — ignore
-    }
 
     function applyTheme() {
       if (!webApp) return;

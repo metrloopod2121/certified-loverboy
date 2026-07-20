@@ -69,7 +69,7 @@ export default function MapScreen() {
         </p>
       )}
 
-      <div className="flex-1 min-h-[400px]">
+      <div className="h-[75dvh]">
         {ideas && !error && <LeafletMap ideas={filtered} />}
         {!ideas && !error && <p className={`p-4 ${mutedText}`}>Загрузка…</p>}
       </div>

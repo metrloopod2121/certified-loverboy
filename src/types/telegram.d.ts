@@ -18,6 +18,7 @@ declare global {
         themeParams: ThemeParams;
         ready: () => void;
         expand: () => void;
+        requestFullscreen?: () => void;
         setHeaderColor?: (color: string) => void;
         setBackgroundColor?: (color: string) => void;
         onEvent: (event: "themeChanged", callback: () => void) => void;

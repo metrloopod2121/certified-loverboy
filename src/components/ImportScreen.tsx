@@ -5,29 +5,53 @@ import { apiFetch } from "@/lib/apiClient";
 import { parseDateMarkdown, type ParsedDateIdea } from "@/lib/parseDateMarkdown";
 import type { DateIdeaInput } from "@/lib/types";
 import DateIdeaForm from "@/components/DateIdeaForm";
-import { input, buttonPrimary, pageHeading, mutedText } from "@/lib/ui";
+import { input, buttonPrimary, buttonGhost, pageHeading, mutedText } from "@/lib/ui";
+
+type PendingItem = {
+  id: string;
+  source: string;
+  parsed: ParsedDateIdea;
+};
+
+let nextId = 0;
 
 export default function ImportScreen() {
   const [raw, setRaw] = useState("");
-  const [parsed, setParsed] = useState<ParsedDateIdea | null>(null);
-  const [saved, setSaved] = useState(false);
+  const [items, setItems] = useState<PendingItem[]>([]);
+  const [savedCount, setSavedCount] = useState(0);
 
-  function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    file.text().then(setRaw);
+  async function handleFiles(e: React.ChangeEvent<HTMLInputElement>) {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    const newItems = await Promise.all(
+      Array.from(files).map(async (file) => ({
+        id: `f${nextId++}`,
+        source: file.name,
+        parsed: parseDateMarkdown(await file.text()),
+      }))
+    );
+    setItems((prev) => [...prev, ...newItems]);
+    e.target.value = "";
   }
 
-  function handleParse() {
-    setSaved(false);
-    setParsed(parseDateMarkdown(raw));
-  }
-
-  async function handleSave(input: DateIdeaInput) {
-    await apiFetch("/api/date-ideas", { method: "POST", body: JSON.stringify(input) });
-    setSaved(true);
-    setParsed(null);
+  function handleParseText() {
+    if (!raw.trim()) return;
+    setItems((prev) => [
+      ...prev,
+      { id: `t${nextId++}`, source: "вставленный текст", parsed: parseDateMarkdown(raw) },
+    ]);
     setRaw("");
+  }
+
+  function dismiss(id: string) {
+    setItems((prev) => prev.filter((i) => i.id !== id));
+  }
+
+  async function handleSave(id: string, input: DateIdeaInput) {
+    await apiFetch("/api/date-ideas", { method: "POST", body: JSON.stringify(input) });
+    setSavedCount((n) => n + 1);
+    dismiss(id);
   }
 
   return (
@@ -35,30 +59,51 @@ export default function ImportScreen() {
       <h1 className={pageHeading}>Импорт из markdown</h1>
 
       <label className="flex flex-col gap-1.5">
-        <span className={mutedText}>Файл (.md / .txt)</span>
-        <input type="file" accept=".md,.txt" onChange={handleFile} className="text-[14px]" />
+        <span className={mutedText}>Файлы (.md / .txt) — можно выбрать сразу несколько</span>
+        <input type="file" accept=".md,.txt" multiple onChange={handleFiles} className="text-[14px]" />
       </label>
 
-      <textarea
-        value={raw}
-        onChange={(e) => setRaw(e.target.value)}
-        placeholder={"# Название\nАдрес: ...\nМетро: ...\nКоординаты: 55.75, 37.61\nТеги: романтика, искусство\nЦена: 1500-3000 ₽\n\nСвободное описание."}
-        rows={10}
-        className={`${input} font-mono text-[13px]`}
-      />
-
-      <button onClick={handleParse} disabled={!raw.trim()} className={`${buttonPrimary} self-start`}>
-        Разобрать
-      </button>
-
-      {saved && <p className="text-[14px] text-emerald-500">Сохранено ✓</p>}
-
-      {parsed && (
-        <div>
-          <p className={`${mutedText} mb-2`}>Проверь и поправь перед сохранением:</p>
-          <DateIdeaForm initial={parsed} onSubmit={handleSave} onCancel={() => setParsed(null)} />
+      <details className="text-[14px]">
+        <summary className={mutedText}>…или вставить текст одной свиданки</summary>
+        <div className="flex flex-col gap-2 mt-2">
+          <textarea
+            value={raw}
+            onChange={(e) => setRaw(e.target.value)}
+            placeholder={"# Название\nАдрес: ...\nМетро: ...\nКоординаты: 55.75, 37.61\nТеги: романтика, искусство\nЦена: 1500-3000 ₽\n\nСвободное описание."}
+            rows={8}
+            className={`${input} font-mono text-[13px]`}
+          />
+          <button onClick={handleParseText} disabled={!raw.trim()} className={`${buttonPrimary} self-start`}>
+            Разобрать
+          </button>
         </div>
+      </details>
+
+      {savedCount > 0 && (
+        <p className="text-[14px] text-emerald-500">Сохранено: {savedCount} ✓</p>
       )}
+
+      {items.length > 0 && (
+        <p className={mutedText}>
+          Разобрано {items.length} {items.length === 1 ? "файл" : "файла(ов)"} — проверь и сохрани каждую:
+        </p>
+      )}
+
+      <div className="flex flex-col gap-4">
+        {items.map((item) => (
+          <div key={item.id} className="flex flex-col gap-2">
+            <div className="flex items-center justify-between">
+              <span className={mutedText}>{item.source}</span>
+              <button onClick={() => dismiss(item.id)} className={buttonGhost}>Пропустить</button>
+            </div>
+            <DateIdeaForm
+              initial={item.parsed}
+              onSubmit={(input) => handleSave(item.id, input)}
+              onCancel={() => dismiss(item.id)}
+            />
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

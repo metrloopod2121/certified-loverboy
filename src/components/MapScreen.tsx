@@ -4,17 +4,20 @@ import { useEffect, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import { apiFetch } from "@/lib/apiClient";
 import type { DateIdea } from "@/lib/types";
-import { select } from "@/lib/ui";
+import { select, mutedText } from "@/lib/ui";
 
 const LeafletMap = dynamic(() => import("@/components/LeafletMap"), { ssr: false });
 
 export default function MapScreen() {
   const [ideas, setIdeas] = useState<DateIdea[] | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const [tagFilter, setTagFilter] = useState("");
   const [metroFilter, setMetroFilter] = useState("");
 
   useEffect(() => {
-    apiFetch("/api/date-ideas").then(setIdeas);
+    apiFetch("/api/date-ideas")
+      .then(setIdeas)
+      .catch((err) => setError(err instanceof Error ? err.message : "Не удалось загрузить"));
   }, []);
 
   const withCoords = useMemo(
@@ -57,8 +60,18 @@ export default function MapScreen() {
           ))}
         </select>
       </div>
+
+      {error && <p className="p-4 text-[14px] text-red-500">{error}</p>}
+
+      {ideas && withCoords.length === 0 && (
+        <p className={`p-4 ${mutedText}`}>
+          Ни у одной свиданки нет координат — открой её в «Хранилище» → «Правка» и впиши координаты, тогда она появится тут.
+        </p>
+      )}
+
       <div className="flex-1 min-h-[400px]">
-        {ideas && <LeafletMap ideas={filtered} />}
+        {ideas && !error && <LeafletMap ideas={filtered} />}
+        {!ideas && !error && <p className={`p-4 ${mutedText}`}>Загрузка…</p>}
       </div>
     </div>
   );

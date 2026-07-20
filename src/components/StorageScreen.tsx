@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { apiFetch } from "@/lib/apiClient";
 import { dateIdeaToInput, type DateIdea, type DateIdeaInput } from "@/lib/types";
 import DateIdeaForm from "@/components/DateIdeaForm";
+import { card, select, buttonPrimary, buttonGhost, buttonDanger, pill, pageHeading, mutedText } from "@/lib/ui";
 
 type Sort = "newest" | "title";
 
@@ -75,34 +76,36 @@ export default function StorageScreen() {
   }
 
   return (
-    <div className="p-4 flex flex-col gap-4 max-w-2xl mx-auto">
-      <h1 className="text-lg font-semibold">Хранилище свиданок</h1>
+    <div className="flex flex-col gap-4 max-w-2xl mx-auto p-4 pb-6">
+      <div className="flex items-center justify-between">
+        <h1 className={pageHeading}>Хранилище свиданок</h1>
+        <button onClick={() => setShowForm((v) => !v)} className={buttonPrimary}>
+          {showForm ? "Закрыть" : "+ Добавить"}
+        </button>
+      </div>
 
-      <div className="flex gap-2 flex-wrap text-sm">
-        <select value={tagFilter} onChange={(e) => setTagFilter(e.target.value)} className="border rounded px-2 py-1">
+      <div className="flex gap-2 flex-wrap">
+        <select value={tagFilter} onChange={(e) => setTagFilter(e.target.value)} className={select}>
           <option value="">Все теги</option>
           {allTags.map((t) => (
             <option key={t} value={t}>{t}</option>
           ))}
         </select>
-        <select value={metroFilter} onChange={(e) => setMetroFilter(e.target.value)} className="border rounded px-2 py-1">
+        <select value={metroFilter} onChange={(e) => setMetroFilter(e.target.value)} className={select}>
           <option value="">Всё метро</option>
           {allMetro.map((m) => (
             <option key={m} value={m}>{m}</option>
           ))}
         </select>
-        <select value={sort} onChange={(e) => setSort(e.target.value as Sort)} className="border rounded px-2 py-1">
+        <select value={sort} onChange={(e) => setSort(e.target.value as Sort)} className={select}>
           <option value="newest">Сначала новые</option>
           <option value="title">По названию</option>
         </select>
-        <button onClick={() => setShowForm((v) => !v)} className="ml-auto px-3 py-1 rounded bg-foreground text-background">
-          {showForm ? "Закрыть" : "+ Добавить"}
-        </button>
       </div>
 
       {showForm && <DateIdeaForm onSubmit={createIdea} onCancel={() => setShowForm(false)} />}
 
-      {!ideas && <p className="opacity-60 text-sm">Загрузка…</p>}
+      {!ideas && <p className={mutedText}>Загрузка…</p>}
 
       <div className="flex flex-col gap-3">
         {filtered.map((idea) =>
@@ -114,35 +117,43 @@ export default function StorageScreen() {
               onCancel={() => setEditing(null)}
             />
           ) : (
-            <div key={idea.id} className="border rounded-lg p-3 flex flex-col gap-1">
-              <div className="flex justify-between items-start">
-                <h2 className="font-medium">{idea.title}</h2>
-                <div className="flex gap-2 text-xs">
-                  <button onClick={() => setEditing(idea)} className="underline">Правка</button>
-                  <button onClick={() => remove(idea.id)} className="underline text-red-600">Удалить</button>
+            <div key={idea.id} className={`${card} flex flex-col gap-2`}>
+              <div className="flex justify-between items-start gap-2">
+                <h2 className="text-[16px] font-semibold">{idea.title}</h2>
+                <div className="flex gap-1 shrink-0">
+                  <button onClick={() => setEditing(idea)} className={buttonGhost}>Правка</button>
+                  <button onClick={() => remove(idea.id)} className={buttonDanger}>Удалить</button>
                 </div>
               </div>
-              <p className="text-sm opacity-70">
-                {[idea.address, idea.metro].filter(Boolean).join(" · ") || "Без адреса"}
-              </p>
-              {idea.priceNote && <p className="text-sm">{idea.priceNote}</p>}
-              {idea.tags.length > 0 && (
-                <p className="text-xs opacity-60">{idea.tags.map((t) => t.tag.name).join(", ")}</p>
+              {(idea.address || idea.metro) && (
+                <p className={mutedText}>
+                  {[idea.address, idea.metro && `м. ${idea.metro}`].filter(Boolean).join(" · ")}
+                </p>
               )}
-              <div className="flex gap-4 text-xs mt-1">
-                <label className="flex items-center gap-1">
+              {idea.priceNote && <p className="text-[14px]">{idea.priceNote}</p>}
+              {idea.tags.length > 0 && (
+                <div className="flex flex-wrap gap-1.5">
+                  {idea.tags.map((t) => (
+                    <span key={t.tag.id} className={pill}>{t.tag.name}</span>
+                  ))}
+                </div>
+              )}
+              <div className="flex gap-4 pt-1 text-[13px] border-t border-black/5 dark:border-white/10 mt-1">
+                <label className="flex items-center gap-1.5 py-1.5">
                   <input
                     type="checkbox"
                     checked={idea.inPartnerDeck}
                     onChange={() => toggle(idea, "inPartnerDeck")}
+                    className="h-4 w-4 accent-[var(--tg-button)]"
                   />
                   В деке
                 </label>
-                <label className="flex items-center gap-1">
+                <label className="flex items-center gap-1.5 py-1.5">
                   <input
                     type="checkbox"
                     checked={idea.showPriceToPartner}
                     onChange={() => toggle(idea, "showPriceToPartner")}
+                    className="h-4 w-4 accent-[var(--tg-button)]"
                   />
                   Цена видна
                 </label>
@@ -151,7 +162,7 @@ export default function StorageScreen() {
           )
         )}
         {ideas && filtered.length === 0 && (
-          <p className="opacity-60 text-sm">Пока пусто — добавь первую свиданку.</p>
+          <p className={mutedText}>Пока пусто — добавь первую свиданку.</p>
         )}
       </div>
     </div>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useAuth } from "@/hooks/useAuth";
+import { mutedText } from "@/lib/ui";
 
 export default function AuthGate({
   allow,
@@ -12,13 +13,14 @@ export default function AuthGate({
   const auth = useAuth();
 
   if (auth.status === "loading") {
-    return <div className="p-6 text-center text-sm opacity-60">Загрузка…</div>;
+    return <div className={`p-8 text-center ${mutedText}`}>Загрузка…</div>;
   }
 
   if (auth.status === "unauthorized" || !allow.includes(auth.role)) {
     return (
-      <div className="p-6 text-center text-sm opacity-60">
-        Открой это приложение через Telegram-бота.
+      <div className="flex flex-col items-center justify-center gap-2 p-10 text-center">
+        <span className="text-4xl">🔒</span>
+        <p className={mutedText}>Открой это приложение через Telegram-бота.</p>
       </div>
     );
   }

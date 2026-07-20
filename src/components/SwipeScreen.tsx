@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { apiFetch } from "@/lib/apiClient";
 import type { DateIdea } from "@/lib/types";
+import { pill, mutedText } from "@/lib/ui";
 
 export default function SwipeScreen() {
   const [stack, setStack] = useState<DateIdea[] | null>(null);
@@ -27,48 +28,63 @@ export default function SwipeScreen() {
     }
   }
 
-  if (!stack) return <div className="p-6 text-center text-sm opacity-60">Загрузка…</div>;
+  if (!stack) return <div className="p-8 text-center text-sm opacity-60">Загрузка…</div>;
 
   if (stack.length === 0) {
-    return <div className="p-6 text-center text-sm opacity-60">Пока больше нечего смотреть.</div>;
+    return (
+      <div className="flex flex-col items-center justify-center gap-2 p-10 text-center">
+        <span className="text-4xl">🤷</span>
+        <p className={mutedText}>Пока больше нечего смотреть.</p>
+      </div>
+    );
   }
 
   const idea = stack[0];
 
   return (
-    <div className="p-4 flex flex-col items-center gap-4 max-w-md mx-auto">
-      <div className="border rounded-xl p-5 w-full flex flex-col gap-2">
-        <h2 className="text-xl font-semibold">{idea.title}</h2>
+    <div className="flex flex-col items-center gap-6 max-w-md mx-auto p-4 pt-6">
+      <div className="w-full rounded-3xl border border-black/5 bg-[var(--tg-secondary-bg)] p-6 shadow-md dark:border-white/10 min-h-[260px] flex flex-col gap-3">
+        <h2 className="text-[22px] font-semibold leading-tight">{idea.title}</h2>
         {(idea.address || idea.metro) && (
-          <p className="text-sm opacity-70">
+          <p className={mutedText}>
             {[idea.address, idea.metro && `м. ${idea.metro}`].filter(Boolean).join(" · ")}
           </p>
         )}
-        {idea.priceNote && <p className="text-sm">{idea.priceNote}</p>}
-        {idea.tags.length > 0 && (
-          <p className="text-xs opacity-60">{idea.tags.map((t) => t.tag.name).join(", ")}</p>
+        {idea.priceNote && (
+          <p className="text-[14px] font-medium text-[var(--tg-button)]">{idea.priceNote}</p>
         )}
-        {idea.description && <p className="text-sm mt-2 whitespace-pre-wrap">{idea.description}</p>}
+        {idea.tags.length > 0 && (
+          <div className="flex flex-wrap gap-1.5">
+            {idea.tags.map((t) => (
+              <span key={t.tag.id} className={pill}>{t.tag.name}</span>
+            ))}
+          </div>
+        )}
+        {idea.description && (
+          <p className="text-[14px] whitespace-pre-wrap mt-1">{idea.description}</p>
+        )}
       </div>
 
-      <div className="flex gap-6">
+      <div className="flex gap-8">
         <button
           onClick={() => swipe("PASS")}
           disabled={swiping}
-          className="w-16 h-16 rounded-full border text-2xl flex items-center justify-center"
+          aria-label="Не то"
+          className="w-16 h-16 rounded-full bg-black/5 dark:bg-white/10 text-3xl flex items-center justify-center active:scale-90 transition disabled:opacity-50"
         >
-          ❌
+          ✕
         </button>
         <button
           onClick={() => swipe("LIKE")}
           disabled={swiping}
-          className="w-16 h-16 rounded-full border text-2xl flex items-center justify-center"
+          aria-label="Нравится"
+          className="w-16 h-16 rounded-full bg-[var(--tg-button)] text-[var(--tg-button-text)] text-3xl flex items-center justify-center active:scale-90 transition disabled:opacity-50 shadow-lg shadow-[var(--tg-button)]/30"
         >
-          ❤️
+          ❤
         </button>
       </div>
 
-      <p className="text-xs opacity-50">Осталось: {stack.length}</p>
+      <p className={mutedText}>Осталось: {stack.length}</p>
     </div>
   );
 }

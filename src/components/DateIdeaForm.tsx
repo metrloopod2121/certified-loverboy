@@ -3,6 +3,7 @@
 import { useState } from "react";
 import type { DateIdeaInput } from "@/lib/types";
 import { parseCoordinates, formatCoordinates } from "@/lib/coords";
+import { input, label as labelClass, buttonPrimary, buttonSecondary } from "@/lib/ui";
 
 export default function DateIdeaForm({
   initial,
@@ -57,79 +58,80 @@ export default function DateIdeaForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-3 p-4 border rounded-lg">
-      <input
-        required
-        placeholder="Название"
-        value={title}
-        onChange={(e) => setTitle(e.target.value)}
-        className="border rounded px-3 py-2"
-      />
-      <input
-        placeholder="Адрес"
-        value={address}
-        onChange={(e) => setAddress(e.target.value)}
-        className="border rounded px-3 py-2"
-      />
-      <input
-        placeholder="Метро"
-        value={metro}
-        onChange={(e) => setMetro(e.target.value)}
-        className="border rounded px-3 py-2"
-      />
-      <input
-        placeholder="Координаты: 55.75, 37.61"
-        value={coords}
-        onChange={(e) => setCoords(e.target.value)}
-        className="border rounded px-3 py-2"
-      />
-      <input
-        placeholder="Теги через запятую"
-        value={tags}
-        onChange={(e) => setTags(e.target.value)}
-        className="border rounded px-3 py-2"
-      />
-      <input
-        placeholder="Цена (свободный текст)"
-        value={priceNote}
-        onChange={(e) => setPriceNote(e.target.value)}
-        className="border rounded px-3 py-2"
-      />
-      <textarea
-        placeholder="Описание"
-        value={description}
-        onChange={(e) => setDescription(e.target.value)}
-        className="border rounded px-3 py-2"
-        rows={3}
-      />
-      <label className="flex items-center gap-2 text-sm">
-        <input
-          type="checkbox"
-          checked={inPartnerDeck}
-          onChange={(e) => setInPartnerDeck(e.target.checked)}
-        />
-        Показывать партнёрше (в деке для свайпа)
-      </label>
-      <label className="flex items-center gap-2 text-sm">
-        <input
-          type="checkbox"
-          checked={showPriceToPartner}
-          onChange={(e) => setShowPriceToPartner(e.target.checked)}
-        />
-        Показывать ей цену
-      </label>
+    <form
+      onSubmit={handleSubmit}
+      className="flex flex-col gap-3 rounded-2xl border border-black/5 bg-[var(--tg-secondary-bg)] p-4 dark:border-white/10"
+    >
+      <div className="flex flex-col gap-1">
+        <span className={labelClass}>Название</span>
+        <input required placeholder="Пикник в парке" value={title} onChange={(e) => setTitle(e.target.value)} className={input} />
+      </div>
 
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      <div className="grid grid-cols-2 gap-3">
+        <div className="flex flex-col gap-1">
+          <span className={labelClass}>Адрес</span>
+          <input placeholder="Улица, дом" value={address} onChange={(e) => setAddress(e.target.value)} className={input} />
+        </div>
+        <div className="flex flex-col gap-1">
+          <span className={labelClass}>Метро</span>
+          <input placeholder="Охотный ряд" value={metro} onChange={(e) => setMetro(e.target.value)} className={input} />
+        </div>
+      </div>
 
-      <div className="flex gap-2">
-        <button
-          type="submit"
-          disabled={saving}
-          className="px-4 py-2 rounded bg-foreground text-background text-sm"
-        >
+      <div className="flex flex-col gap-1">
+        <span className={labelClass}>Координаты</span>
+        <input placeholder="55.75, 37.61" value={coords} onChange={(e) => setCoords(e.target.value)} className={input} />
+      </div>
+
+      <div className="flex flex-col gap-1">
+        <span className={labelClass}>Теги</span>
+        <input placeholder="романтика, искусство" value={tags} onChange={(e) => setTags(e.target.value)} className={input} />
+      </div>
+
+      <div className="flex flex-col gap-1">
+        <span className={labelClass}>Цена</span>
+        <input placeholder="1500–3000 ₽" value={priceNote} onChange={(e) => setPriceNote(e.target.value)} className={input} />
+      </div>
+
+      <div className="flex flex-col gap-1">
+        <span className={labelClass}>Описание</span>
+        <textarea
+          placeholder="Свободный текст"
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          className={input}
+          rows={3}
+        />
+      </div>
+
+      <div className="flex flex-col gap-2 rounded-xl bg-black/[0.03] p-3 dark:bg-white/[0.05]">
+        <label className="flex items-center justify-between gap-2 text-[14px]">
+          Показывать партнёрше
+          <input
+            type="checkbox"
+            checked={inPartnerDeck}
+            onChange={(e) => setInPartnerDeck(e.target.checked)}
+            className="h-5 w-5 accent-[var(--tg-button)]"
+          />
+        </label>
+        <label className="flex items-center justify-between gap-2 text-[14px]">
+          Показывать ей цену
+          <input
+            type="checkbox"
+            checked={showPriceToPartner}
+            onChange={(e) => setShowPriceToPartner(e.target.checked)}
+            className="h-5 w-5 accent-[var(--tg-button)]"
+          />
+        </label>
+      </div>
+
+      {error && <p className="text-[13px] text-red-500">{error}</p>}
+
+      <div className="flex gap-2 pt-1">
+        <button type="submit" disabled={saving} className={buttonPrimary}>
           {saving ? "Сохраняю…" : "Сохранить"}
         </button>
-        <button type="button" onClick={onCancel} className="px-4 py-2 rounded border text-sm">
+        <button type="button" onClick={onCancel} className={buttonSecondary}>
           Отмена
         </button>
       </div>

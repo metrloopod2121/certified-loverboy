@@ -1,26 +1,46 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --tg-bg: #ffffff;
+  --tg-text: #0f0f0f;
+  --tg-hint: #8e8e93;
+  --tg-link: #2481cc;
+  --tg-button: #2481cc;
+  --tg-button-text: #ffffff;
+  --tg-secondary-bg: #f4f4f5;
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --tg-bg: #17212b;
+    --tg-text: #f0f0f0;
+    --tg-hint: #7d8b99;
+    --tg-link: #6ab3f3;
+    --tg-button: #5288c1;
+    --tg-button-text: #ffffff;
+    --tg-secondary-bg: #1f2a36;
   }
 }
 
+@theme inline {
+  --color-background: var(--tg-bg);
+  --color-foreground: var(--tg-text);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--tg-bg);
+  color: var(--tg-text);
+}
+
+select {
+  -webkit-appearance: none;
+  appearance: none;
 }

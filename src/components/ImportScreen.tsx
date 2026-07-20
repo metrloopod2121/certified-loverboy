@@ -5,6 +5,7 @@ import { apiFetch } from "@/lib/apiClient";
 import { parseDateMarkdown, type ParsedDateIdea } from "@/lib/parseDateMarkdown";
 import type { DateIdeaInput } from "@/lib/types";
 import DateIdeaForm from "@/components/DateIdeaForm";
+import { input, buttonPrimary, pageHeading, mutedText } from "@/lib/ui";
 
 export default function ImportScreen() {
   const [raw, setRaw] = useState("");
@@ -30,28 +31,31 @@ export default function ImportScreen() {
   }
 
   return (
-    <div className="p-4 flex flex-col gap-4 max-w-2xl mx-auto">
-      <h1 className="text-lg font-semibold">Импорт из markdown</h1>
+    <div className="flex flex-col gap-4 max-w-2xl mx-auto p-4 pb-6">
+      <h1 className={pageHeading}>Импорт из markdown</h1>
 
-      <input type="file" accept=".md,.txt" onChange={handleFile} className="text-sm" />
+      <label className="flex flex-col gap-1.5">
+        <span className={mutedText}>Файл (.md / .txt)</span>
+        <input type="file" accept=".md,.txt" onChange={handleFile} className="text-[14px]" />
+      </label>
 
       <textarea
         value={raw}
         onChange={(e) => setRaw(e.target.value)}
         placeholder={"# Название\nАдрес: ...\nМетро: ...\nКоординаты: 55.75, 37.61\nТеги: романтика, искусство\nЦена: 1500-3000 ₽\n\nСвободное описание."}
         rows={10}
-        className="border rounded px-3 py-2 font-mono text-sm"
+        className={`${input} font-mono text-[13px]`}
       />
 
-      <button onClick={handleParse} disabled={!raw.trim()} className="px-4 py-2 rounded bg-foreground text-background text-sm self-start">
+      <button onClick={handleParse} disabled={!raw.trim()} className={`${buttonPrimary} self-start`}>
         Разобрать
       </button>
 
-      {saved && <p className="text-sm text-green-700">Сохранено ✓</p>}
+      {saved && <p className="text-[14px] text-emerald-500">Сохранено ✓</p>}
 
       {parsed && (
         <div>
-          <p className="text-sm opacity-60 mb-2">Проверь и поправь перед сохранением:</p>
+          <p className={`${mutedText} mb-2`}>Проверь и поправь перед сохранением:</p>
           <DateIdeaForm initial={parsed} onSubmit={handleSave} onCancel={() => setParsed(null)} />
         </div>
       )}

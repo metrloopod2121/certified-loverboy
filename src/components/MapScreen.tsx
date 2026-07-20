@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import { apiFetch } from "@/lib/apiClient";
 import type { DateIdea } from "@/lib/types";
+import { select } from "@/lib/ui";
 
 const LeafletMap = dynamic(() => import("@/components/LeafletMap"), { ssr: false });
 
@@ -42,14 +43,14 @@ export default function MapScreen() {
 
   return (
     <div className="flex flex-col h-full">
-      <div className="flex gap-2 p-3 text-sm border-b">
-        <select value={tagFilter} onChange={(e) => setTagFilter(e.target.value)} className="border rounded px-2 py-1">
+      <div className="flex gap-2 p-3 border-b border-black/5 dark:border-white/10">
+        <select value={tagFilter} onChange={(e) => setTagFilter(e.target.value)} className={select}>
           <option value="">Все теги</option>
           {allTags.map((t) => (
             <option key={t} value={t}>{t}</option>
           ))}
         </select>
-        <select value={metroFilter} onChange={(e) => setMetroFilter(e.target.value)} className="border rounded px-2 py-1">
+        <select value={metroFilter} onChange={(e) => setMetroFilter(e.target.value)} className={select}>
           <option value="">Всё метро</option>
           {allMetro.map((m) => (
             <option key={m} value={m}>{m}</option>

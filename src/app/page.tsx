@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import StorageScreen from "@/components/StorageScreen";
+import { mutedText } from "@/lib/ui";
 
 export default function Home() {
   const auth = useAuth();
@@ -16,13 +17,14 @@ export default function Home() {
   }, [auth, router]);
 
   if (auth.status === "loading") {
-    return <div className="p-6 text-center text-sm opacity-60">Загрузка…</div>;
+    return <div className={`p-8 text-center ${mutedText}`}>Загрузка…</div>;
   }
 
   if (auth.status === "unauthorized") {
     return (
-      <div className="p-6 text-center text-sm opacity-60">
-        Открой это приложение через Telegram-бота.
+      <div className="flex flex-col items-center justify-center gap-2 p-10 text-center">
+        <span className="text-4xl">🔒</span>
+        <p className={mutedText}>Открой это приложение через Telegram-бота.</p>
       </div>
     );
   }

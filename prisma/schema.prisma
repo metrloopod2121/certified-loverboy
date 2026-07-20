@@ -1,0 +1,68 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model DateIdea {
+  id                 String            @id @default(cuid())
+  title              String
+  address            String?
+  metro              String?
+  lat                Float?
+  lng                Float?
+  description        String?
+  priceNote          String?
+  inPartnerDeck      Boolean           @default(false)
+  showPriceToPartner Boolean           @default(false)
+  tags               TagsOnDateIdeas[]
+  swipes             Swipe[]
+  match              Match?
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+}
+
+model Tag {
+  id    String            @id @default(cuid())
+  name  String            @unique
+  ideas TagsOnDateIdeas[]
+}
+
+model TagsOnDateIdeas {
+  dateIdeaId String
+  tagId      String
+  dateIdea   DateIdea @relation(fields: [dateIdeaId], references: [id], onDelete: Cascade)
+  tag        Tag      @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([dateIdeaId, tagId])
+}
+
+enum Direction {
+  LIKE
+  PASS
+}
+
+model Swipe {
+  id             String    @id @default(cuid())
+  telegramUserId String
+  dateIdeaId     String
+  direction      Direction
+  createdAt      DateTime  @default(now())
+  dateIdea       DateIdea  @relation(fields: [dateIdeaId], references: [id], onDelete: Cascade)
+
+  @@unique([telegramUserId, dateIdeaId])
+}
+
+model Match {
+  id         String   @id @default(cuid())
+  dateIdeaId String   @unique
+  matchedAt  DateTime @default(now())
+  notified   Boolean  @default(false)
+  dateIdea   DateIdea @relation(fields: [dateIdeaId], references: [id], onDelete: Cascade)
+}

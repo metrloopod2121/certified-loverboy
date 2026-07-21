@@ -65,30 +65,29 @@ export default function MapScreen() {
   }, [allMarkers, tagFilters, metroFilters]);
 
   return (
-    <div className="flex flex-col gap-3 p-4 pt-2">
-      <div className="flex items-end justify-between">
-        <div>
+    <div className="relative h-[100dvh] -mb-[92px] overflow-hidden">
+      <div className="absolute inset-0 z-0">
+        <LeafletMap markers={filtered} />
+      </div>
+
+      <div className="relative z-10 flex flex-col gap-2 p-4 pt-2">
+        <div className="flex items-center justify-between rounded-[18px] border border-[var(--app-outline)]/10 bg-[var(--app-surface)]/70 px-3 py-3 shadow-[0_4px_16px_rgba(28,26,23,0.12)] backdrop-blur-xl">
           <h1 className={pageHeading}>Карта идей</h1>
+          {ideas && <span className="rounded-full bg-[var(--app-ink)] px-3 py-1.5 text-[12px] font-semibold text-[var(--app-canvas)]">{filtered.length}</span>}
         </div>
-        {ideas && <span className="rounded-full bg-[var(--app-ink)] px-3 py-1.5 text-[12px] font-semibold text-[var(--app-canvas)]">{filtered.length}</span>}
-      </div>
 
-      <div className="relative z-10 flex flex-wrap gap-2">
-        <MultiSelectFilter label="Теги" options={allTags} selected={tagFilters} onChange={setTagFilters} open={openFilter === "tags"} onOpenChange={(v) => setOpenFilter(v ? "tags" : null)} />
-        <MultiSelectFilter label="Метро" options={allMetro} selected={metroFilters} onChange={setMetroFilters} open={openFilter === "metro"} onOpenChange={(v) => setOpenFilter(v ? "metro" : null)} />
-      </div>
+        <div className="relative z-20 flex flex-wrap gap-2 rounded-[18px] border border-[var(--app-outline)]/10 bg-[var(--app-surface)]/70 p-2 shadow-[0_4px_16px_rgba(28,26,23,0.12)] backdrop-blur-xl">
+          <MultiSelectFilter label="Теги" options={allTags} selected={tagFilters} onChange={setTagFilters} open={openFilter === "tags"} onOpenChange={(v) => setOpenFilter(v ? "tags" : null)} />
+          <MultiSelectFilter label="Метро" options={allMetro} selected={metroFilters} onChange={setMetroFilters} open={openFilter === "metro"} onOpenChange={(v) => setOpenFilter(v ? "metro" : null)} />
+        </div>
 
-      {error && <p className="rounded-xl bg-[var(--app-coral)] p-3 text-[14px] font-medium text-[var(--app-ink)]">{error}</p>}
+        {error && <p className="rounded-[18px] border border-[var(--app-outline)]/10 bg-[var(--app-coral)]/90 p-3 text-[14px] font-medium text-[var(--app-ink)] shadow-[0_4px_16px_rgba(28,26,23,0.12)] backdrop-blur-xl">{error}</p>}
 
-      {ideas && allMarkers.length === 0 && (
-        <p className={`rounded-[22px] bg-[var(--app-lilac)] p-4 ${mutedText}`}>
-          Ни у одной свиданки нет координат — открой её в «Хранилище» → «Правка» и впиши координаты, тогда она появится тут.
-        </p>
-      )}
-
-      <div className="relative z-0 h-[62dvh] overflow-hidden rounded-[22px] border border-[var(--app-outline)]/10 bg-[var(--app-surface)] shadow-[0_2px_0_rgba(28,26,23,0.08)]">
-        {ideas && !error && <LeafletMap markers={filtered} />}
-        {!ideas && !error && <p className={`p-4 ${mutedText}`}>Загрузка…</p>}
+        {ideas && allMarkers.length === 0 && (
+          <p className={`rounded-[18px] border border-[var(--app-outline)]/10 bg-[var(--app-lilac)]/90 p-3 shadow-[0_4px_16px_rgba(28,26,23,0.12)] backdrop-blur-xl ${mutedText}`}>
+            Ни у одной свиданки нет координат — открой её в «Хранилище» → «Правка» и впиши координаты, тогда она появится тут.
+          </p>
+        )}
       </div>
     </div>
   );

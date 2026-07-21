@@ -23,7 +23,7 @@ export function OpenFreeMapLayer({ dark }: { dark: boolean }) {
   const map = useMap();
 
   useEffect(() => {
-    const style = `https://tiles.openfreemap.org/styles/${dark ? "dark" : "positron"}`;
+    const style = `https://tiles.openfreemap.org/styles/${dark ? "dark" : "liberty"}`;
     const layer = L.maplibreGL({ style }).addTo(map);
     return () => {
       map.removeLayer(layer);

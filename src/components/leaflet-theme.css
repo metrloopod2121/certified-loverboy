@@ -1,0 +1,35 @@
+.leaflet-popup-content-wrapper {
+  background: var(--tg-secondary-bg);
+  color: var(--tg-text);
+  border-radius: 16px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+}
+.leaflet-popup-tip {
+  background: var(--tg-secondary-bg);
+}
+.leaflet-popup-content {
+  margin: 12px 14px;
+  font-size: 13px;
+  line-height: 1.45;
+}
+.leaflet-popup-close-button {
+  color: var(--tg-hint) !important;
+}
+.leaflet-control-attribution {
+  background: var(--tg-secondary-bg) !important;
+  color: var(--tg-hint) !important;
+  border-radius: 8px 0 0 0 !important;
+  font-size: 10px !important;
+}
+.leaflet-control-attribution a {
+  color: var(--tg-link) !important;
+}
+
+.date-marker {
+  width: 16px;
+  height: 16px;
+  border-radius: 9999px;
+  background: var(--tg-button);
+  border: 2px solid var(--tg-bg);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+}

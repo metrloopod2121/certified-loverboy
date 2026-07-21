@@ -9,6 +9,8 @@ export type ParsedDateIdea = Pick<
 type LocationKey = "address" | "metro" | "url";
 type OtherKey = "priceNote" | "swipeDescription" | "type";
 
+type ParsedLocation = DateIdeaInput["locations"][number];
+
 const LOCATION_KEYS: Record<string, LocationKey> = {
   "адрес": "address",
   "метро": "metro",
@@ -24,6 +26,49 @@ const OTHER_KEYS: Record<string, OtherKey> = {
   "тип": "type",
 };
 
+const LOCATION_MARKER_KEYS = new Set(["место", "локация", "точка"]);
+
+function emptyLocation(): ParsedLocation {
+  return { address: "", metro: "", lat: null, lng: null, url: "" };
+}
+
+function hasLocationData(location: ParsedLocation): boolean {
+  return Boolean(
+    location.address.trim() ||
+      location.metro.trim() ||
+      location.url.trim() ||
+      location.lat != null ||
+      location.lng != null
+  );
+}
+
+function normalizeKey(raw: string): string {
+  return raw
+    .trim()
+    .toLowerCase()
+    .replace(/^[-*]\s*/, "")
+    .replace(/\s+\d+$/, "");
+}
+
+function startLocation(locations: ParsedLocation[]): ParsedLocation {
+  const last = locations[locations.length - 1];
+  if (last && !hasLocationData(last)) return last;
+
+  const location = emptyLocation();
+  locations.push(location);
+  return location;
+}
+
+function currentOrNewLocation(locations: ParsedLocation[], current: ParsedLocation | null): ParsedLocation {
+  if (current) return current;
+  return startLocation(locations);
+}
+
+function hasFieldValue(location: ParsedLocation, field: LocationKey | "coordinates"): boolean {
+  if (field === "coordinates") return location.lat != null || location.lng != null;
+  return location[field].trim() !== "";
+}
+
 export function parseDateMarkdown(raw: string): ParsedDateIdea {
   const lines = raw.replace(/\r\n/g, "\n").split("\n");
   const result: ParsedDateIdea = {
@@ -33,9 +78,9 @@ export function parseDateMarkdown(raw: string): ParsedDateIdea {
     priceNote: "",
     description: "",
     swipeDescription: "",
-    locations: [{ address: "", metro: "", lat: null, lng: null, url: "" }],
+    locations: [],
   };
-  const location = result.locations[0];
+  let currentLocation: ParsedLocation | null = null;
 
   let i = 0;
   while (i < lines.length && lines[i].trim() === "") i++;
@@ -58,15 +103,24 @@ export function parseDateMarkdown(raw: string): ParsedDateIdea {
 
     const match = trimmed.match(/^([^:]+):\s*(.*)$/);
     if (match) {
-      const key = match[1].trim().toLowerCase();
+      const key = normalizeKey(match[1]);
       const value = match[2].trim();
 
+      if (LOCATION_MARKER_KEYS.has(key)) {
+        currentLocation = startLocation(result.locations);
+        continue;
+      }
       if (key === "координаты") {
+        const baseLocation = currentOrNewLocation(result.locations, currentLocation);
+        const location = hasFieldValue(baseLocation, "coordinates")
+          ? startLocation(result.locations)
+          : baseLocation;
         const coords = parseCoordinates(value) ?? parseMapsLink(value);
         if (coords) {
           location.lat = coords.lat;
           location.lng = coords.lng;
         }
+        currentLocation = location;
         continue;
       }
       if (key === "теги") {
@@ -74,7 +128,13 @@ export function parseDateMarkdown(raw: string): ParsedDateIdea {
         continue;
       }
       if (key in LOCATION_KEYS) {
-        location[LOCATION_KEYS[key]] = value;
+        const field = LOCATION_KEYS[key];
+        const baseLocation = currentOrNewLocation(result.locations, currentLocation);
+        const location = hasFieldValue(baseLocation, field)
+          ? startLocation(result.locations)
+          : baseLocation;
+        location[field] = value;
+        currentLocation = location;
         continue;
       }
       if (key in OTHER_KEYS) {
@@ -92,6 +152,9 @@ export function parseDateMarkdown(raw: string): ParsedDateIdea {
     descLines.push(line);
   }
 
+  if (result.locations.length === 0) {
+    result.locations.push(emptyLocation());
+  }
   result.description = descLines.join("\n").trim();
   return result;
 }

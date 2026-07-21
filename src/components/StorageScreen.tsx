@@ -7,6 +7,7 @@ import { dateIdeaToInput, type DateIdea, type DateIdeaInput } from "@/lib/types"
 import DateIdeaForm from "@/components/DateIdeaForm";
 import MultiSelectFilter from "@/components/MultiSelectFilter";
 import { card, select, pill, iconButton, pageHeading, mutedText, pastelTone } from "@/lib/ui";
+import { metroPastelTone } from "@/lib/metro";
 
 type Sort = "newest" | "title";
 
@@ -137,7 +138,7 @@ export default function StorageScreen({ readOnly = false }: { readOnly?: boolean
               onCancel={() => setEditing(null)}
             />
           ) : (
-            <div key={idea.id} className={`${card} ${pastelTone(idea.id)} flex flex-col gap-2.5 transition`}>
+            <div key={idea.id} className={`${card} ${metroPastelTone(idea.locations[0]?.metro) ?? pastelTone(idea.id)} flex flex-col gap-2.5 transition`}>
               <div className="flex justify-between items-start gap-2">
                 <h2 className="text-[19px] font-semibold leading-[1.05]">{idea.title}</h2>
                 {!readOnly && (

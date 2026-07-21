@@ -8,6 +8,7 @@ import { pageHeading, mutedText } from "@/lib/ui";
 import MultiSelectFilter from "@/components/MultiSelectFilter";
 import IdeaTypeFilter from "@/components/IdeaTypeFilter";
 import { useIdeaTypeFilter } from "@/components/IdeaTypeFilterProvider";
+import { metroStations } from "@/lib/metro";
 import type { MapMarker } from "@/components/LeafletMap";
 
 const LeafletMap = dynamic(() => import("@/components/LeafletMap"), { ssr: false });
@@ -54,7 +55,7 @@ export default function MapScreen() {
 
   const allMetro = useMemo(() => {
     const set = new Set<string>();
-    allMarkers.forEach((m) => m.metro && set.add(m.metro));
+    allMarkers.forEach((marker) => metroStations(marker.metro).forEach((station) => set.add(station)));
     return [...set].sort();
   }, [allMarkers]);
 
@@ -64,7 +65,7 @@ export default function MapScreen() {
       result = result.filter((m) => m.tags.some((t) => tagFilters.includes(t)));
     }
     if (metroFilters.length > 0) {
-      result = result.filter((m) => m.metro && metroFilters.includes(m.metro));
+      result = result.filter((marker) => metroStations(marker.metro).some((station) => metroFilters.includes(station)));
     }
     return result;
   }, [allMarkers, tagFilters, metroFilters]);

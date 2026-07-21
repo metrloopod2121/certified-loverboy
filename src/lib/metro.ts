@@ -25,8 +25,17 @@ function normalizeStation(value: string) {
     .trim();
 }
 
+export function metroStations(value: string | null | undefined) {
+  if (!value) return [];
+  return value
+    .split(/[;,]/u)
+    .map((station) => station.replace(/^м\.?\s*/u, "").trim())
+    .filter(Boolean);
+}
+
 export function metroPastelTone(station: string | null | undefined) {
-  if (!station) return null;
-  const line = stationLines[normalizeStation(station) as keyof typeof stationLines];
+  const firstStation = metroStations(station)[0];
+  if (!firstStation) return null;
+  const line = stationLines[normalizeStation(firstStation) as keyof typeof stationLines];
   return line ? lineTones[line] : null;
 }

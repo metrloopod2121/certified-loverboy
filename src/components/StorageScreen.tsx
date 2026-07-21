@@ -9,7 +9,7 @@ import MultiSelectFilter from "@/components/MultiSelectFilter";
 import IdeaTypeFilter from "@/components/IdeaTypeFilter";
 import { useIdeaTypeFilter } from "@/components/IdeaTypeFilterProvider";
 import { card, select, pill, iconButton, pageHeading, mutedText, pastelTone } from "@/lib/ui";
-import { metroPastelTone } from "@/lib/metro";
+import { metroPastelTone, metroStations } from "@/lib/metro";
 
 type Sort = "newest" | "title";
 
@@ -48,7 +48,7 @@ export default function StorageScreen({ readOnly = false }: { readOnly?: boolean
 
   const allMetro = useMemo(() => {
     const set = new Set<string>();
-    ideas?.forEach((idea) => idea.locations.forEach((loc) => loc.metro && set.add(loc.metro)));
+    ideas?.forEach((idea) => idea.locations.forEach((loc) => metroStations(loc.metro).forEach((station) => set.add(station))));
     return [...set].sort();
   }, [ideas]);
 
@@ -59,7 +59,7 @@ export default function StorageScreen({ readOnly = false }: { readOnly?: boolean
       result = result.filter((i) => i.tags.some((t) => tagFilters.includes(t.tag.name)));
     }
     if (metroFilters.length > 0) {
-      result = result.filter((i) => i.locations.some((loc) => loc.metro && metroFilters.includes(loc.metro)));
+      result = result.filter((idea) => idea.locations.some((loc) => metroStations(loc.metro).some((station) => metroFilters.includes(station))));
     }
     result = [...result].sort((a, b) =>
       sort === "title"

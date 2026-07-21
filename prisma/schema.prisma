@@ -20,7 +20,7 @@ model DateIdea {
   description        String?
   swipeDescription   String?
   priceNote          String?
-  inPartnerDeck      Boolean           @default(false)
+  inPartnerDeck      Boolean           @default(true)
   showPriceToPartner Boolean           @default(false)
   tags               TagsOnDateIdeas[]
   swipes             Swipe[]

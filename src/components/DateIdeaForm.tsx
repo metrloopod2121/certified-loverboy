@@ -26,7 +26,7 @@ export default function DateIdeaForm({
   const [swipeDescription, setSwipeDescription] = useState(initial?.swipeDescription ?? "");
   const [priceNote, setPriceNote] = useState(initial?.priceNote ?? "");
   const [tags, setTags] = useState(initial?.tags?.join(", ") ?? "");
-  const [inPartnerDeck, setInPartnerDeck] = useState(initial?.inPartnerDeck ?? false);
+  const [inPartnerDeck, setInPartnerDeck] = useState(initial?.inPartnerDeck ?? true);
   const [showPriceToPartner, setShowPriceToPartner] = useState(initial?.showPriceToPartner ?? false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);

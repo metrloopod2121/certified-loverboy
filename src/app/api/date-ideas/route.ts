@@ -29,6 +29,7 @@ export async function POST(request: Request) {
       lat: body.lat ?? null,
       lng: body.lng ?? null,
       description: body.description || null,
+      swipeDescription: body.swipeDescription || null,
       priceNote: body.priceNote || null,
       inPartnerDeck: Boolean(body.inPartnerDeck),
       showPriceToPartner: Boolean(body.showPriceToPartner),

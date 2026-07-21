@@ -18,6 +18,7 @@ model DateIdea {
   lat                Float?
   lng                Float?
   description        String?
+  swipeDescription   String?
   priceNote          String?
   inPartnerDeck      Boolean           @default(false)
   showPriceToPartner Boolean           @default(false)

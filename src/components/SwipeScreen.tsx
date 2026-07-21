@@ -3,63 +3,10 @@
 import { useEffect, useState } from "react";
 import { apiFetch } from "@/lib/apiClient";
 import type { DateIdea } from "@/lib/types";
-import { label, mutedText, pill } from "@/lib/ui";
-
-const GENERIC_TAGS = new Set(["активити", "падел", "большой теннис"]);
-
-const TAG_HIGHLIGHTS: Record<string, string> = {
-  "бюджетно": "дружелюбный бюджет",
-  "премиум": "эффектное место",
-  "парковка": "парковка",
-  "сауна": "сауна после игры",
-  "прогулка": "прогулка рядом",
-  "вднх": "сценарий на ВДНХ",
-  "кафе": "кафе рядом",
-  "парк": "парк вокруг",
-  "крытый корт": "не зависит от погоды",
-  "грунт": "грунтовое покрытие",
-  "вечер": "хорошо на вечер",
-  "современно": "современное пространство",
-  "стильное место": "стильная локация",
-  "торговый центр": "запасной план в ТЦ",
-  "всесезонно": "всесезонно",
-};
-
-const FEATURE_HIGHLIGHTS: Array<[RegExp, string]> = [
-  [/саун/i, "сауна после игры"],
-  [/кафе|ресторан/i, "кафе рядом"],
-  [/парков/i, "парковка"],
-  [/прогулк|вднх|парк/i, "прогулка рядом"],
-  [/душ/i, "душевые"],
-  [/раздевал/i, "раздевалки"],
-  [/прокат|ракетк/i, "прокат инвентаря"],
-  [/крыт/i, "не зависит от погоды"],
-  [/нович|перв/i, "подходит новичкам"],
-];
-
-const ADMIN_COPY = [
-  /работает/i,
-  /ежедневно/i,
-  /стоимость/i,
-  /тариф/i,
-  /цен[ауеы]/i,
-  /уточн/i,
-  /брони/i,
-  /перед поездкой/i,
-];
+import { mutedText } from "@/lib/ui";
 
 function normalizeText(value: string) {
   return value.replace(/\s+/g, " ").trim();
-}
-
-function truncate(value: string, maxLength: number) {
-  if (value.length <= maxLength) return value;
-  return `${value.slice(0, maxLength - 1).trimEnd()}…`;
-}
-
-function compactPrice(priceNote: string | null) {
-  if (!priceNote) return "";
-  return truncate(normalizeText(priceNote).split(";")[0], 120);
 }
 
 function compactAddress(address: string | null) {
@@ -67,52 +14,6 @@ function compactAddress(address: string | null) {
   return normalizeText(address)
     .replace(/^Москва,\s*/i, "")
     .replace(/,\s*\d+\s*этаж.*$/i, "");
-}
-
-function splitSentences(description: string | null) {
-  if (!description) return [];
-  return description
-    .split(/(?<=[.!?])\s+|\n+/)
-    .map(normalizeText)
-    .filter(Boolean);
-}
-
-function getEssence(idea: DateIdea) {
-  const sentences = splitSentences(idea.description);
-  const preferred =
-    sentences.find((sentence) => ADMIN_COPY.every((pattern) => !pattern.test(sentence))) ??
-    sentences[0];
-
-  if (preferred) return truncate(preferred, 150);
-
-  const activity = idea.tags
-    .map((tag) => tag.tag.name)
-    .find((name) => name === "падел" || name === "большой теннис");
-  return `Короткая активная идея${activity ? `: ${activity}` : ""}${idea.metro ? ` у м. ${idea.metro}` : ""}.`;
-}
-
-function getHighlights(idea: DateIdea) {
-  const highlights: string[] = [];
-  const add = (value: string) => {
-    if (!highlights.includes(value)) highlights.push(value);
-  };
-
-  idea.tags.forEach(({ tag }) => {
-    const normalized = tag.name.toLowerCase();
-    if (TAG_HIGHLIGHTS[normalized]) add(TAG_HIGHLIGHTS[normalized]);
-  });
-
-  const description = idea.description ?? "";
-  FEATURE_HIGHLIGHTS.forEach(([pattern, value]) => {
-    if (pattern.test(description)) add(value);
-  });
-
-  idea.tags.forEach(({ tag }) => {
-    const normalized = tag.name.toLowerCase();
-    if (!GENERIC_TAGS.has(normalized) && !TAG_HIGHLIGHTS[normalized]) add(tag.name);
-  });
-
-  return highlights.slice(0, 5);
 }
 
 export default function SwipeScreen() {
@@ -150,12 +51,10 @@ export default function SwipeScreen() {
   }
 
   const idea = stack[0];
-  const price = compactPrice(idea.priceNote);
   const location = [idea.metro && `м. ${idea.metro}`, compactAddress(idea.address)]
     .filter(Boolean)
     .join(" · ");
-  const essence = getEssence(idea);
-  const highlights = getHighlights(idea);
+  const swipeDescription = idea.swipeDescription?.trim();
 
   return (
     <div className="flex flex-col items-center gap-6 max-w-md mx-auto p-4 pt-6">
@@ -165,33 +64,21 @@ export default function SwipeScreen() {
           {location && <p className={mutedText}>{location}</p>}
         </div>
 
-        {price && (
-          <div className="flex flex-col gap-1 border-l-2 border-[var(--tg-button)] pl-3">
-            <span className={label}>Цена</span>
-            <p className="text-[14px] font-medium text-[var(--tg-button)]">{price}</p>
-          </div>
+        {idea.priceNote && (
+          <p className="text-[14px] font-medium text-[var(--tg-button)]">
+            {idea.priceNote}
+          </p>
         )}
 
-        <div className="flex flex-col gap-1.5">
-          <span className={label}>Суть</span>
-          <p className="text-[15px] leading-snug">{essence}</p>
-        </div>
-
-        {highlights.length > 0 && (
-          <div className="flex flex-col gap-2">
-            <span className={label}>Прелести</span>
-            <div className="flex flex-wrap gap-1.5">
-              {highlights.map((highlight) => (
-                <span key={highlight} className={pill}>{highlight}</span>
-              ))}
-            </div>
-          </div>
+        {swipeDescription && (
+          <p className="whitespace-pre-wrap text-[15px] leading-snug">
+            {swipeDescription}
+          </p>
         )}
 
         {idea.tags.length > 0 && (
           <div className="flex flex-wrap gap-1.5 pt-1">
             {idea.tags
-              .filter((t) => !GENERIC_TAGS.has(t.tag.name.toLowerCase()))
               .slice(0, 4)
               .map((t) => (
                 <span key={t.tag.id} className="text-[12px] text-[var(--tg-hint)]">#{t.tag.name}</span>

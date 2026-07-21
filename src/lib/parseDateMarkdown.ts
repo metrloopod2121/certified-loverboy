@@ -1,15 +1,27 @@
-import { parseCoordinates } from "@/lib/coords";
+import { parseCoordinates, parseMapsLink } from "@/lib/coords";
 import type { DateIdeaInput } from "@/lib/types";
 
 export type ParsedDateIdea = Pick<
   DateIdeaInput,
-  "title" | "address" | "metro" | "lat" | "lng" | "tags" | "priceNote" | "description"
+  | "title"
+  | "address"
+  | "metro"
+  | "lat"
+  | "lng"
+  | "tags"
+  | "priceNote"
+  | "description"
+  | "swipeDescription"
 >;
 
-const FIELD_KEYS: Record<string, "address" | "metro" | "priceNote"> = {
+const FIELD_KEYS: Record<string, "address" | "metro" | "priceNote" | "swipeDescription"> = {
   "адрес": "address",
   "метро": "metro",
   "цена": "priceNote",
+  "описание для свайпа": "swipeDescription",
+  "свайп": "swipeDescription",
+  "свайп описание": "swipeDescription",
+  "свайп-описание": "swipeDescription",
 };
 
 export function parseDateMarkdown(raw: string): ParsedDateIdea {
@@ -23,6 +35,7 @@ export function parseDateMarkdown(raw: string): ParsedDateIdea {
     tags: [],
     priceNote: "",
     description: "",
+    swipeDescription: "",
   };
 
   let i = 0;
@@ -50,7 +63,7 @@ export function parseDateMarkdown(raw: string): ParsedDateIdea {
       const value = match[2].trim();
 
       if (key === "координаты") {
-        const coords = parseCoordinates(value);
+        const coords = parseCoordinates(value) ?? parseMapsLink(value);
         if (coords) {
           result.lat = coords.lat;
           result.lng = coords.lng;

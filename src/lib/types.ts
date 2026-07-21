@@ -6,6 +6,7 @@ export type DateIdea = {
   lat: number | null;
   lng: number | null;
   description: string | null;
+  swipeDescription: string | null;
   priceNote: string | null;
   inPartnerDeck: boolean;
   showPriceToPartner: boolean;
@@ -21,6 +22,7 @@ export type DateIdeaInput = {
   lat: number | null;
   lng: number | null;
   description: string;
+  swipeDescription: string;
   priceNote: string;
   tags: string[];
   inPartnerDeck: boolean;
@@ -42,6 +44,7 @@ export function dateIdeaToInput(idea: DateIdea): DateIdeaInput {
     lat: idea.lat,
     lng: idea.lng,
     description: idea.description ?? "",
+    swipeDescription: idea.swipeDescription ?? "",
     priceNote: idea.priceNote ?? "",
     tags: idea.tags.map((t) => t.tag.name),
     inPartnerDeck: idea.inPartnerDeck,

@@ -1,9 +1,12 @@
 "use client";
 
 import { useState } from "react";
+import dynamic from "next/dynamic";
 import type { DateIdeaInput } from "@/lib/types";
-import { parseCoordinates, formatCoordinates } from "@/lib/coords";
-import { input, label as labelClass, buttonPrimary, buttonSecondary } from "@/lib/ui";
+import { parseCoordinates, parseMapsLink, formatCoordinates } from "@/lib/coords";
+import { input, label as labelClass, buttonPrimary, buttonSecondary, buttonGhost } from "@/lib/ui";
+
+const LocationPicker = dynamic(() => import("@/components/LocationPicker"), { ssr: false });
 
 export default function DateIdeaForm({
   initial,
@@ -19,12 +22,29 @@ export default function DateIdeaForm({
   const [metro, setMetro] = useState(initial?.metro ?? "");
   const [coords, setCoords] = useState(formatCoordinates(initial?.lat ?? null, initial?.lng ?? null));
   const [description, setDescription] = useState(initial?.description ?? "");
+  const [swipeDescription, setSwipeDescription] = useState(initial?.swipeDescription ?? "");
   const [priceNote, setPriceNote] = useState(initial?.priceNote ?? "");
   const [tags, setTags] = useState(initial?.tags?.join(", ") ?? "");
   const [inPartnerDeck, setInPartnerDeck] = useState(initial?.inPartnerDeck ?? false);
   const [showPriceToPartner, setShowPriceToPartner] = useState(initial?.showPriceToPartner ?? false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showPicker, setShowPicker] = useState(false);
+
+  function handleCoordsChange(value: string) {
+    if (/https?:\/\//.test(value)) {
+      const parsed = parseMapsLink(value);
+      if (parsed) {
+        setCoords(formatCoordinates(parsed.lat, parsed.lng));
+        return;
+      }
+    }
+    setCoords(value);
+  }
+
+  function handlePick(lat: number, lng: number) {
+    setCoords(formatCoordinates(lat, lng));
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -45,6 +65,7 @@ export default function DateIdeaForm({
         lat: parsedCoords?.lat ?? null,
         lng: parsedCoords?.lng ?? null,
         description,
+        swipeDescription,
         priceNote,
         tags: tags.split(",").map((t) => t.trim()).filter(Boolean),
         inPartnerDeck,
@@ -80,7 +101,26 @@ export default function DateIdeaForm({
 
       <div className="flex flex-col gap-1">
         <span className={labelClass}>Координаты</span>
-        <input placeholder="55.75, 37.61" value={coords} onChange={(e) => setCoords(e.target.value)} className={input} />
+        <div className="flex gap-2">
+          <input
+            placeholder="55.75, 37.61 или ссылка на Яндекс/Google Карты"
+            value={coords}
+            onChange={(e) => handleCoordsChange(e.target.value)}
+            className={input}
+          />
+          <button type="button" onClick={() => setShowPicker((v) => !v)} className={buttonGhost}>
+            📍 На карте
+          </button>
+        </div>
+        {showPicker && (
+          <div className="mt-2">
+            <LocationPicker
+              lat={parseCoordinates(coords)?.lat ?? null}
+              lng={parseCoordinates(coords)?.lng ?? null}
+              onPick={handlePick}
+            />
+          </div>
+        )}
       </div>
 
       <div className="flex flex-col gap-1">
@@ -91,6 +131,17 @@ export default function DateIdeaForm({
       <div className="flex flex-col gap-1">
         <span className={labelClass}>Цена</span>
         <input placeholder="1500–3000 ₽" value={priceNote} onChange={(e) => setPriceNote(e.target.value)} className={input} />
+      </div>
+
+      <div className="flex flex-col gap-1">
+        <span className={labelClass}>Описание для свайпа</span>
+        <textarea
+          placeholder="Коротко: суть, плюсы и почему стоит лайкнуть"
+          value={swipeDescription}
+          onChange={(e) => setSwipeDescription(e.target.value)}
+          className={input}
+          rows={2}
+        />
       </div>
 
       <div className="flex flex-col gap-1">

@@ -51,9 +51,11 @@ export default function DateIdeaForm({
     e.preventDefault();
     setError(null);
 
-    const parsedCoords = coords.trim() ? parseCoordinates(coords) : null;
+    const parsedCoords = coords.trim()
+      ? parseCoordinates(coords) ?? parseMapsLink(coords)
+      : null;
     if (coords.trim() && !parsedCoords) {
-      setError("Координаты должны быть в формате: 55.75, 37.61");
+      setError("Укажи координаты 55.75, 37.61 или ссылку на Яндекс/Google Карты");
       return;
     }
 

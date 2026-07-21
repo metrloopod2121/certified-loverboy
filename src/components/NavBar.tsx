@@ -40,7 +40,7 @@ export default function NavBar() {
           <Link
             key={link.href}
             href={link.href}
-            className={`flex flex-1 max-w-24 flex-col items-center justify-center gap-0.5 rounded-full py-2 text-[10px] font-semibold transition ${
+            className={`flex min-h-[68px] flex-1 max-w-24 flex-col items-center justify-center gap-0.5 rounded-full py-2 text-[10px] font-semibold transition ${
               active
                 ? "bg-[var(--app-ink)] text-[var(--app-canvas)] shadow-[0_2px_0_rgba(28,26,23,0.16)]"
                 : "text-[var(--app-ink)]/70 active:bg-[var(--app-ink)]/8"

@@ -8,8 +8,10 @@
   --tg-button: #2481cc;
   --tg-button-text: #ffffff;
   --tg-secondary-bg: #f4f4f5;
-  --safe-top: env(safe-area-inset-top, 0px);
-  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --tg-safe-top-js: 0px;
+  --tg-safe-bottom-js: 0px;
+  --safe-top: max(env(safe-area-inset-top, 0px), var(--tg-safe-area-inset-top, 0px), var(--tg-content-safe-area-inset-top, 0px), var(--tg-safe-top-js));
+  --safe-bottom: max(env(safe-area-inset-bottom, 0px), var(--tg-safe-area-inset-bottom, 0px), var(--tg-content-safe-area-inset-bottom, 0px), var(--tg-safe-bottom-js));
 }
 
 @media (prefers-color-scheme: dark) {

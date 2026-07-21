@@ -17,9 +17,6 @@ export default function TelegramInit() {
     const webApp = window.Telegram?.WebApp;
     if (!webApp) return;
 
-    webApp.ready();
-    webApp.expand();
-
     function applyTheme() {
       if (!webApp) return;
       const root = document.documentElement.style;
@@ -39,8 +36,8 @@ export default function TelegramInit() {
       const root = document.documentElement.style;
       const device = webApp.safeAreaInset ?? { top: 0, bottom: 0, left: 0, right: 0 };
       const content = webApp.contentSafeAreaInset ?? { top: 0, bottom: 0, left: 0, right: 0 };
-      root.setProperty("--safe-top", `${Math.max(device.top, content.top)}px`);
-      root.setProperty("--safe-bottom", `${Math.max(device.bottom, content.bottom)}px`);
+      root.setProperty("--tg-safe-top-js", `${Math.max(device.top, content.top)}px`);
+      root.setProperty("--tg-safe-bottom-js", `${Math.max(device.bottom, content.bottom)}px`);
     }
 
     applyTheme();
@@ -49,7 +46,11 @@ export default function TelegramInit() {
     webApp.onEvent("safeAreaChanged", applySafeArea);
     webApp.onEvent("contentSafeAreaChanged", applySafeArea);
     webApp.onEvent("fullscreenChanged", applySafeArea);
+    webApp.ready();
+
+    const frame = requestAnimationFrame(applySafeArea);
     return () => {
+      cancelAnimationFrame(frame);
       webApp.offEvent("themeChanged", applyTheme);
       webApp.offEvent("safeAreaChanged", applySafeArea);
       webApp.offEvent("contentSafeAreaChanged", applySafeArea);

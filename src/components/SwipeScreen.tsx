@@ -57,7 +57,7 @@ export default function SwipeScreen() {
 
   if (stack.length === 0) {
     return (
-      <div className="flex min-h-[calc(100dvh-92px)] flex-col gap-4 p-4 pt-6">
+      <div className="flex min-h-[calc(100dvh-82px)] flex-col gap-4 p-4 pt-6">
         <h1 className="text-[22px] font-semibold leading-none">Выбери вайб</h1>
         <IdeaTypeFilter fullWidth />
         <div className="flex flex-1 flex-col items-center justify-center gap-2 text-center">

@@ -30,7 +30,7 @@ export default function NavBar() {
 
   return (
     <nav
-      className="fixed inset-x-0 bottom-0 z-20 mx-3 flex justify-center gap-0.5 rounded-full border border-[var(--app-outline)]/10 bg-[var(--app-surface)]/60 px-1 py-1 shadow-[0_8px_22px_rgba(28,26,23,0.12)] backdrop-blur-xl"
+      className="fixed inset-x-0 bottom-0 z-20 mx-3 flex justify-center gap-0.5 rounded-full border border-[var(--app-outline)]/10 bg-[var(--app-pink)]/80 px-1 py-1 shadow-[0_8px_22px_rgba(28,26,23,0.12)] backdrop-blur-xl"
       style={{ marginBottom: "calc(var(--safe-bottom) + 12px)" }}
     >
       {links.map((link) => {
@@ -40,7 +40,7 @@ export default function NavBar() {
           <Link
             key={link.href}
             href={link.href}
-            className={`flex min-h-[68px] flex-1 max-w-24 flex-col items-center justify-center gap-0.5 rounded-full py-2 text-[10px] font-semibold transition ${
+            className={`flex min-h-[58px] flex-1 max-w-24 flex-col items-center justify-center gap-0.5 rounded-full py-2 text-[10px] font-semibold transition ${
               active
                 ? "bg-[var(--app-ink)] text-[var(--app-canvas)] shadow-[0_2px_0_rgba(28,26,23,0.16)]"
                 : "text-[var(--app-ink)]/70 active:bg-[var(--app-ink)]/8"

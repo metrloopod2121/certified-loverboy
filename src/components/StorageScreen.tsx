@@ -144,8 +144,10 @@ export default function StorageScreen({ readOnly = false }: { readOnly?: boolean
           ) : (
             <div key={idea.id} className={`${card} ${metroPastelTone(idea.locations[0]?.metro) ?? pastelTone(idea.id)} flex flex-col gap-2.5 transition`}>
               <div className="flex justify-between items-start gap-2">
-                <h2 className="text-[19px] font-semibold leading-[1.05]">{idea.title}</h2>
-                {idea.type === "FOOD" && <Utensils className="mt-0.5 shrink-0" size={18} aria-label="Еда" />}
+                <h2 className="flex items-start gap-1.5 text-[19px] font-semibold leading-[1.05]">
+                  {idea.type === "FOOD" && <Utensils className="mt-0.5 shrink-0" size={18} aria-label="Еда" />}
+                  <span>{idea.title}</span>
+                </h2>
                 {!readOnly && (
                   <div className="flex gap-1 shrink-0">
                     <button

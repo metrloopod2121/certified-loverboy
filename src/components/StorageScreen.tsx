@@ -17,6 +17,7 @@ export default function StorageScreen({ readOnly = false }: { readOnly?: boolean
   const [sort, setSort] = useState<Sort>("newest");
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<DateIdea | null>(null);
+  const [openFilter, setOpenFilter] = useState<"tags" | "metro" | null>(null);
 
   async function reload() {
     const data = await apiFetch("/api/date-ideas");
@@ -93,9 +94,23 @@ export default function StorageScreen({ readOnly = false }: { readOnly?: boolean
         )}
       </div>
 
-      <div className="flex gap-2 flex-wrap">
-        <MultiSelectFilter label="Теги" options={allTags} selected={tagFilters} onChange={setTagFilters} />
-        <MultiSelectFilter label="Метро" options={allMetro} selected={metroFilters} onChange={setMetroFilters} />
+      <div className="relative z-10 flex gap-2 flex-wrap">
+        <MultiSelectFilter
+          label="Теги"
+          options={allTags}
+          selected={tagFilters}
+          onChange={setTagFilters}
+          open={openFilter === "tags"}
+          onOpenChange={(v) => setOpenFilter(v ? "tags" : null)}
+        />
+        <MultiSelectFilter
+          label="Метро"
+          options={allMetro}
+          selected={metroFilters}
+          onChange={setMetroFilters}
+          open={openFilter === "metro"}
+          onOpenChange={(v) => setOpenFilter(v ? "metro" : null)}
+        />
         <select value={sort} onChange={(e) => setSort(e.target.value as Sort)} className={select}>
           <option value="newest">Сначала новые</option>
           <option value="title">По названию</option>

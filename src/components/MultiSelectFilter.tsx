@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import { ChevronDown } from "lucide-react";
 import { select } from "@/lib/ui";
 
@@ -9,22 +9,26 @@ export default function MultiSelectFilter({
   options,
   selected,
   onChange,
+  open,
+  onOpenChange,
 }: {
   label: string;
   options: string[];
   selected: string[];
   onChange: (selected: string[]) => void;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
 }) {
-  const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    if (!open) return;
     function onClickOutside(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+      if (ref.current && !ref.current.contains(e.target as Node)) onOpenChange(false);
     }
     document.addEventListener("mousedown", onClickOutside);
     return () => document.removeEventListener("mousedown", onClickOutside);
-  }, []);
+  }, [open, onOpenChange]);
 
   function toggle(option: string) {
     onChange(selected.includes(option) ? selected.filter((o) => o !== option) : [...selected, option]);
@@ -33,10 +37,10 @@ export default function MultiSelectFilter({
   if (options.length === 0) return null;
 
   return (
-    <div className="relative" ref={ref}>
+    <div className="relative isolate" ref={ref}>
       <button
         type="button"
-        onClick={() => setOpen((v) => !v)}
+        onClick={() => onOpenChange(!open)}
         className={`${select} inline-flex items-center gap-1 ${selected.length > 0 ? "border-[var(--tg-button)] text-[var(--tg-button)]" : ""}`}
       >
         {label}
@@ -44,7 +48,7 @@ export default function MultiSelectFilter({
         <ChevronDown size={14} />
       </button>
       {open && (
-        <div className="absolute z-20 mt-1 max-h-72 w-56 overflow-y-auto rounded-xl border border-black/10 bg-[var(--tg-bg)] p-2 shadow-lg dark:border-white/15">
+        <div className="absolute z-[100] mt-1 max-h-72 w-56 overflow-y-auto rounded-xl border border-black/10 bg-[var(--tg-bg)] p-2 shadow-lg dark:border-white/15">
           {selected.length > 0 && (
             <button
               type="button"

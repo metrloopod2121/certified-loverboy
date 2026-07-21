@@ -14,6 +14,7 @@ export default function MapScreen() {
   const [error, setError] = useState<string | null>(null);
   const [tagFilters, setTagFilters] = useState<string[]>([]);
   const [metroFilters, setMetroFilters] = useState<string[]>([]);
+  const [openFilter, setOpenFilter] = useState<"tags" | "metro" | null>(null);
 
   useEffect(() => {
     apiFetch("/api/date-ideas")
@@ -51,9 +52,23 @@ export default function MapScreen() {
 
   return (
     <div className="flex flex-col h-full">
-      <div className="flex gap-2 p-3 border-b border-black/5 dark:border-white/10">
-        <MultiSelectFilter label="Теги" options={allTags} selected={tagFilters} onChange={setTagFilters} />
-        <MultiSelectFilter label="Метро" options={allMetro} selected={metroFilters} onChange={setMetroFilters} />
+      <div className="relative z-10 flex gap-2 p-3 border-b border-black/5 dark:border-white/10 bg-[var(--tg-bg)]">
+        <MultiSelectFilter
+          label="Теги"
+          options={allTags}
+          selected={tagFilters}
+          onChange={setTagFilters}
+          open={openFilter === "tags"}
+          onOpenChange={(v) => setOpenFilter(v ? "tags" : null)}
+        />
+        <MultiSelectFilter
+          label="Метро"
+          options={allMetro}
+          selected={metroFilters}
+          onChange={setMetroFilters}
+          open={openFilter === "metro"}
+          onOpenChange={(v) => setOpenFilter(v ? "metro" : null)}
+        />
       </div>
 
       {error && <p className="p-4 text-[14px] text-red-500">{error}</p>}
@@ -64,7 +79,7 @@ export default function MapScreen() {
         </p>
       )}
 
-      <div className="h-[75dvh]">
+      <div className="relative z-0 h-[75dvh]">
         {ideas && !error && <LeafletMap ideas={filtered} />}
         {!ideas && !error && <p className={`p-4 ${mutedText}`}>Загрузка…</p>}
       </div>

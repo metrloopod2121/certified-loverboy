@@ -14,6 +14,8 @@ const OWNER_LINKS: { href: string; label: string; icon: LucideIcon }[] = [
 ];
 
 const PARTNER_LINKS: { href: string; label: string; icon: LucideIcon }[] = [
+  { href: "/", label: "Идеи", icon: FolderHeart },
+  { href: "/map", label: "Карта", icon: Map },
   { href: "/swipe", label: "Свайп", icon: Heart },
   { href: "/matches", label: "Мэтчи", icon: PartyPopper },
 ];

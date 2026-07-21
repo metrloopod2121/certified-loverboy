@@ -4,14 +4,20 @@ import { requireAuth, isAuthUser } from "@/lib/apiAuth";
 import { resolveTagIds } from "@/lib/tags";
 
 export async function GET(request: Request) {
-  const auth = requireAuth(request, ["OWNER"]);
+  const auth = requireAuth(request, ["OWNER", "PARTNER"]);
   if (!isAuthUser(auth)) return auth;
 
   const ideas = await prisma.dateIdea.findMany({
     include: { tags: { include: { tag: true } } },
     orderBy: { createdAt: "desc" },
   });
-  return NextResponse.json(ideas);
+
+  const shaped = ideas.map((idea) =>
+    auth.role === "PARTNER"
+      ? { ...idea, priceNote: null }
+      : idea
+  );
+  return NextResponse.json(shaped);
 }
 
 export async function POST(request: Request) {

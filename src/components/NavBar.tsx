@@ -2,19 +2,20 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { FolderHeart, Map, Inbox, Heart, PartyPopper, type LucideIcon } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 
-const OWNER_LINKS = [
-  { href: "/", label: "Идеи", icon: "🗂️" },
-  { href: "/map", label: "Карта", icon: "🗺️" },
-  { href: "/import", label: "Импорт", icon: "📥" },
-  { href: "/swipe", label: "Свайп", icon: "❤️" },
-  { href: "/matches", label: "Мэтчи", icon: "🎉" },
+const OWNER_LINKS: { href: string; label: string; icon: LucideIcon }[] = [
+  { href: "/", label: "Идеи", icon: FolderHeart },
+  { href: "/map", label: "Карта", icon: Map },
+  { href: "/import", label: "Импорт", icon: Inbox },
+  { href: "/swipe", label: "Свайп", icon: Heart },
+  { href: "/matches", label: "Мэтчи", icon: PartyPopper },
 ];
 
-const PARTNER_LINKS = [
-  { href: "/swipe", label: "Свайп", icon: "❤️" },
-  { href: "/matches", label: "Мэтчи", icon: "🎉" },
+const PARTNER_LINKS: { href: string; label: string; icon: LucideIcon }[] = [
+  { href: "/swipe", label: "Свайп", icon: Heart },
+  { href: "/matches", label: "Мэтчи", icon: PartyPopper },
 ];
 
 export default function NavBar() {
@@ -32,6 +33,7 @@ export default function NavBar() {
     >
       {links.map((link) => {
         const active = pathname === link.href;
+        const Icon = link.icon;
         return (
           <Link
             key={link.href}
@@ -42,7 +44,7 @@ export default function NavBar() {
                 : "text-[var(--tg-hint)] active:bg-black/5 dark:active:bg-white/5"
             }`}
           >
-            <span className="text-[19px] leading-none">{link.icon}</span>
+            <Icon size={20} strokeWidth={2} />
             {link.label}
           </Link>
         );

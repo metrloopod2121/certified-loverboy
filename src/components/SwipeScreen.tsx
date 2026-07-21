@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { X, Heart, Inbox } from "lucide-react";
 import { apiFetch } from "@/lib/apiClient";
 import type { DateIdea } from "@/lib/types";
 import { mutedText } from "@/lib/ui";
@@ -19,6 +20,7 @@ function compactAddress(address: string | null) {
 export default function SwipeScreen() {
   const [stack, setStack] = useState<DateIdea[] | null>(null);
   const [swiping, setSwiping] = useState(false);
+  const [exiting, setExiting] = useState<"LIKE" | "PASS" | null>(null);
 
   useEffect(() => {
     apiFetch("/api/deck").then(setStack);
@@ -28,14 +30,18 @@ export default function SwipeScreen() {
     if (!stack || stack.length === 0 || swiping) return;
     const current = stack[0];
     setSwiping(true);
+    setExiting(direction);
     try {
       await apiFetch("/api/swipe", {
         method: "POST",
         body: JSON.stringify({ dateIdeaId: current.id, direction }),
       });
-      setStack(stack.slice(1));
     } finally {
-      setSwiping(false);
+      setTimeout(() => {
+        setStack((s) => s?.slice(1) ?? null);
+        setExiting(null);
+        setSwiping(false);
+      }, 200);
     }
   }
 
@@ -44,7 +50,7 @@ export default function SwipeScreen() {
   if (stack.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center gap-2 p-10 text-center">
-        <span className="text-4xl">🤷</span>
+        <Inbox className="text-[var(--tg-hint)]" size={36} strokeWidth={1.5} />
         <p className={mutedText}>Пока больше нечего смотреть.</p>
       </div>
     );
@@ -58,7 +64,15 @@ export default function SwipeScreen() {
 
   return (
     <div className="flex flex-col items-center gap-6 max-w-md mx-auto p-4 pt-6">
-      <div className="w-full rounded-3xl border border-black/5 bg-[var(--tg-secondary-bg)] p-6 shadow-md dark:border-white/10 min-h-[300px] flex flex-col gap-4">
+      <div
+        className={`w-full rounded-3xl border border-black/5 bg-[var(--tg-secondary-bg)] p-6 shadow-md dark:border-white/10 min-h-[300px] flex flex-col gap-4 transition-all duration-200 ease-out ${
+          exiting === "LIKE"
+            ? "translate-x-28 rotate-6 opacity-0"
+            : exiting === "PASS"
+              ? "-translate-x-28 -rotate-6 opacity-0"
+              : "translate-x-0 rotate-0 opacity-100"
+        }`}
+      >
         <div className="flex flex-col gap-2">
           <h2 className="text-[22px] font-semibold leading-tight">{idea.title}</h2>
           {location && <p className={mutedText}>{location}</p>}
@@ -92,17 +106,17 @@ export default function SwipeScreen() {
           onClick={() => swipe("PASS")}
           disabled={swiping}
           aria-label="Не то"
-          className="w-16 h-16 rounded-full bg-black/5 dark:bg-white/10 text-3xl flex items-center justify-center active:scale-90 transition disabled:opacity-50"
+          className="w-16 h-16 rounded-full bg-black/5 dark:bg-white/10 flex items-center justify-center active:scale-90 transition disabled:opacity-50"
         >
-          ✕
+          <X size={28} className="text-[var(--tg-text)]" />
         </button>
         <button
           onClick={() => swipe("LIKE")}
           disabled={swiping}
           aria-label="Нравится"
-          className="w-16 h-16 rounded-full bg-[var(--tg-button)] text-[var(--tg-button-text)] text-3xl flex items-center justify-center active:scale-90 transition disabled:opacity-50 shadow-lg shadow-[var(--tg-button)]/30"
+          className="w-16 h-16 rounded-full bg-[var(--tg-button)] text-[var(--tg-button-text)] flex items-center justify-center active:scale-90 transition disabled:opacity-50 shadow-lg shadow-[var(--tg-button)]/30"
         >
-          ❤
+          <Heart size={28} fill="currentColor" />
         </button>
       </div>
 

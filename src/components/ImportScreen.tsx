@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
+import { Upload, Check } from "lucide-react";
 import { apiFetch } from "@/lib/apiClient";
 import { parseDateMarkdown, type ParsedDateIdea } from "@/lib/parseDateMarkdown";
 import type { DateIdeaInput } from "@/lib/types";
 import DateIdeaForm from "@/components/DateIdeaForm";
-import { input, buttonPrimary, buttonGhost, pageHeading, mutedText } from "@/lib/ui";
+import { input, buttonPrimary, buttonSecondary, buttonGhost, pageHeading, mutedText } from "@/lib/ui";
 
 type PendingItem = {
   id: string;
@@ -19,6 +20,7 @@ export default function ImportScreen() {
   const [raw, setRaw] = useState("");
   const [items, setItems] = useState<PendingItem[]>([]);
   const [savedCount, setSavedCount] = useState(0);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   async function handleFiles(e: React.ChangeEvent<HTMLInputElement>) {
     const files = e.target.files;
@@ -58,10 +60,25 @@ export default function ImportScreen() {
     <div className="flex flex-col gap-4 max-w-2xl mx-auto p-4 pb-6">
       <h1 className={pageHeading}>Импорт из markdown</h1>
 
-      <label className="flex flex-col gap-1.5">
+      <div className="flex flex-col gap-1.5">
         <span className={mutedText}>Файлы (.md / .txt) — можно выбрать сразу несколько</span>
-        <input type="file" accept=".md,.txt" multiple onChange={handleFiles} className="text-[14px]" />
-      </label>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept=".md,.txt"
+          multiple
+          onChange={handleFiles}
+          className="hidden"
+        />
+        <button
+          type="button"
+          onClick={() => fileInputRef.current?.click()}
+          className={`${buttonSecondary} self-start`}
+        >
+          <Upload size={18} />
+          Выбрать файлы
+        </button>
+      </div>
 
       <details className="text-[14px]">
         <summary className={mutedText}>…или вставить текст одной свиданки</summary>
@@ -80,7 +97,9 @@ export default function ImportScreen() {
       </details>
 
       {savedCount > 0 && (
-        <p className="text-[14px] text-emerald-500">Сохранено: {savedCount} ✓</p>
+        <p className="flex items-center gap-1 text-[14px] text-emerald-500">
+          <Check size={16} /> Сохранено: {savedCount}
+        </p>
       )}
 
       {items.length > 0 && (

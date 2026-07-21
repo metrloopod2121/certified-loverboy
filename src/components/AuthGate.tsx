@@ -1,5 +1,6 @@
 "use client";
 
+import { Lock } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { mutedText } from "@/lib/ui";
 
@@ -19,7 +20,7 @@ export default function AuthGate({
   if (auth.status === "unauthorized" || !allow.includes(auth.role)) {
     return (
       <div className="flex flex-col items-center justify-center gap-2 p-10 text-center">
-        <span className="text-4xl">🔒</span>
+        <Lock className="text-[var(--tg-hint)]" size={36} strokeWidth={1.5} />
         <p className={mutedText}>Открой это приложение через Telegram-бота.</p>
       </div>
     );

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { PartyPopper, MessageCircleHeart } from "lucide-react";
 import { apiFetch } from "@/lib/apiClient";
 import type { MatchWithIdea } from "@/lib/types";
 import { card, pill, pageHeading, mutedText } from "@/lib/ui";
@@ -17,7 +18,7 @@ export default function MatchesScreen() {
   if (matches.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center gap-2 p-10 text-center">
-        <span className="text-4xl">💭</span>
+        <MessageCircleHeart className="text-[var(--tg-hint)]" size={36} strokeWidth={1.5} />
         <p className={mutedText}>Мэтчей пока нет.</p>
       </div>
     );
@@ -28,7 +29,10 @@ export default function MatchesScreen() {
       <h1 className={pageHeading}>Мэтчи</h1>
       {matches.map((m) => (
         <div key={m.id} className={`${card} flex flex-col gap-1.5`}>
-          <h2 className="text-[16px] font-semibold">🎉 {m.dateIdea.title}</h2>
+          <h2 className="flex items-center gap-1.5 text-[16px] font-semibold">
+            <PartyPopper className="text-[var(--tg-button)]" size={18} />
+            {m.dateIdea.title}
+          </h2>
           {(m.dateIdea.address || m.dateIdea.metro) && (
             <p className={mutedText}>
               {[m.dateIdea.address, m.dateIdea.metro && `м. ${m.dateIdea.metro}`].filter(Boolean).join(" · ")}

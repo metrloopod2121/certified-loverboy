@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import dynamic from "next/dynamic";
+import { MapPin } from "lucide-react";
 import type { DateIdeaInput } from "@/lib/types";
 import { parseCoordinates, parseMapsLink, formatCoordinates } from "@/lib/coords";
 import { input, label as labelClass, buttonPrimary, buttonSecondary, buttonGhost } from "@/lib/ui";
@@ -109,7 +110,8 @@ export default function DateIdeaForm({
             className={input}
           />
           <button type="button" onClick={() => setShowPicker((v) => !v)} className={buttonGhost}>
-            📍 На карте
+            <MapPin size={16} />
+            На карте
           </button>
         </div>
         {showPicker && (

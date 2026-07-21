@@ -1,16 +1,28 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { Pencil, Trash2, Plus, X } from "lucide-react";
 import { apiFetch } from "@/lib/apiClient";
 import { dateIdeaToInput, type DateIdea, type DateIdeaInput } from "@/lib/types";
 import DateIdeaForm from "@/components/DateIdeaForm";
-import { card, select, buttonPrimary, buttonGhost, buttonDanger, pill, pageHeading, mutedText } from "@/lib/ui";
+import {
+  card,
+  select,
+  buttonPrimary,
+  pill,
+  pillToggle,
+  pillToggleActive,
+  pillToggleInactive,
+  iconButton,
+  pageHeading,
+  mutedText,
+} from "@/lib/ui";
 
 type Sort = "newest" | "title";
 
 export default function StorageScreen() {
   const [ideas, setIdeas] = useState<DateIdea[] | null>(null);
-  const [tagFilter, setTagFilter] = useState("");
+  const [tagFilters, setTagFilters] = useState<string[]>([]);
   const [metroFilter, setMetroFilter] = useState("");
   const [sort, setSort] = useState<Sort>("newest");
   const [showForm, setShowForm] = useState(false);
@@ -48,7 +60,9 @@ export default function StorageScreen() {
   const filtered = useMemo(() => {
     if (!ideas) return [];
     let result = ideas;
-    if (tagFilter) result = result.filter((i) => i.tags.some((t) => t.tag.name === tagFilter));
+    if (tagFilters.length > 0) {
+      result = result.filter((i) => i.tags.some((t) => tagFilters.includes(t.tag.name)));
+    }
     if (metroFilter) result = result.filter((i) => i.metro === metroFilter);
     result = [...result].sort((a, b) =>
       sort === "title"
@@ -56,7 +70,11 @@ export default function StorageScreen() {
         : b.createdAt.localeCompare(a.createdAt)
     );
     return result;
-  }, [ideas, tagFilter, metroFilter, sort]);
+  }, [ideas, tagFilters, metroFilter, sort]);
+
+  function toggleTagFilter(tag: string) {
+    setTagFilters((prev) => (prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]));
+  }
 
   async function createIdea(input: DateIdeaInput) {
     await apiFetch("/api/date-ideas", { method: "POST", body: JSON.stringify(input) });
@@ -88,17 +106,26 @@ export default function StorageScreen() {
       <div className="flex items-center justify-between">
         <h1 className={pageHeading}>Хранилище свиданок</h1>
         <button onClick={() => setShowForm((v) => !v)} className={buttonPrimary}>
-          {showForm ? "Закрыть" : "+ Добавить"}
+          {showForm ? <X size={18} /> : <Plus size={18} />}
+          {showForm ? "Закрыть" : "Добавить"}
         </button>
       </div>
 
-      <div className="flex gap-2 flex-wrap">
-        <select value={tagFilter} onChange={(e) => setTagFilter(e.target.value)} className={select}>
-          <option value="">Все теги</option>
+      {allTags.length > 0 && (
+        <div className="flex gap-1.5 flex-wrap">
           {allTags.map((t) => (
-            <option key={t} value={t}>{t}</option>
+            <button
+              key={t}
+              onClick={() => toggleTagFilter(t)}
+              className={`${pillToggle} ${tagFilters.includes(t) ? pillToggleActive : pillToggleInactive}`}
+            >
+              {t}
+            </button>
           ))}
-        </select>
+        </div>
+      )}
+
+      <div className="flex gap-2 flex-wrap">
         <select value={metroFilter} onChange={(e) => setMetroFilter(e.target.value)} className={select}>
           <option value="">Всё метро</option>
           {allMetro.map((m) => (
@@ -125,12 +152,24 @@ export default function StorageScreen() {
               onCancel={() => setEditing(null)}
             />
           ) : (
-            <div key={idea.id} className={`${card} flex flex-col gap-2`}>
+            <div key={idea.id} className={`${card} flex flex-col gap-2 transition`}>
               <div className="flex justify-between items-start gap-2">
                 <h2 className="text-[16px] font-semibold">{idea.title}</h2>
                 <div className="flex gap-1 shrink-0">
-                  <button onClick={() => setEditing(idea)} className={buttonGhost}>Правка</button>
-                  <button onClick={() => remove(idea.id)} className={buttonDanger}>Удалить</button>
+                  <button
+                    onClick={() => setEditing(idea)}
+                    aria-label="Править"
+                    className={`${iconButton} bg-black/5 dark:bg-white/10 text-[var(--tg-text)]`}
+                  >
+                    <Pencil size={16} />
+                  </button>
+                  <button
+                    onClick={() => remove(idea.id)}
+                    aria-label="Удалить"
+                    className={`${iconButton} bg-red-500/10 text-red-500`}
+                  >
+                    <Trash2 size={16} />
+                  </button>
                 </div>
               </div>
               {(idea.address || idea.metro) && (
@@ -149,22 +188,22 @@ export default function StorageScreen() {
                   ))}
                 </div>
               )}
-              <div className="flex gap-4 pt-1 text-[13px] border-t border-black/5 dark:border-white/10 mt-1">
-                <label className="flex items-center gap-1.5 py-1.5">
+              <div className="flex gap-5 pt-2 text-[14px] border-t border-black/5 dark:border-white/10 mt-1">
+                <label className="flex items-center gap-2 py-1.5">
                   <input
                     type="checkbox"
                     checked={idea.inPartnerDeck}
                     onChange={() => toggle(idea, "inPartnerDeck")}
-                    className="h-4 w-4 accent-[var(--tg-button)]"
+                    className="h-5 w-5 accent-[var(--tg-button)]"
                   />
-                  В деке
+                  Показывать партнёрше
                 </label>
-                <label className="flex items-center gap-1.5 py-1.5">
+                <label className="flex items-center gap-2 py-1.5">
                   <input
                     type="checkbox"
                     checked={idea.showPriceToPartner}
                     onChange={() => toggle(idea, "showPriceToPartner")}
-                    className="h-4 w-4 accent-[var(--tg-button)]"
+                    className="h-5 w-5 accent-[var(--tg-button)]"
                   />
                   Цена видна
                 </label>

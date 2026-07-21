@@ -16,7 +16,7 @@ export const buttonGhost =
   "inline-flex items-center justify-center gap-1 rounded-full px-3 py-1.5 text-[13px] font-semibold text-[var(--app-ink)] active:opacity-60 transition";
 
 export const pill =
-  "inline-flex items-center rounded-full bg-white/65 px-2.5 py-1 text-[12px] font-semibold text-[var(--app-ink)] ring-1 ring-[var(--app-outline)]/10";
+  "inline-flex items-center rounded-full bg-[var(--app-overlay)] px-2.5 py-1 text-[12px] font-semibold text-[var(--app-ink)] ring-1 ring-[var(--app-outline)]/10";
 
 export const select =
   "rounded-full border border-[var(--app-outline)]/15 bg-[var(--app-surface)] px-3.5 py-2 text-[13px] font-semibold text-[var(--app-ink)] outline-none focus:border-[var(--app-ink)] transition";

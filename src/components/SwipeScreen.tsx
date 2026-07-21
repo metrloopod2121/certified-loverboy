@@ -70,8 +70,7 @@ export default function SwipeScreen() {
     <div className="flex flex-col items-center gap-5 max-w-md mx-auto p-4 pt-3">
       <div className="flex w-full items-end justify-between px-1">
         <div>
-          <span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--app-muted)]">На сегодня</span>
-          <h1 className="mt-1 text-[25px] font-semibold leading-[0.98]">Выбери вайб</h1>
+          <h1 className="text-[25px] font-semibold leading-[0.98]">Выбери вайб</h1>
         </div>
         <span className="rounded-full bg-[var(--app-ink)] px-3 py-1.5 text-[12px] font-semibold text-[var(--app-canvas)]">{stack.length}</span>
       </div>

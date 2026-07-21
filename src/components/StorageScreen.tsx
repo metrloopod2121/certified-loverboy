@@ -145,14 +145,14 @@ export default function StorageScreen({ readOnly = false }: { readOnly?: boolean
                     <button
                       onClick={() => setEditing(idea)}
                       aria-label="Править"
-                      className={`${iconButton} bg-white/60 text-[var(--app-ink)] ring-1 ring-[var(--app-outline)]/10`}
+                      className={`${iconButton} bg-[var(--app-overlay)] text-[var(--app-ink)] ring-1 ring-[var(--app-outline)]/10`}
                     >
                       <Pencil size={16} />
                     </button>
                     <button
                       onClick={() => remove(idea.id)}
                       aria-label="Удалить"
-                      className={`${iconButton} bg-white/60 text-red-600 ring-1 ring-[var(--app-outline)]/10`}
+                      className={`${iconButton} bg-[var(--app-overlay)] text-red-500 ring-1 ring-[var(--app-outline)]/10`}
                     >
                       <Trash2 size={16} />
                     </button>

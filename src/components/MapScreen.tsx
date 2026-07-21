@@ -68,8 +68,7 @@ export default function MapScreen() {
     <div className="flex h-full flex-col gap-3 p-4 pt-3">
       <div className="flex items-end justify-between">
         <div>
-          <span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--app-muted)]">В Москве</span>
-          <h1 className={`${pageHeading} mt-1`}>Карта идей</h1>
+          <h1 className={pageHeading}>Карта идей</h1>
         </div>
         {ideas && <span className="rounded-full bg-[var(--app-ink)] px-3 py-1.5 text-[12px] font-semibold text-[var(--app-canvas)]">{filtered.length}</span>}
       </div>

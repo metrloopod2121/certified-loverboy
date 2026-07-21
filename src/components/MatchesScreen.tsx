@@ -27,8 +27,7 @@ export default function MatchesScreen() {
   return (
     <div className="flex flex-col gap-4 max-w-2xl mx-auto p-4 pb-6">
       <div>
-        <span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--app-muted)]">Наше</span>
-        <h1 className={`${pageHeading} mt-1`}>Мэтчи</h1>
+        <h1 className={pageHeading}>Мэтчи</h1>
       </div>
       {matches.map((m) => (
         <div key={m.id} className={`${card} ${pastelTone(m.dateIdea.id)} flex flex-col gap-2`}>

@@ -59,8 +59,7 @@ export default function ImportScreen() {
   return (
     <div className="flex flex-col gap-5 max-w-2xl mx-auto p-4 pb-6">
       <div>
-        <span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--app-muted)]">Для владельца</span>
-        <h1 className={`${pageHeading} mt-1`}>Импорт<br />идей</h1>
+        <h1 className={pageHeading}>Импорт<br />идей</h1>
       </div>
 
       <div className="flex flex-col gap-2 rounded-[22px] border border-[var(--app-outline)]/10 bg-[var(--app-yellow)] p-4 shadow-[0_2px_0_rgba(28,26,23,0.08)]">
@@ -76,7 +75,7 @@ export default function ImportScreen() {
         <button
           type="button"
           onClick={() => fileInputRef.current?.click()}
-          className={`${buttonSecondary} w-full bg-white/70`}
+          className={`${buttonSecondary} w-full bg-[var(--app-overlay)]`}
         >
           <Upload size={18} />
           Выбрать файлы
@@ -90,7 +89,7 @@ export default function ImportScreen() {
           onChange={(e) => setRaw(e.target.value)}
           placeholder={"# Название\nАдрес: ...\nМетро: ...\nКоординаты: 55.75, 37.61\nТеги: романтика, искусство\nЦена: 1500-3000 ₽\nОписание для свайпа: короткий текст для карточки\n\nСвободное описание."}
           rows={8}
-          className={`${input} bg-white/70 font-mono text-[13px]`}
+          className={`${input} bg-[var(--app-overlay)] font-mono text-[13px]`}
         />
         <button onClick={handleParseText} disabled={!raw.trim()} className={`${buttonPrimary} w-full mt-1`}>
           Разобрать

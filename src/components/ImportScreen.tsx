@@ -59,7 +59,7 @@ export default function ImportScreen() {
   return (
     <div className="flex flex-col gap-5 max-w-2xl mx-auto p-4 pb-6">
       <div>
-        <h1 className={pageHeading}>Импорт<br />идей</h1>
+        <h1 className={pageHeading}>Импорт идей</h1>
       </div>
 
       <div className="flex flex-col gap-2 rounded-[22px] border border-[var(--app-outline)]/10 bg-[var(--app-yellow)] p-4 shadow-[0_2px_0_rgba(28,26,23,0.08)]">

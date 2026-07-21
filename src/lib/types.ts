@@ -44,6 +44,7 @@ export type MatchWithIdea = {
   id: string;
   dateIdeaId: string;
   matchedAt: string;
+  isFavorite: boolean;
   dateIdea: DateIdea;
 };
 

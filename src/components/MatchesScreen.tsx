@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { PartyPopper, MessageCircleHeart } from "lucide-react";
+import { Heart, PartyPopper, MessageCircleHeart } from "lucide-react";
 import { apiFetch } from "@/lib/apiClient";
 import type { MatchWithIdea } from "@/lib/types";
 import { card, pill, pageHeading, mutedText, pastelTone } from "@/lib/ui";
@@ -10,11 +10,31 @@ import { useIdeaTypeFilter } from "@/components/IdeaTypeFilterProvider";
 
 export default function MatchesScreen() {
   const [matches, setMatches] = useState<MatchWithIdea[] | null>(null);
+  const [updatingId, setUpdatingId] = useState<string | null>(null);
   const { filter: typeFilter } = useIdeaTypeFilter();
 
   useEffect(() => {
     apiFetch("/api/matches").then(setMatches);
   }, []);
+
+  async function toggleFavorite(match: MatchWithIdea) {
+    if (updatingId) return;
+
+    const isFavorite = !match.isFavorite;
+    setUpdatingId(match.id);
+    setMatches((current) => current?.map((item) => item.id === match.id ? { ...item, isFavorite } : item) ?? null);
+
+    try {
+      await apiFetch(`/api/matches/${match.id}`, {
+        method: "PATCH",
+        body: JSON.stringify({ isFavorite }),
+      });
+    } catch {
+      setMatches((current) => current?.map((item) => item.id === match.id ? { ...item, isFavorite: !isFavorite } : item) ?? null);
+    } finally {
+      setUpdatingId(null);
+    }
+  }
 
   if (!matches) return <div className="p-8 text-center text-sm opacity-60">Загрузка…</div>;
 
@@ -40,10 +60,22 @@ export default function MatchesScreen() {
       <IdeaTypeFilter />
       {filteredMatches.map((m) => (
         <div key={m.id} className={`${card} ${pastelTone(m.dateIdea.id)} flex flex-col gap-2`}>
-          <h2 className="flex items-start gap-2 text-[19px] font-semibold leading-[1.05]">
-            <PartyPopper className="mt-0.5 shrink-0" size={19} />
-            {m.dateIdea.title}
-          </h2>
+          <div className="flex items-start justify-between gap-3">
+            <h2 className="flex items-start gap-2 text-[19px] font-semibold leading-[1.05]">
+              <PartyPopper className="mt-0.5 shrink-0" size={19} />
+              {m.dateIdea.title}
+            </h2>
+            <button
+              type="button"
+              onClick={() => toggleFavorite(m)}
+              disabled={updatingId === m.id}
+              aria-label={m.isFavorite ? "Убрать из избранного" : "Добавить в избранное"}
+              title={m.isFavorite ? "Убрать из избранного" : "Добавить в избранное"}
+              className="inline-flex size-9 shrink-0 items-center justify-center rounded-full bg-[var(--app-overlay)] text-[var(--app-ink)] ring-1 ring-[var(--app-outline)]/10 transition active:scale-90 disabled:opacity-50"
+            >
+              <Heart size={18} fill={m.isFavorite ? "currentColor" : "none"} className={m.isFavorite ? "text-[var(--app-coral)]" : ""} />
+            </button>
+          </div>
           {m.dateIdea.locations.map((loc) => (
             <p key={loc.id} className={mutedText}>
               {[loc.address, loc.metro && `м. ${loc.metro}`].filter(Boolean).join(" · ")}

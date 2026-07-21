@@ -1,0 +1,1 @@
+ALTER TABLE "Match" ADD COLUMN "isFavorite" BOOLEAN NOT NULL DEFAULT false;

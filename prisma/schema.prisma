@@ -77,5 +77,6 @@ model Match {
   dateIdeaId String   @unique
   matchedAt  DateTime @default(now())
   notified   Boolean  @default(false)
+  isFavorite Boolean  @default(false)
   dateIdea   DateIdea @relation(fields: [dateIdeaId], references: [id], onDelete: Cascade)
 }

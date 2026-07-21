@@ -57,9 +57,13 @@ export default function SwipeScreen() {
   }
 
   const idea = stack[0];
-  const location = [idea.metro && `м. ${idea.metro}`, compactAddress(idea.address)]
-    .filter(Boolean)
-    .join(" · ");
+  const firstLocation = idea.locations[0];
+  const location = firstLocation
+    ? [firstLocation.metro && `м. ${firstLocation.metro}`, compactAddress(firstLocation.address)]
+        .filter(Boolean)
+        .join(" · ")
+    : "";
+  const extraLocations = idea.locations.length - 1;
   const swipeDescription = idea.swipeDescription?.trim();
 
   return (
@@ -67,7 +71,7 @@ export default function SwipeScreen() {
       <div className="flex w-full items-end justify-between px-1">
         <div>
           <span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--app-muted)]">На сегодня</span>
-          <h1 className="mt-1 text-[30px] font-semibold leading-[0.95]">Выбери вайб</h1>
+          <h1 className="mt-1 text-[25px] font-semibold leading-[0.98]">Выбери вайб</h1>
         </div>
         <span className="rounded-full bg-[var(--app-ink)] px-3 py-1.5 text-[12px] font-semibold text-[var(--app-canvas)]">{stack.length}</span>
       </div>
@@ -81,8 +85,13 @@ export default function SwipeScreen() {
         }`}
       >
         <div className="flex flex-col gap-2">
-          <h2 className="text-[32px] font-semibold leading-[0.94]">{idea.title}</h2>
-          {location && <p className={mutedText}>{location}</p>}
+          <h2 className="text-[28px] font-semibold leading-[0.98]">{idea.title}</h2>
+          {location && (
+            <p className={mutedText}>
+              {location}
+              {extraLocations > 0 && ` · ещё ${extraLocations} мест`}
+            </p>
+          )}
         </div>
 
         {idea.priceNote && (

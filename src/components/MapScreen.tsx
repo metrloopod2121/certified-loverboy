@@ -6,6 +6,7 @@ import { apiFetch } from "@/lib/apiClient";
 import type { DateIdea } from "@/lib/types";
 import { pageHeading, mutedText } from "@/lib/ui";
 import MultiSelectFilter from "@/components/MultiSelectFilter";
+import type { MapMarker } from "@/components/LeafletMap";
 
 const LeafletMap = dynamic(() => import("@/components/LeafletMap"), { ssr: false });
 
@@ -22,33 +23,46 @@ export default function MapScreen() {
       .catch((err) => setError(err instanceof Error ? err.message : "Не удалось загрузить"));
   }, []);
 
-  const withCoords = useMemo(
-    () => (ideas ?? []).filter((i) => i.lat != null && i.lng != null),
-    [ideas]
-  );
+  const allMarkers = useMemo<MapMarker[]>(() => {
+    return (ideas ?? []).flatMap((idea) =>
+      idea.locations
+        .filter((loc) => loc.lat != null && loc.lng != null)
+        .map((loc) => ({
+          id: loc.id,
+          lat: loc.lat as number,
+          lng: loc.lng as number,
+          title: idea.title,
+          address: loc.address,
+          metro: loc.metro,
+          url: loc.url,
+          priceNote: idea.priceNote,
+          tags: idea.tags.map((t) => t.tag.name),
+        }))
+    );
+  }, [ideas]);
 
   const allTags = useMemo(() => {
     const set = new Set<string>();
-    withCoords.forEach((idea) => idea.tags.forEach((t) => set.add(t.tag.name)));
+    allMarkers.forEach((m) => m.tags.forEach((t) => set.add(t)));
     return [...set].sort();
-  }, [withCoords]);
+  }, [allMarkers]);
 
   const allMetro = useMemo(() => {
     const set = new Set<string>();
-    withCoords.forEach((idea) => idea.metro && set.add(idea.metro));
+    allMarkers.forEach((m) => m.metro && set.add(m.metro));
     return [...set].sort();
-  }, [withCoords]);
+  }, [allMarkers]);
 
   const filtered = useMemo(() => {
-    let result = withCoords;
+    let result = allMarkers;
     if (tagFilters.length > 0) {
-      result = result.filter((i) => i.tags.some((t) => tagFilters.includes(t.tag.name)));
+      result = result.filter((m) => m.tags.some((t) => tagFilters.includes(t)));
     }
     if (metroFilters.length > 0) {
-      result = result.filter((i) => i.metro && metroFilters.includes(i.metro));
+      result = result.filter((m) => m.metro && metroFilters.includes(m.metro));
     }
     return result;
-  }, [withCoords, tagFilters, metroFilters]);
+  }, [allMarkers, tagFilters, metroFilters]);
 
   return (
     <div className="flex h-full flex-col gap-3 p-4 pt-3">
@@ -67,14 +81,14 @@ export default function MapScreen() {
 
       {error && <p className="rounded-xl bg-[var(--app-coral)] p-3 text-[14px] font-medium text-[var(--app-ink)]">{error}</p>}
 
-      {ideas && withCoords.length === 0 && (
+      {ideas && allMarkers.length === 0 && (
         <p className={`rounded-[22px] bg-[var(--app-lilac)] p-4 ${mutedText}`}>
           Ни у одной свиданки нет координат — открой её в «Хранилище» → «Правка» и впиши координаты, тогда она появится тут.
         </p>
       )}
 
       <div className="relative z-0 min-h-[62dvh] flex-1 overflow-hidden rounded-[22px] border border-[var(--app-outline)]/10 bg-[var(--app-surface)] shadow-[0_2px_0_rgba(28,26,23,0.08)]">
-        {ideas && !error && <LeafletMap ideas={filtered} />}
+        {ideas && !error && <LeafletMap markers={filtered} />}
         {!ideas && !error && <p className={`p-4 ${mutedText}`}>Загрузка…</p>}
       </div>
     </div>

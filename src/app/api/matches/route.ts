@@ -7,7 +7,9 @@ export async function GET(request: Request) {
   if (!isAuthUser(auth)) return auth;
 
   const matches = await prisma.match.findMany({
-    include: { dateIdea: { include: { tags: { include: { tag: true } } } } },
+    include: {
+      dateIdea: { include: { tags: { include: { tag: true } }, locations: true } },
+    },
     orderBy: { matchedAt: "desc" },
   });
 

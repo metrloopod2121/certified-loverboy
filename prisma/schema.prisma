@@ -13,18 +13,26 @@ datasource db {
 model DateIdea {
   id               String            @id @default(cuid())
   title            String
-  address          String?
-  metro            String?
-  lat              Float?
-  lng              Float?
   description      String?
   swipeDescription String?
   priceNote        String?
   tags             TagsOnDateIdeas[]
+  locations        Location[]
   swipes           Swipe[]
   match            Match?
   createdAt        DateTime          @default(now())
   updatedAt        DateTime          @updatedAt
+}
+
+model Location {
+  id         String   @id @default(cuid())
+  dateIdeaId String
+  address    String?
+  metro      String?
+  lat        Float?
+  lng        Float?
+  url        String?
+  dateIdea   DateIdea @relation(fields: [dateIdeaId], references: [id], onDelete: Cascade)
 }
 
 model Tag {

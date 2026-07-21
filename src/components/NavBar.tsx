@@ -30,7 +30,7 @@ export default function NavBar() {
 
   return (
     <nav
-      className="fixed inset-x-0 bottom-0 z-20 mx-3 flex justify-center gap-0.5 rounded-full border border-white/10 bg-[var(--app-ink)]/95 px-1.5 py-1.5 shadow-[0_10px_24px_rgba(28,26,23,0.28)] backdrop-blur-xl"
+      className="fixed inset-x-0 bottom-0 z-20 mx-3 flex justify-center gap-0.5 rounded-full bg-transparent px-1 py-1"
       style={{ marginBottom: "calc(var(--safe-bottom) + 12px)" }}
     >
       {links.map((link) => {
@@ -42,8 +42,8 @@ export default function NavBar() {
             href={link.href}
             className={`flex flex-1 max-w-24 flex-col items-center justify-center gap-0.5 rounded-full py-2 text-[10px] font-semibold transition ${
               active
-                ? "bg-[var(--app-yellow)] text-[#1c1a17]"
-                : "text-white/65 active:bg-white/10"
+                ? "bg-[var(--app-ink)] text-[var(--app-canvas)] shadow-[0_2px_0_rgba(28,26,23,0.16)]"
+                : "text-[var(--app-ink)]/70 active:bg-[var(--app-ink)]/8"
             }`}
           >
             <Icon size={20} strokeWidth={2} />

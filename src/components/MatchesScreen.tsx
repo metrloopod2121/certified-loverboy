@@ -36,11 +36,11 @@ export default function MatchesScreen() {
             <PartyPopper className="mt-0.5 shrink-0" size={19} />
             {m.dateIdea.title}
           </h2>
-          {(m.dateIdea.address || m.dateIdea.metro) && (
-            <p className={mutedText}>
-              {[m.dateIdea.address, m.dateIdea.metro && `м. ${m.dateIdea.metro}`].filter(Boolean).join(" · ")}
+          {m.dateIdea.locations.map((loc) => (
+            <p key={loc.id} className={mutedText}>
+              {[loc.address, loc.metro && `м. ${loc.metro}`].filter(Boolean).join(" · ")}
             </p>
-          )}
+          ))}
           {m.dateIdea.tags.length > 0 && (
             <div className="flex flex-wrap gap-1.5">
               {m.dateIdea.tags.map((t) => (

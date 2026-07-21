@@ -23,7 +23,7 @@ export async function GET(request: Request) {
 
   const ideas = await prisma.dateIdea.findMany({
     where: { id: { notIn: swipedIds } },
-    include: { tags: { include: { tag: true } } },
+    include: { tags: { include: { tag: true } }, locations: true },
     orderBy: { createdAt: "asc" },
   });
 

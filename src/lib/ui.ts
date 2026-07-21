@@ -30,7 +30,7 @@ export const pillToggleInactive =
 export const iconButton =
   "inline-flex size-9 items-center justify-center rounded-full transition active:scale-90";
 
-export const pageHeading = "text-[30px] font-semibold leading-[0.95]";
+export const pageHeading = "text-[25px] font-semibold leading-[0.98]";
 
 export const mutedText = "text-[13px] leading-snug text-[var(--app-muted)]";
 

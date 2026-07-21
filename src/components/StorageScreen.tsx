@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Pencil, Trash2, Plus, X } from "lucide-react";
+import { Pencil, Trash2, Plus, X, Link as LinkIcon } from "lucide-react";
 import { apiFetch } from "@/lib/apiClient";
 import { dateIdeaToInput, type DateIdea, type DateIdeaInput } from "@/lib/types";
 import DateIdeaForm from "@/components/DateIdeaForm";
@@ -44,7 +44,7 @@ export default function StorageScreen({ readOnly = false }: { readOnly?: boolean
 
   const allMetro = useMemo(() => {
     const set = new Set<string>();
-    ideas?.forEach((idea) => idea.metro && set.add(idea.metro));
+    ideas?.forEach((idea) => idea.locations.forEach((loc) => loc.metro && set.add(loc.metro)));
     return [...set].sort();
   }, [ideas]);
 
@@ -55,7 +55,7 @@ export default function StorageScreen({ readOnly = false }: { readOnly?: boolean
       result = result.filter((i) => i.tags.some((t) => tagFilters.includes(t.tag.name)));
     }
     if (metroFilters.length > 0) {
-      result = result.filter((i) => i.metro && metroFilters.includes(i.metro));
+      result = result.filter((i) => i.locations.some((loc) => loc.metro && metroFilters.includes(loc.metro)));
     }
     result = [...result].sort((a, b) =>
       sort === "title"
@@ -83,10 +83,9 @@ export default function StorageScreen({ readOnly = false }: { readOnly?: boolean
   }
 
   return (
-    <div className="flex flex-col gap-5 max-w-2xl mx-auto p-4 pb-6">
+    <div className="flex flex-col gap-5 max-w-2xl mx-auto p-4 pt-0 pb-6">
       <div className="flex items-center justify-between">
-        <div className="flex flex-col gap-1">
-          <span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--app-muted)]">На двоих</span>
+        <div>
           <h1 className={pageHeading}>Идеи<br />для свиданий</h1>
         </div>
         {!readOnly && (
@@ -160,10 +159,21 @@ export default function StorageScreen({ readOnly = false }: { readOnly?: boolean
                   </div>
                 )}
               </div>
-              {(idea.address || idea.metro) && (
-                <p className={mutedText}>
-                  {[idea.address, idea.metro && `м. ${idea.metro}`].filter(Boolean).join(" · ")}
-                </p>
+              {idea.locations.length > 0 && (
+                <div className="flex flex-col gap-1">
+                  {idea.locations.map((loc) => (
+                    <div key={loc.id} className="flex items-center gap-1.5">
+                      <p className={mutedText}>
+                        {[loc.address, loc.metro && `м. ${loc.metro}`].filter(Boolean).join(" · ") || "Без адреса"}
+                      </p>
+                      {loc.url && (
+                        <a href={loc.url} target="_blank" rel="noreferrer" className="text-[var(--app-ink)]">
+                          <LinkIcon size={12} />
+                        </a>
+                      )}
+                    </div>
+                  ))}
+                </div>
               )}
               {idea.priceNote && <p className="text-[14px] font-semibold">{idea.priceNote}</p>}
               {idea.swipeDescription && (

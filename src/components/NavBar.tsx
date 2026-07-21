@@ -4,7 +4,6 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { FolderHeart, Map, Inbox, Heart, PartyPopper, type LucideIcon } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
-import { useKeyboardOpen } from "@/hooks/useKeyboardOpen";
 
 const OWNER_LINKS: { href: string; label: string; icon: LucideIcon }[] = [
   { href: "/", label: "Идеи", icon: FolderHeart },
@@ -22,9 +21,8 @@ const PARTNER_LINKS: { href: string; label: string; icon: LucideIcon }[] = [
 export default function NavBar() {
   const auth = useAuth();
   const pathname = usePathname();
-  const keyboardOpen = useKeyboardOpen();
 
-  if (auth.status !== "authorized" || keyboardOpen) return null;
+  if (auth.status !== "authorized") return null;
 
   const links = auth.role === "OWNER" ? OWNER_LINKS : PARTNER_LINKS;
 

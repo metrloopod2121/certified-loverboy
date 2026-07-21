@@ -11,6 +11,7 @@ export default function MultiSelectFilter({
   onChange,
   open,
   onOpenChange,
+  fullWidth = false,
 }: {
   label: string;
   options: string[];
@@ -18,6 +19,7 @@ export default function MultiSelectFilter({
   onChange: (selected: string[]) => void;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  fullWidth?: boolean;
 }) {
   const ref = useRef<HTMLDivElement>(null);
 
@@ -37,11 +39,11 @@ export default function MultiSelectFilter({
   if (options.length === 0) return null;
 
   return (
-    <div className="relative isolate" ref={ref}>
+    <div className={`relative isolate ${fullWidth ? "min-w-0" : ""}`} ref={ref}>
       <button
         type="button"
         onClick={() => onOpenChange(!open)}
-        className={`${select} inline-flex items-center gap-1 ${selected.length > 0 ? "border-[var(--app-ink)] bg-[var(--app-yellow)]" : ""}`}
+        className={`${select} gap-1 ${fullWidth ? "w-full" : ""} ${selected.length > 0 ? "border-[var(--app-ink)] bg-[var(--app-yellow)]" : ""}`}
       >
         {label}
         {selected.length > 0 ? ` (${selected.length})` : ""}

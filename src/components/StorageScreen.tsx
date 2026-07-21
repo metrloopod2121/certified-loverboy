@@ -104,28 +104,32 @@ export default function StorageScreen({ readOnly = false }: { readOnly?: boolean
         )}
       </div>
 
-      <div className="relative z-10 flex flex-wrap gap-2">
-        <IdeaTypeFilter />
-        <MultiSelectFilter
-          label="Теги"
-          options={allTags}
-          selected={tagFilters}
-          onChange={setTagFilters}
-          open={openFilter === "tags"}
-          onOpenChange={(v) => setOpenFilter(v ? "tags" : null)}
-        />
-        <MultiSelectFilter
-          label="Метро"
-          options={allMetro}
-          selected={metroFilters}
-          onChange={setMetroFilters}
-          open={openFilter === "metro"}
-          onOpenChange={(v) => setOpenFilter(v ? "metro" : null)}
-        />
-        <select value={sort} onChange={(e) => setSort(e.target.value as Sort)} className={select}>
-          <option value="newest">Сначала новые</option>
-          <option value="title">По названию</option>
-        </select>
+      <div className="relative z-10 flex flex-col gap-2">
+        <IdeaTypeFilter fullWidth />
+        <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1.35fr)] gap-2">
+          <MultiSelectFilter
+            label="Теги"
+            options={allTags}
+            selected={tagFilters}
+            onChange={setTagFilters}
+            open={openFilter === "tags"}
+            onOpenChange={(v) => setOpenFilter(v ? "tags" : null)}
+            fullWidth
+          />
+          <MultiSelectFilter
+            label="Метро"
+            options={allMetro}
+            selected={metroFilters}
+            onChange={setMetroFilters}
+            open={openFilter === "metro"}
+            onOpenChange={(v) => setOpenFilter(v ? "metro" : null)}
+            fullWidth
+          />
+          <select value={sort} onChange={(e) => setSort(e.target.value as Sort)} className={`${select} w-full min-w-0`}>
+            <option value="newest">Сначала новые</option>
+            <option value="title">По названию</option>
+          </select>
+        </div>
       </div>
 
       {!readOnly && showForm && <DateIdeaForm onSubmit={createIdea} onCancel={() => setShowForm(false)} />}

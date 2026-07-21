@@ -19,7 +19,7 @@ export const pill =
   "inline-flex items-center rounded-full bg-[var(--app-overlay)] px-2.5 py-1 text-[12px] font-semibold text-[var(--app-ink)] ring-1 ring-[var(--app-outline)]/10";
 
 export const select =
-  "rounded-full border border-[var(--app-outline)]/15 bg-[var(--app-surface)] px-3.5 py-2 text-[13px] font-semibold text-[var(--app-ink)] outline-none focus:border-[var(--app-ink)] transition";
+  "inline-flex h-11 items-center justify-center rounded-full border border-[var(--app-outline)]/15 bg-[var(--app-surface)] px-3.5 py-2 text-[13px] font-semibold text-[var(--app-ink)] outline-none focus:border-[var(--app-ink)] transition";
 
 export const pillToggle =
   "rounded-full border px-3 py-1.5 text-[13px] font-semibold transition active:scale-95";

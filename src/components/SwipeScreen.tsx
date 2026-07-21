@@ -67,10 +67,10 @@ export default function SwipeScreen() {
   const swipeDescription = idea.swipeDescription?.trim();
 
   return (
-    <div className="flex flex-col items-center gap-5 max-w-md mx-auto p-4 pt-3">
+    <div className="flex flex-col items-center gap-5 max-w-md mx-auto p-4 pt-2">
       <div className="flex w-full items-end justify-between px-1">
         <div>
-          <h1 className="text-[25px] font-semibold leading-[0.98]">Выбери вайб</h1>
+          <h1 className="text-[22px] font-semibold leading-none">Выбери вайб</h1>
         </div>
         <span className="rounded-full bg-[var(--app-ink)] px-3 py-1.5 text-[12px] font-semibold text-[var(--app-canvas)]">{stack.length}</span>
       </div>

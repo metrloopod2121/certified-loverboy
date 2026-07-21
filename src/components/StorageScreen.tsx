@@ -83,7 +83,7 @@ export default function StorageScreen({ readOnly = false }: { readOnly?: boolean
   }
 
   return (
-    <div className="flex flex-col gap-5 max-w-2xl mx-auto p-4 pt-0 pb-6">
+    <div className="flex flex-col gap-5 max-w-2xl mx-auto p-4 pt-2 pb-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className={`${pageHeading} whitespace-nowrap`}>Идеи для свиданий</h1>

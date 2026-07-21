@@ -57,7 +57,7 @@ export default function ImportScreen() {
   }
 
   return (
-    <div className="flex flex-col gap-5 max-w-2xl mx-auto p-4 pb-6">
+    <div className="flex flex-col gap-5 max-w-2xl mx-auto p-4 pt-2 pb-6">
       <div>
         <h1 className={pageHeading}>Импорт идей</h1>
       </div>

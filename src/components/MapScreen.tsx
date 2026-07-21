@@ -65,7 +65,7 @@ export default function MapScreen() {
   }, [allMarkers, tagFilters, metroFilters]);
 
   return (
-    <div className="flex h-full flex-col gap-3 p-4 pt-3">
+    <div className="flex flex-col gap-3 p-4 pt-2">
       <div className="flex items-end justify-between">
         <div>
           <h1 className={pageHeading}>Карта идей</h1>
@@ -86,7 +86,7 @@ export default function MapScreen() {
         </p>
       )}
 
-      <div className="relative z-0 min-h-[62dvh] flex-1 overflow-hidden rounded-[22px] border border-[var(--app-outline)]/10 bg-[var(--app-surface)] shadow-[0_2px_0_rgba(28,26,23,0.08)]">
+      <div className="relative z-0 h-[62dvh] overflow-hidden rounded-[22px] border border-[var(--app-outline)]/10 bg-[var(--app-surface)] shadow-[0_2px_0_rgba(28,26,23,0.08)]">
         {ideas && !error && <LeafletMap markers={filtered} />}
         {!ideas && !error && <p className={`p-4 ${mutedText}`}>Загрузка…</p>}
       </div>

@@ -42,7 +42,6 @@ export default function RootLayout({
         <main
           className="flex-1 overflow-y-auto"
           style={{
-            paddingTop: "6px",
             paddingBottom: "calc(var(--safe-bottom) + 92px)",
           }}
         >

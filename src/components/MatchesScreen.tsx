@@ -42,9 +42,10 @@ export default function MatchesScreen() {
 
   if (filteredMatches.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center gap-4 p-10 text-center">
+      <div className="flex min-h-[calc(100dvh-92px)] flex-col gap-4 p-4 pt-2">
+        <h1 className={pageHeading}>Мэтчи</h1>
         <IdeaTypeFilter />
-        <div className="flex flex-col items-center gap-2">
+        <div className="flex flex-1 flex-col items-center justify-center gap-2 text-center">
           <MessageCircleHeart className="text-[var(--tg-hint)]" size={36} strokeWidth={1.5} />
           <p className={mutedText}>Мэтчей пока нет.</p>
         </div>

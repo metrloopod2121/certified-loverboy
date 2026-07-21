@@ -2,10 +2,10 @@
 
 import { useState } from "react";
 import dynamic from "next/dynamic";
-import { MapPin, Plus, X } from "lucide-react";
-import type { DateIdeaInput, LocationInput } from "@/lib/types";
+import { Heart, MapPin, Plus, Utensils, X } from "lucide-react";
+import type { DateIdeaInput, DateIdeaType, LocationInput } from "@/lib/types";
 import { parseCoordinates, parseMapsLink, formatCoordinates } from "@/lib/coords";
-import { input, label as labelClass, buttonPrimary, buttonSecondary, buttonGhost, iconButton } from "@/lib/ui";
+import { input, label as labelClass, buttonPrimary, buttonSecondary, buttonGhost, iconButton, pillToggle, pillToggleActive, pillToggleInactive } from "@/lib/ui";
 
 const LocationPicker = dynamic(() => import("@/components/LocationPicker"), { ssr: false });
 
@@ -31,6 +31,7 @@ export default function DateIdeaForm({
   onSubmit: (input: DateIdeaInput) => Promise<void>;
   onCancel: () => void;
 }) {
+  const [type, setType] = useState<DateIdeaType>(initial?.type ?? "DATE");
   const [title, setTitle] = useState(initial?.title ?? "");
   const [description, setDescription] = useState(initial?.description ?? "");
   const [swipeDescription, setSwipeDescription] = useState(initial?.swipeDescription ?? "");
@@ -96,6 +97,7 @@ export default function DateIdeaForm({
     setSaving(true);
     try {
       await onSubmit({
+        type,
         title,
         description,
         swipeDescription,
@@ -116,11 +118,30 @@ export default function DateIdeaForm({
       className="flex flex-col gap-3 rounded-[22px] border border-[var(--app-outline)]/10 bg-[var(--app-mint)] p-4 shadow-[0_2px_0_rgba(28,26,23,0.08)]"
     >
       <div>
-        <h2 className="text-[20px] font-semibold leading-none">Детали свидания</h2>
+        <h2 className="text-[20px] font-semibold leading-none">{type === "FOOD" ? "Детали заведения" : "Детали свидания"}</h2>
+      </div>
+      <div className="flex flex-col gap-1.5">
+        <span className={labelClass}>Тип</span>
+        <div className="inline-flex w-fit gap-1 rounded-full bg-[var(--app-overlay)] p-1 ring-1 ring-[var(--app-outline)]/10">
+          {([
+            ["DATE", "Свиданка", Heart],
+            ["FOOD", "Еда", Utensils],
+          ] as const).map(([value, text, Icon]) => (
+            <button
+              key={value}
+              type="button"
+              onClick={() => setType(value)}
+              className={`${pillToggle} inline-flex items-center gap-1 border-0 ${type === value ? pillToggleActive : pillToggleInactive}`}
+            >
+              <Icon size={15} />
+              {text}
+            </button>
+          ))}
+        </div>
       </div>
       <div className="flex flex-col gap-1">
         <span className={labelClass}>Название</span>
-        <input required placeholder="Пикник в парке" value={title} onChange={(e) => setTitle(e.target.value)} className={input} />
+        <input required placeholder={type === "FOOD" ? "Кофейня на районе" : "Пикник в парке"} value={title} onChange={(e) => setTitle(e.target.value)} className={input} />
       </div>
 
       <div className="flex flex-col gap-3">

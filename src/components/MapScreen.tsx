@@ -6,6 +6,8 @@ import { apiFetch } from "@/lib/apiClient";
 import type { DateIdea } from "@/lib/types";
 import { pageHeading, mutedText } from "@/lib/ui";
 import MultiSelectFilter from "@/components/MultiSelectFilter";
+import IdeaTypeFilter from "@/components/IdeaTypeFilter";
+import { useIdeaTypeFilter } from "@/components/IdeaTypeFilterProvider";
 import type { MapMarker } from "@/components/LeafletMap";
 
 const LeafletMap = dynamic(() => import("@/components/LeafletMap"), { ssr: false });
@@ -16,6 +18,7 @@ export default function MapScreen() {
   const [tagFilters, setTagFilters] = useState<string[]>([]);
   const [metroFilters, setMetroFilters] = useState<string[]>([]);
   const [openFilter, setOpenFilter] = useState<"tags" | "metro" | null>(null);
+  const { filter: typeFilter } = useIdeaTypeFilter();
 
   useEffect(() => {
     apiFetch("/api/date-ideas")
@@ -24,7 +27,9 @@ export default function MapScreen() {
   }, []);
 
   const allMarkers = useMemo<MapMarker[]>(() => {
-    return (ideas ?? []).flatMap((idea) =>
+    return (ideas ?? [])
+      .filter((idea) => typeFilter === "ALL" || idea.type === typeFilter)
+      .flatMap((idea) =>
       idea.locations
         .filter((loc) => loc.lat != null && loc.lng != null)
         .map((loc) => ({
@@ -38,8 +43,8 @@ export default function MapScreen() {
           priceNote: idea.priceNote,
           tags: idea.tags.map((t) => t.tag.name),
         }))
-    );
-  }, [ideas]);
+      );
+  }, [ideas, typeFilter]);
 
   const allTags = useMemo(() => {
     const set = new Set<string>();
@@ -77,6 +82,7 @@ export default function MapScreen() {
         </div>
 
         <div className="relative z-20 flex flex-wrap gap-2 rounded-[18px] border border-[var(--app-outline)]/10 bg-[var(--app-surface)]/70 p-2 shadow-[0_4px_16px_rgba(28,26,23,0.12)] backdrop-blur-xl">
+          <IdeaTypeFilter />
           <MultiSelectFilter label="Теги" options={allTags} selected={tagFilters} onChange={setTagFilters} open={openFilter === "tags"} onOpenChange={(v) => setOpenFilter(v ? "tags" : null)} />
           <MultiSelectFilter label="Метро" options={allMetro} selected={metroFilters} onChange={setMetroFilters} open={openFilter === "metro"} onOpenChange={(v) => setOpenFilter(v ? "metro" : null)} />
         </div>
@@ -85,7 +91,7 @@ export default function MapScreen() {
 
         {ideas && allMarkers.length === 0 && (
           <p className={`rounded-[18px] border border-[var(--app-outline)]/10 bg-[var(--app-lilac)]/90 p-3 shadow-[0_4px_16px_rgba(28,26,23,0.12)] backdrop-blur-xl ${mutedText}`}>
-            Ни у одной свиданки нет координат — открой её в «Хранилище» → «Правка» и впиши координаты, тогда она появится тут.
+            Ни у одной записи нет координат — открой её в «Хранилище» → «Правка» и впиши координаты, тогда она появится тут.
           </p>
         )}
       </div>

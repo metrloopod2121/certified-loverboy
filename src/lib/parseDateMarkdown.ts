@@ -3,11 +3,11 @@ import type { DateIdeaInput } from "@/lib/types";
 
 export type ParsedDateIdea = Pick<
   DateIdeaInput,
-  "title" | "tags" | "priceNote" | "description" | "swipeDescription" | "locations"
+  "type" | "title" | "tags" | "priceNote" | "description" | "swipeDescription" | "locations"
 >;
 
 type LocationKey = "address" | "metro" | "url";
-type OtherKey = "priceNote" | "swipeDescription";
+type OtherKey = "priceNote" | "swipeDescription" | "type";
 
 const LOCATION_KEYS: Record<string, LocationKey> = {
   "адрес": "address",
@@ -21,11 +21,13 @@ const OTHER_KEYS: Record<string, OtherKey> = {
   "свайп": "swipeDescription",
   "свайп описание": "swipeDescription",
   "свайп-описание": "swipeDescription",
+  "тип": "type",
 };
 
 export function parseDateMarkdown(raw: string): ParsedDateIdea {
   const lines = raw.replace(/\r\n/g, "\n").split("\n");
   const result: ParsedDateIdea = {
+    type: "DATE",
     title: "",
     tags: [],
     priceNote: "",
@@ -76,7 +78,12 @@ export function parseDateMarkdown(raw: string): ParsedDateIdea {
         continue;
       }
       if (key in OTHER_KEYS) {
-        result[OTHER_KEYS[key]] = value;
+        const field = OTHER_KEYS[key];
+        if (field === "type") {
+          result.type = /^(food|еда|заведение)$/iu.test(value) ? "FOOD" : "DATE";
+        } else {
+          result[field] = value;
+        }
         continue;
       }
     }

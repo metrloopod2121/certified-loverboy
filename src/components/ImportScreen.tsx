@@ -87,7 +87,7 @@ export default function ImportScreen() {
         <textarea
           value={raw}
           onChange={(e) => setRaw(e.target.value)}
-          placeholder={"# Название\nАдрес: ...\nМетро: ...\nКоординаты: 55.75, 37.61\nТеги: романтика, искусство\nЦена: 1500-3000 ₽\nОписание для свайпа: короткий текст для карточки\n\nСвободное описание."}
+          placeholder={"# Название\nТип: DATE или FOOD\nАдрес: ...\nМетро: ...\nКоординаты: 55.75, 37.61\nТеги: романтика, искусство\nЦена: 1500-3000 ₽\nОписание для свайпа: короткий текст для карточки\n\nСвободное описание."}
           rows={8}
           className={`${input} bg-[var(--app-overlay)] font-mono text-[13px]`}
         />

@@ -2,7 +2,11 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { requireAuth, isAuthUser } from "@/lib/apiAuth";
 import { resolveTagIds } from "@/lib/tags";
-import type { LocationInput } from "@/lib/types";
+import type { DateIdeaType, LocationInput } from "@/lib/types";
+
+function parseIdeaType(value: unknown): DateIdeaType {
+  return value === "FOOD" ? "FOOD" : "DATE";
+}
 
 export async function PATCH(
   request: Request,
@@ -15,6 +19,7 @@ export async function PATCH(
   const body = await request.json();
 
   const data: Record<string, unknown> = {};
+  if ("type" in body) data.type = parseIdeaType(body.type);
   for (const key of ["title", "description", "swipeDescription", "priceNote"]) {
     if (key in body) data[key] = body[key];
   }

@@ -1,11 +1,13 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Pencil, Trash2, Plus, X, Link as LinkIcon } from "lucide-react";
+import { Pencil, Trash2, Plus, X, Link as LinkIcon, Utensils } from "lucide-react";
 import { apiFetch } from "@/lib/apiClient";
 import { dateIdeaToInput, type DateIdea, type DateIdeaInput } from "@/lib/types";
 import DateIdeaForm from "@/components/DateIdeaForm";
 import MultiSelectFilter from "@/components/MultiSelectFilter";
+import IdeaTypeFilter from "@/components/IdeaTypeFilter";
+import { useIdeaTypeFilter } from "@/components/IdeaTypeFilterProvider";
 import { card, select, pill, iconButton, pageHeading, mutedText, pastelTone } from "@/lib/ui";
 import { metroPastelTone } from "@/lib/metro";
 
@@ -19,6 +21,7 @@ export default function StorageScreen({ readOnly = false }: { readOnly?: boolean
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<DateIdea | null>(null);
   const [openFilter, setOpenFilter] = useState<"tags" | "metro" | null>(null);
+  const { filter: typeFilter } = useIdeaTypeFilter();
 
   async function reload() {
     const data = await apiFetch("/api/date-ideas");
@@ -51,7 +54,7 @@ export default function StorageScreen({ readOnly = false }: { readOnly?: boolean
 
   const filtered = useMemo(() => {
     if (!ideas) return [];
-    let result = ideas;
+    let result = typeFilter === "ALL" ? ideas : ideas.filter((idea) => idea.type === typeFilter);
     if (tagFilters.length > 0) {
       result = result.filter((i) => i.tags.some((t) => tagFilters.includes(t.tag.name)));
     }
@@ -64,7 +67,7 @@ export default function StorageScreen({ readOnly = false }: { readOnly?: boolean
         : b.createdAt.localeCompare(a.createdAt)
     );
     return result;
-  }, [ideas, tagFilters, metroFilters, sort]);
+  }, [ideas, tagFilters, metroFilters, sort, typeFilter]);
 
   async function createIdea(input: DateIdeaInput) {
     await apiFetch("/api/date-ideas", { method: "POST", body: JSON.stringify(input) });
@@ -102,6 +105,7 @@ export default function StorageScreen({ readOnly = false }: { readOnly?: boolean
       </div>
 
       <div className="relative z-10 flex flex-wrap gap-2">
+        <IdeaTypeFilter />
         <MultiSelectFilter
           label="Теги"
           options={allTags}
@@ -141,6 +145,7 @@ export default function StorageScreen({ readOnly = false }: { readOnly?: boolean
             <div key={idea.id} className={`${card} ${metroPastelTone(idea.locations[0]?.metro) ?? pastelTone(idea.id)} flex flex-col gap-2.5 transition`}>
               <div className="flex justify-between items-start gap-2">
                 <h2 className="text-[19px] font-semibold leading-[1.05]">{idea.title}</h2>
+                {idea.type === "FOOD" && <Utensils className="mt-0.5 shrink-0" size={18} aria-label="Еда" />}
                 {!readOnly && (
                   <div className="flex gap-1 shrink-0">
                     <button
@@ -191,7 +196,7 @@ export default function StorageScreen({ readOnly = false }: { readOnly?: boolean
           )
         )}
         {ideas && filtered.length === 0 && (
-          <p className={`${card} ${mutedText}`}>Пока пусто — добавь первую свиданку.</p>
+          <p className={`${card} ${mutedText}`}>Пока пусто — добавь первую запись.</p>
         )}
       </div>
     </div>

@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { Pencil, Trash2, Plus, X, Link as LinkIcon, Utensils } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { ChevronDown, Pencil, Trash2, Plus, X, Link as LinkIcon, Utensils } from "lucide-react";
 import { apiFetch } from "@/lib/apiClient";
 import { dateIdeaToInput, type DateIdea, type DateIdeaInput } from "@/lib/types";
 import DateIdeaForm from "@/components/DateIdeaForm";
@@ -13,6 +13,11 @@ import { metroPastelTone, metroStations } from "@/lib/metro";
 
 type Sort = "newest" | "title";
 
+const sortOptions: { value: Sort; label: string }[] = [
+  { value: "newest", label: "Сначала новые" },
+  { value: "title", label: "По названию" },
+];
+
 export default function StorageScreen({ readOnly = false }: { readOnly?: boolean }) {
   const [ideas, setIdeas] = useState<DateIdea[] | null>(null);
   const [tagFilters, setTagFilters] = useState<string[]>([]);
@@ -20,8 +25,10 @@ export default function StorageScreen({ readOnly = false }: { readOnly?: boolean
   const [sort, setSort] = useState<Sort>("newest");
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<DateIdea | null>(null);
-  const [openFilter, setOpenFilter] = useState<"tags" | "metro" | null>(null);
+  const [openFilter, setOpenFilter] = useState<"tags" | "metro" | "sort" | null>(null);
+  const sortRef = useRef<HTMLDivElement>(null);
   const { filter: typeFilter } = useIdeaTypeFilter();
+  const sortLabel = sortOptions.find((option) => option.value === sort)?.label ?? "Сортировка";
 
   async function reload() {
     const data = await apiFetch("/api/date-ideas");
@@ -39,6 +46,17 @@ export default function StorageScreen({ readOnly = false }: { readOnly?: boolean
       cancelled = true;
     };
   }, []);
+
+  useEffect(() => {
+    if (openFilter !== "sort") return;
+
+    function onClickOutside(e: MouseEvent) {
+      if (sortRef.current && !sortRef.current.contains(e.target as Node)) setOpenFilter(null);
+    }
+
+    document.addEventListener("mousedown", onClickOutside);
+    return () => document.removeEventListener("mousedown", onClickOutside);
+  }, [openFilter]);
 
   const allTags = useMemo(() => {
     const set = new Set<string>();
@@ -125,10 +143,35 @@ export default function StorageScreen({ readOnly = false }: { readOnly?: boolean
             onOpenChange={(v) => setOpenFilter(v ? "metro" : null)}
             fullWidth
           />
-          <select value={sort} onChange={(e) => setSort(e.target.value as Sort)} className={`${select} w-full min-w-0`}>
-            <option value="newest">Сначала новые</option>
-            <option value="title">По названию</option>
-          </select>
+          <div className="relative isolate min-w-0" ref={sortRef}>
+            <button
+              type="button"
+              onClick={() => setOpenFilter(openFilter === "sort" ? null : "sort")}
+              className={`${select} w-full min-w-0 gap-1 whitespace-nowrap text-[13px] leading-none`}
+            >
+              {sortLabel}
+              <ChevronDown size={14} />
+            </button>
+            {openFilter === "sort" && (
+              <div className="absolute right-0 z-[100] mt-1 w-44 overflow-hidden rounded-xl border border-[var(--app-outline)]/15 bg-[var(--app-surface)] p-1.5 shadow-[0_8px_20px_rgba(28,26,23,0.16)]">
+                {sortOptions.map((option) => (
+                  <button
+                    key={option.value}
+                    type="button"
+                    onClick={() => {
+                      setSort(option.value);
+                      setOpenFilter(null);
+                    }}
+                    className={`w-full rounded-lg px-2.5 py-2 text-left text-[13px] font-semibold leading-none active:bg-black/5 ${
+                      sort === option.value ? "bg-[var(--app-yellow)] text-[var(--app-ink)]" : "text-[var(--app-ink)]"
+                    }`}
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       </div>
 

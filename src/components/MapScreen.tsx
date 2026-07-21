@@ -82,10 +82,12 @@ export default function MapScreen() {
           {ideas && <span className="rounded-full bg-[var(--app-ink)] px-3 py-1.5 text-[12px] font-semibold text-[var(--app-canvas)]">{filtered.length}</span>}
         </div>
 
-        <div className="relative z-20 flex flex-wrap gap-2 rounded-[18px] border border-[var(--app-outline)]/10 bg-[var(--app-surface)]/70 p-2 shadow-[0_4px_16px_rgba(28,26,23,0.12)] backdrop-blur-xl">
+        <div className="relative z-20 flex flex-col gap-2">
           <IdeaTypeFilter fullWidth />
-          <MultiSelectFilter label="Теги" options={allTags} selected={tagFilters} onChange={setTagFilters} open={openFilter === "tags"} onOpenChange={(v) => setOpenFilter(v ? "tags" : null)} />
-          <MultiSelectFilter label="Метро" options={allMetro} selected={metroFilters} onChange={setMetroFilters} open={openFilter === "metro"} onOpenChange={(v) => setOpenFilter(v ? "metro" : null)} />
+          <div className="grid grid-cols-2 gap-2">
+            <MultiSelectFilter label="Теги" options={allTags} selected={tagFilters} onChange={setTagFilters} open={openFilter === "tags"} onOpenChange={(v) => setOpenFilter(v ? "tags" : null)} fullWidth />
+            <MultiSelectFilter label="Метро" options={allMetro} selected={metroFilters} onChange={setMetroFilters} open={openFilter === "metro"} onOpenChange={(v) => setOpenFilter(v ? "metro" : null)} fullWidth />
+          </div>
         </div>
 
         {error && <p className="rounded-[18px] border border-[var(--app-outline)]/10 bg-[var(--app-coral)]/90 p-3 text-[14px] font-medium text-[var(--app-ink)] shadow-[0_4px_16px_rgba(28,26,23,0.12)] backdrop-blur-xl">{error}</p>}

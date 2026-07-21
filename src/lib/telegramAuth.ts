@@ -57,7 +57,13 @@ export function authenticate(initDataRaw: string | null): AuthUser | null {
   const user = JSON.parse(userJson) as TelegramUser;
   const telegramId = String(user.id);
   const role = roleForTelegramId(telegramId);
-  if (!role) return null;
+  if (!role) {
+    // Validly signed by our bot, but this telegram id isn't OWNER_TG_ID/PARTNER_TG_ID yet.
+    // Logged so whoever's setting up the app can grab the id from `journalctl` instead of
+    // relying on a third-party "what's my id" bot.
+    console.log(`[auth] unrecognized telegram id=${telegramId} name=${user.first_name ?? ""} username=${user.username ?? ""}`);
+    return null;
+  }
 
   return { telegramId, role, user };
 }

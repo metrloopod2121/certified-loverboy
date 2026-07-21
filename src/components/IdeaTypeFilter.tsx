@@ -14,7 +14,7 @@ export default function IdeaTypeFilter() {
   const { filter, setFilter } = useIdeaTypeFilter();
 
   return (
-    <div className="inline-flex gap-1 rounded-full bg-[var(--app-overlay)] p-1 ring-1 ring-[var(--app-outline)]/10">
+    <div className="inline-flex w-fit self-start gap-1 rounded-full bg-[var(--app-overlay)] p-1 ring-1 ring-[var(--app-outline)]/10">
       {options.map(({ value, label, Icon }) => (
         <button
           key={value}

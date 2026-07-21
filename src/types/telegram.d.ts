@@ -17,7 +17,7 @@ type SafeAreaInset = {
   right: number;
 };
 
-type WebAppEvent = "themeChanged" | "safeAreaChanged" | "contentSafeAreaChanged" | "fullscreenChanged";
+type WebAppEvent = "themeChanged" | "safeAreaChanged" | "contentSafeAreaChanged" | "fullscreenChanged" | "viewportChanged";
 
 declare global {
   interface Window {
@@ -28,6 +28,7 @@ declare global {
         themeParams: ThemeParams;
         safeAreaInset: SafeAreaInset;
         contentSafeAreaInset: SafeAreaInset;
+        isExpanded: boolean;
         ready: () => void;
         expand: () => void;
         setHeaderColor?: (color: string) => void;

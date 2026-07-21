@@ -10,6 +10,7 @@
   --tg-secondary-bg: #f4f4f5;
   --tg-safe-top-js: 0px;
   --tg-safe-bottom-js: 0px;
+  --tg-expanded-top-fallback: 0px;
   --app-canvas: #fff9ee;
   --app-surface: #fffdf8;
   --app-ink: #1c1a17;
@@ -21,7 +22,7 @@
   --app-blue: #bcccf0;
   --app-lilac: #d9cdf1;
   --app-coral: #f4b4a7;
-  --safe-top: max(env(safe-area-inset-top, 0px), var(--tg-safe-area-inset-top, 0px), var(--tg-content-safe-area-inset-top, 0px), var(--tg-safe-top-js));
+  --safe-top: max(env(safe-area-inset-top, 0px), var(--tg-safe-area-inset-top, 0px), var(--tg-content-safe-area-inset-top, 0px), var(--tg-safe-top-js), var(--tg-expanded-top-fallback));
   --safe-bottom: max(env(safe-area-inset-bottom, 0px), var(--tg-safe-area-inset-bottom, 0px), var(--tg-content-safe-area-inset-bottom, 0px), var(--tg-safe-bottom-js));
 }
 

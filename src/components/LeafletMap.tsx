@@ -2,8 +2,11 @@
 
 import { MapContainer, Marker, Popup } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
+import "maplibre-gl/dist/maplibre-gl.css";
+import "@maplibre/maplibre-gl-leaflet";
 import "./leaflet-theme.css";
-import { OpenStreetMapLayer, InvalidateSizeOnMount, dateMarkerIcon, MOSCOW_CENTER } from "./mapInternals";
+import { useIsDark } from "@/hooks/useIsDark";
+import { OpenFreeMapLayer, InvalidateSizeOnMount, dateMarkerIcon, MOSCOW_CENTER } from "./mapInternals";
 
 export type MapMarker = {
   id: string;
@@ -18,10 +21,12 @@ export type MapMarker = {
 };
 
 export default function LeafletMap({ markers }: { markers: MapMarker[] }) {
+  const dark = useIsDark();
+
   return (
     <MapContainer center={MOSCOW_CENTER} zoom={11} className="h-full w-full" zoomControl={false}>
       <InvalidateSizeOnMount />
-      <OpenStreetMapLayer />
+      <OpenFreeMapLayer dark={dark} />
       {markers.map((marker) => (
         <Marker key={marker.id} position={[marker.lat, marker.lng]} icon={dateMarkerIcon}>
           <Popup>

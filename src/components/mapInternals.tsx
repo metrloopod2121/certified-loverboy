@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { TileLayer, useMap } from "react-leaflet";
+import { useMap } from "react-leaflet";
 import L from "leaflet";
 
 export const dateMarkerIcon = L.divIcon({
@@ -19,13 +19,18 @@ export const pickerMarkerIcon = L.divIcon({
 
 export const MOSCOW_CENTER: [number, number] = [55.751244, 37.618423];
 
-export function OpenStreetMapLayer() {
-  return (
-    <TileLayer
-      url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
-      attribution="&copy; OpenStreetMap contributors"
-    />
-  );
+export function OpenFreeMapLayer({ dark }: { dark: boolean }) {
+  const map = useMap();
+
+  useEffect(() => {
+    const style = `https://tiles.openfreemap.org/styles/${dark ? "dark" : "liberty"}`;
+    const layer = L.maplibreGL({ style }).addTo(map);
+    return () => {
+      map.removeLayer(layer);
+    };
+  }, [map, dark]);
+
+  return null;
 }
 
 // Leaflet measures its container once on init. If the layout hasn't settled

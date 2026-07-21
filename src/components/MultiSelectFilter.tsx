@@ -80,7 +80,6 @@ export default function MultiSelectFilter({
         className={`${select} gap-1 ${fullWidth ? "w-full" : ""} ${selected.length > 0 ? "border-[var(--app-ink)] bg-[var(--app-yellow)]" : ""}`}
       >
         {label}
-        {selected.length > 0 ? ` (${selected.length})` : ""}
         <ChevronDown size={14} />
       </button>
       {open && (

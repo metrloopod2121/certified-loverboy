@@ -88,8 +88,8 @@ export default function ImportScreen() {
           value={raw}
           onChange={(e) => setRaw(e.target.value)}
           placeholder={"# Название\nТип: DATE или FOOD\nТеги: романтика, искусство\nЦена: 1500-3000 ₽\nОписание для свайпа: короткий текст для карточки\n\nМесто:\nАдрес: ...\nМетро: ...\nКоординаты: 55.75, 37.61\nСсылка: ...\n\nСвободное описание."}
-          rows={8}
-          className={`${input} bg-[var(--app-overlay)] font-mono text-[13px]`}
+          rows={13}
+          className={`${input} min-h-[260px] bg-[var(--app-overlay)] font-mono text-[12px] leading-relaxed`}
         />
         <button onClick={handleParseText} disabled={!raw.trim()} className={`${buttonPrimary} w-full mt-1`}>
           Разобрать

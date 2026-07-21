@@ -28,6 +28,7 @@
   --metro-gray: #d4d7d4;
   --app-overlay: rgb(255 255 255 / 0.65);
   --app-subtle-overlay: rgb(255 255 255 / 0.5);
+  --content-top-gap: 29px;
   --safe-top: max(env(safe-area-inset-top, 0px), var(--tg-safe-area-inset-top, 0px), var(--tg-content-safe-area-inset-top, 0px), var(--tg-safe-top-js), var(--tg-expanded-top-fallback));
   --safe-bottom: max(env(safe-area-inset-bottom, 0px), var(--tg-safe-area-inset-bottom, 0px), var(--tg-content-safe-area-inset-bottom, 0px), var(--tg-safe-bottom-js));
 }

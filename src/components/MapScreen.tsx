@@ -71,7 +71,10 @@ export default function MapScreen() {
   }, [allMarkers, tagFilters, metroFilters]);
 
   return (
-    <div className="relative h-[100dvh] -mb-[82px] overflow-hidden">
+    <div
+      className="relative h-[100dvh] -mb-[82px] overflow-hidden"
+      style={{ marginTop: "calc(-1 * (var(--safe-top) + var(--content-top-gap)))" }}
+    >
       <div className="absolute inset-0 z-0">
         <LeafletMap markers={filtered} />
       </div>

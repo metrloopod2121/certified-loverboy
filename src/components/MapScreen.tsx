@@ -4,7 +4,8 @@ import { useEffect, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import { apiFetch } from "@/lib/apiClient";
 import type { DateIdea } from "@/lib/types";
-import { select, mutedText, pillToggle, pillToggleActive, pillToggleInactive } from "@/lib/ui";
+import { mutedText } from "@/lib/ui";
+import MultiSelectFilter from "@/components/MultiSelectFilter";
 
 const LeafletMap = dynamic(() => import("@/components/LeafletMap"), { ssr: false });
 
@@ -12,7 +13,7 @@ export default function MapScreen() {
   const [ideas, setIdeas] = useState<DateIdea[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [tagFilters, setTagFilters] = useState<string[]>([]);
-  const [metroFilter, setMetroFilter] = useState("");
+  const [metroFilters, setMetroFilters] = useState<string[]>([]);
 
   useEffect(() => {
     apiFetch("/api/date-ideas")
@@ -42,36 +43,17 @@ export default function MapScreen() {
     if (tagFilters.length > 0) {
       result = result.filter((i) => i.tags.some((t) => tagFilters.includes(t.tag.name)));
     }
-    if (metroFilter) result = result.filter((i) => i.metro === metroFilter);
+    if (metroFilters.length > 0) {
+      result = result.filter((i) => i.metro && metroFilters.includes(i.metro));
+    }
     return result;
-  }, [withCoords, tagFilters, metroFilter]);
-
-  function toggleTagFilter(tag: string) {
-    setTagFilters((prev) => (prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]));
-  }
+  }, [withCoords, tagFilters, metroFilters]);
 
   return (
     <div className="flex flex-col h-full">
-      <div className="flex flex-col gap-2 p-3 border-b border-black/5 dark:border-white/10">
-        {allTags.length > 0 && (
-          <div className="flex gap-1.5 overflow-x-auto pb-0.5">
-            {allTags.map((t) => (
-              <button
-                key={t}
-                onClick={() => toggleTagFilter(t)}
-                className={`${pillToggle} shrink-0 ${tagFilters.includes(t) ? pillToggleActive : pillToggleInactive}`}
-              >
-                {t}
-              </button>
-            ))}
-          </div>
-        )}
-        <select value={metroFilter} onChange={(e) => setMetroFilter(e.target.value)} className={`${select} self-start`}>
-          <option value="">Всё метро</option>
-          {allMetro.map((m) => (
-            <option key={m} value={m}>{m}</option>
-          ))}
-        </select>
+      <div className="flex gap-2 p-3 border-b border-black/5 dark:border-white/10">
+        <MultiSelectFilter label="Теги" options={allTags} selected={tagFilters} onChange={setTagFilters} />
+        <MultiSelectFilter label="Метро" options={allMetro} selected={metroFilters} onChange={setMetroFilters} />
       </div>
 
       {error && <p className="p-4 text-[14px] text-red-500">{error}</p>}

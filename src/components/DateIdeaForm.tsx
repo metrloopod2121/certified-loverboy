@@ -159,25 +159,33 @@ export default function DateIdeaForm({
         />
       </div>
 
-      <div className="flex flex-col gap-2 rounded-xl bg-black/[0.03] p-3 dark:bg-white/[0.05]">
-        <label className="flex items-center justify-between gap-2 text-[14px]">
-          Показывать партнёрше
+      <div className="flex flex-col gap-3 rounded-xl bg-black/[0.03] p-3 dark:bg-white/[0.05]">
+        <label className="flex items-start justify-between gap-3">
+          <span className="flex flex-col">
+            <span className="text-[14px]">Показывать партнёрше</span>
+            <span className={labelClass}>Попадёт в её колоду для свайпа</span>
+          </span>
           <input
             type="checkbox"
             checked={inPartnerDeck}
             onChange={(e) => setInPartnerDeck(e.target.checked)}
-            className="h-5 w-5 accent-[var(--tg-button)]"
+            className="h-5 w-5 shrink-0 accent-[var(--tg-button)]"
           />
         </label>
-        <label className="flex items-center justify-between gap-2 text-[14px]">
-          Показывать ей цену
-          <input
-            type="checkbox"
-            checked={showPriceToPartner}
-            onChange={(e) => setShowPriceToPartner(e.target.checked)}
-            className="h-5 w-5 accent-[var(--tg-button)]"
-          />
-        </label>
+        {inPartnerDeck && (
+          <label className="flex items-start justify-between gap-3">
+            <span className="flex flex-col">
+              <span className="text-[14px]">Цена видна ей</span>
+              <span className={labelClass}>По умолчанию скрыта от партнёрши</span>
+            </span>
+            <input
+              type="checkbox"
+              checked={showPriceToPartner}
+              onChange={(e) => setShowPriceToPartner(e.target.checked)}
+              className="h-5 w-5 shrink-0 accent-[var(--tg-button)]"
+            />
+          </label>
+        )}
       </div>
 
       {error && <p className="text-[13px] text-red-500">{error}</p>}

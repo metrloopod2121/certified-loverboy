@@ -15,9 +15,6 @@ export const buttonSecondary =
 export const buttonGhost =
   "inline-flex items-center justify-center gap-1 rounded-full px-3 py-1.5 text-[13px] font-medium text-[var(--tg-link)] active:opacity-60 transition";
 
-export const buttonDanger =
-  "inline-flex items-center justify-center gap-1 rounded-full px-3 py-1.5 text-[13px] font-medium text-red-500 active:opacity-60 transition";
-
 export const pill =
   "inline-flex items-center rounded-full bg-[var(--tg-button)]/10 text-[var(--tg-button)] px-2.5 py-1 text-[12px] font-medium";
 

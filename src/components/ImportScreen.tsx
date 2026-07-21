@@ -73,28 +73,26 @@ export default function ImportScreen() {
         <button
           type="button"
           onClick={() => fileInputRef.current?.click()}
-          className={`${buttonSecondary} self-start`}
+          className={`${buttonSecondary} w-full`}
         >
           <Upload size={18} />
           Выбрать файлы
         </button>
       </div>
 
-      <details className="text-[14px]">
-        <summary className={mutedText}>…или вставить текст одной свиданки</summary>
-        <div className="flex flex-col gap-2 mt-2">
-          <textarea
-            value={raw}
-            onChange={(e) => setRaw(e.target.value)}
-            placeholder={"# Название\nАдрес: ...\nМетро: ...\nКоординаты: 55.75, 37.61\nТеги: романтика, искусство\nЦена: 1500-3000 ₽\nОписание для свайпа: короткий текст для карточки\n\nСвободное описание."}
-            rows={8}
-            className={`${input} font-mono text-[13px]`}
-          />
-          <button onClick={handleParseText} disabled={!raw.trim()} className={`${buttonPrimary} self-start`}>
-            Разобрать
-          </button>
-        </div>
-      </details>
+      <div className="flex flex-col gap-1.5">
+        <span className={mutedText}>…или вставить текст одной свиданки</span>
+        <textarea
+          value={raw}
+          onChange={(e) => setRaw(e.target.value)}
+          placeholder={"# Название\nАдрес: ...\nМетро: ...\nКоординаты: 55.75, 37.61\nТеги: романтика, искусство\nЦена: 1500-3000 ₽\nОписание для свайпа: короткий текст для карточки\n\nСвободное описание."}
+          rows={8}
+          className={`${input} font-mono text-[13px]`}
+        />
+        <button onClick={handleParseText} disabled={!raw.trim()} className={`${buttonPrimary} self-start`}>
+          Разобрать
+        </button>
+      </div>
 
       {savedCount > 0 && (
         <p className="flex items-center gap-1 text-[14px] text-emerald-500">

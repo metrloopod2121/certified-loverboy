@@ -5,25 +5,15 @@ import { Pencil, Trash2, Plus, X } from "lucide-react";
 import { apiFetch } from "@/lib/apiClient";
 import { dateIdeaToInput, type DateIdea, type DateIdeaInput } from "@/lib/types";
 import DateIdeaForm from "@/components/DateIdeaForm";
-import {
-  card,
-  select,
-  buttonPrimary,
-  pill,
-  pillToggle,
-  pillToggleActive,
-  pillToggleInactive,
-  iconButton,
-  pageHeading,
-  mutedText,
-} from "@/lib/ui";
+import MultiSelectFilter from "@/components/MultiSelectFilter";
+import { card, select, buttonPrimary, pill, iconButton, pageHeading, mutedText } from "@/lib/ui";
 
 type Sort = "newest" | "title";
 
 export default function StorageScreen() {
   const [ideas, setIdeas] = useState<DateIdea[] | null>(null);
   const [tagFilters, setTagFilters] = useState<string[]>([]);
-  const [metroFilter, setMetroFilter] = useState("");
+  const [metroFilters, setMetroFilters] = useState<string[]>([]);
   const [sort, setSort] = useState<Sort>("newest");
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<DateIdea | null>(null);
@@ -63,18 +53,16 @@ export default function StorageScreen() {
     if (tagFilters.length > 0) {
       result = result.filter((i) => i.tags.some((t) => tagFilters.includes(t.tag.name)));
     }
-    if (metroFilter) result = result.filter((i) => i.metro === metroFilter);
+    if (metroFilters.length > 0) {
+      result = result.filter((i) => i.metro && metroFilters.includes(i.metro));
+    }
     result = [...result].sort((a, b) =>
       sort === "title"
         ? a.title.localeCompare(b.title)
         : b.createdAt.localeCompare(a.createdAt)
     );
     return result;
-  }, [ideas, tagFilters, metroFilter, sort]);
-
-  function toggleTagFilter(tag: string) {
-    setTagFilters((prev) => (prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]));
-  }
+  }, [ideas, tagFilters, metroFilters, sort]);
 
   async function createIdea(input: DateIdeaInput) {
     await apiFetch("/api/date-ideas", { method: "POST", body: JSON.stringify(input) });
@@ -111,27 +99,9 @@ export default function StorageScreen() {
         </button>
       </div>
 
-      {allTags.length > 0 && (
-        <div className="flex gap-1.5 flex-wrap">
-          {allTags.map((t) => (
-            <button
-              key={t}
-              onClick={() => toggleTagFilter(t)}
-              className={`${pillToggle} ${tagFilters.includes(t) ? pillToggleActive : pillToggleInactive}`}
-            >
-              {t}
-            </button>
-          ))}
-        </div>
-      )}
-
       <div className="flex gap-2 flex-wrap">
-        <select value={metroFilter} onChange={(e) => setMetroFilter(e.target.value)} className={select}>
-          <option value="">Всё метро</option>
-          {allMetro.map((m) => (
-            <option key={m} value={m}>{m}</option>
-          ))}
-        </select>
+        <MultiSelectFilter label="Теги" options={allTags} selected={tagFilters} onChange={setTagFilters} />
+        <MultiSelectFilter label="Метро" options={allMetro} selected={metroFilters} onChange={setMetroFilters} />
         <select value={sort} onChange={(e) => setSort(e.target.value as Sort)} className={select}>
           <option value="newest">Сначала новые</option>
           <option value="title">По названию</option>
@@ -188,25 +158,33 @@ export default function StorageScreen() {
                   ))}
                 </div>
               )}
-              <div className="flex gap-5 pt-2 text-[14px] border-t border-black/5 dark:border-white/10 mt-1">
-                <label className="flex items-center gap-2 py-1.5">
+              <div className="flex flex-col gap-2 pt-2 border-t border-black/5 dark:border-white/10 mt-1">
+                <label className="flex items-start justify-between gap-3">
+                  <span className="flex flex-col">
+                    <span className="text-[14px]">Показывать партнёрше</span>
+                    <span className={mutedText}>Попадёт в её колоду для свайпа</span>
+                  </span>
                   <input
                     type="checkbox"
                     checked={idea.inPartnerDeck}
                     onChange={() => toggle(idea, "inPartnerDeck")}
-                    className="h-5 w-5 accent-[var(--tg-button)]"
+                    className="h-5 w-5 shrink-0 accent-[var(--tg-button)]"
                   />
-                  Показывать партнёрше
                 </label>
-                <label className="flex items-center gap-2 py-1.5">
-                  <input
-                    type="checkbox"
-                    checked={idea.showPriceToPartner}
-                    onChange={() => toggle(idea, "showPriceToPartner")}
-                    className="h-5 w-5 accent-[var(--tg-button)]"
-                  />
-                  Цена видна
-                </label>
+                {idea.inPartnerDeck && (
+                  <label className="flex items-start justify-between gap-3">
+                    <span className="flex flex-col">
+                      <span className="text-[14px]">Цена видна ей</span>
+                      <span className={mutedText}>По умолчанию скрыта от партнёрши</span>
+                    </span>
+                    <input
+                      type="checkbox"
+                      checked={idea.showPriceToPartner}
+                      onChange={() => toggle(idea, "showPriceToPartner")}
+                      className="h-5 w-5 shrink-0 accent-[var(--tg-button)]"
+                    />
+                  </label>
+                )}
               </div>
             </div>
           )

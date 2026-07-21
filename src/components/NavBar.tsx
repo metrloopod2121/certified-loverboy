@@ -30,7 +30,7 @@ export default function NavBar() {
 
   return (
     <nav
-      className="fixed inset-x-0 bottom-0 z-20 mx-3 flex justify-center gap-0.5 rounded-full border border-[var(--app-outline)]/10 bg-[#f8d9e8]/70 px-1 py-1 shadow-[0_8px_22px_rgba(28,26,23,0.12)] backdrop-blur-xl dark:bg-[#6d5360]/45"
+      className="fixed inset-x-0 bottom-0 z-20 mx-3 flex justify-center gap-0.5 rounded-full border border-[var(--app-outline)]/10 bg-[#f8d9e8]/70 px-1 py-1 shadow-[0_8px_22px_rgba(28,26,23,0.12)] backdrop-blur-xl dark:border-[#ff8ac7]/20 dark:bg-[#a33f72]/65"
       style={{ marginBottom: "calc(var(--safe-bottom) + 12px)" }}
     >
       {links.map((link) => {

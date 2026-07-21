@@ -57,8 +57,9 @@ export default function SwipeScreen() {
 
   if (stack.length === 0) {
     return (
-      <div className="flex min-h-[calc(100dvh-92px)] flex-col gap-4 p-4 pt-2">
-        <IdeaTypeFilter />
+      <div className="flex min-h-[calc(100dvh-92px)] flex-col gap-4 p-4 pt-6">
+        <h1 className="text-[22px] font-semibold leading-none">Выбери вайб</h1>
+        <IdeaTypeFilter fullWidth />
         <div className="flex flex-1 flex-col items-center justify-center gap-2 text-center">
           <Inbox className="text-[var(--tg-hint)]" size={36} strokeWidth={1.5} />
           <p className={mutedText}>Пока больше нечего смотреть.</p>
@@ -78,14 +79,14 @@ export default function SwipeScreen() {
   const swipeDescription = idea.swipeDescription?.trim();
 
   return (
-    <div className="flex flex-col items-center gap-5 max-w-md mx-auto p-4 pt-2">
+    <div className="flex flex-col items-center gap-5 max-w-md mx-auto p-4 pt-6">
       <div className="flex w-full items-end justify-between px-1">
         <div>
           <h1 className="text-[22px] font-semibold leading-none">Выбери вайб</h1>
         </div>
         <span className="rounded-full bg-[var(--app-ink)] px-3 py-1.5 text-[12px] font-semibold text-[var(--app-canvas)]">{stack.length}</span>
       </div>
-      <IdeaTypeFilter />
+      <IdeaTypeFilter fullWidth />
       <div
         className={`w-full rounded-[28px] border border-[var(--app-outline)]/10 ${pastelTone(idea.id)} p-6 shadow-[0_4px_0_rgba(28,26,23,0.12)] min-h-[330px] flex flex-col gap-4 transition-all duration-200 ease-out ${
           exiting === "LIKE"

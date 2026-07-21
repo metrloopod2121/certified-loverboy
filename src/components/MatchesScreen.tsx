@@ -42,9 +42,9 @@ export default function MatchesScreen() {
 
   if (filteredMatches.length === 0) {
     return (
-      <div className="flex min-h-[calc(100dvh-92px)] flex-col gap-4 p-4 pt-2">
+      <div className="flex min-h-[calc(100dvh-92px)] flex-col gap-4 p-4 pt-6">
         <h1 className={pageHeading}>Мэтчи</h1>
-        <IdeaTypeFilter />
+        <IdeaTypeFilter fullWidth />
         <div className="flex flex-1 flex-col items-center justify-center gap-2 text-center">
           <MessageCircleHeart className="text-[var(--tg-hint)]" size={36} strokeWidth={1.5} />
           <p className={mutedText}>Мэтчей пока нет.</p>
@@ -54,11 +54,11 @@ export default function MatchesScreen() {
   }
 
   return (
-    <div className="flex flex-col gap-4 max-w-2xl mx-auto p-4 pt-2 pb-6">
+    <div className="flex flex-col gap-4 max-w-2xl mx-auto p-4 pt-6 pb-6">
       <div>
         <h1 className={pageHeading}>Мэтчи</h1>
       </div>
-      <IdeaTypeFilter />
+      <IdeaTypeFilter fullWidth />
       {filteredMatches.map((m) => (
         <div key={m.id} className={`${card} ${pastelTone(m.dateIdea.id)} flex flex-col gap-2`}>
           <div className="flex items-start justify-between gap-3">

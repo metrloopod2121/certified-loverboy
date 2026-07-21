@@ -10,17 +10,17 @@ const options: { value: IdeaTypeFilterValue; label: string; Icon: typeof Layers3
   { value: "FOOD", label: "Еда", Icon: Utensils },
 ];
 
-export default function IdeaTypeFilter() {
+export default function IdeaTypeFilter({ fullWidth = false }: { fullWidth?: boolean }) {
   const { filter, setFilter } = useIdeaTypeFilter();
 
   return (
-    <div className="inline-flex w-fit self-start gap-1 rounded-full bg-[var(--app-overlay)] p-1 ring-1 ring-[var(--app-outline)]/10">
+    <div className={`${fullWidth ? "flex w-full" : "inline-flex w-fit self-start"} gap-1 rounded-full bg-[var(--app-overlay)] p-1 ring-1 ring-[var(--app-outline)]/10`}>
       {options.map(({ value, label, Icon }) => (
         <button
           key={value}
           type="button"
           onClick={() => setFilter(value)}
-          className={`${pillToggle} inline-flex items-center gap-1 border-0 py-1.5 ${filter === value ? pillToggleActive : pillToggleInactive}`}
+          className={`${pillToggle} inline-flex items-center gap-1 border-0 py-1.5 ${fullWidth ? "flex-1 justify-center" : ""} ${filter === value ? pillToggleActive : pillToggleInactive}`}
         >
           <Icon size={14} />
           {label}

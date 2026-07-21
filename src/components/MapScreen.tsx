@@ -75,14 +75,14 @@ export default function MapScreen() {
         <LeafletMap markers={filtered} />
       </div>
 
-      <div className="relative z-10 flex flex-col gap-2 p-4 pt-2">
+      <div className="relative z-10 flex flex-col gap-2 p-4 pt-6">
         <div className="flex items-center justify-between rounded-[18px] border border-[var(--app-outline)]/10 bg-[var(--app-surface)]/70 px-3 py-3 shadow-[0_4px_16px_rgba(28,26,23,0.12)] backdrop-blur-xl">
           <h1 className={pageHeading}>Карта идей</h1>
           {ideas && <span className="rounded-full bg-[var(--app-ink)] px-3 py-1.5 text-[12px] font-semibold text-[var(--app-canvas)]">{filtered.length}</span>}
         </div>
 
         <div className="relative z-20 flex flex-wrap gap-2 rounded-[18px] border border-[var(--app-outline)]/10 bg-[var(--app-surface)]/70 p-2 shadow-[0_4px_16px_rgba(28,26,23,0.12)] backdrop-blur-xl">
-          <IdeaTypeFilter />
+          <IdeaTypeFilter fullWidth />
           <MultiSelectFilter label="Теги" options={allTags} selected={tagFilters} onChange={setTagFilters} open={openFilter === "tags"} onOpenChange={(v) => setOpenFilter(v ? "tags" : null)} />
           <MultiSelectFilter label="Метро" options={allMetro} selected={metroFilters} onChange={setMetroFilters} open={openFilter === "metro"} onOpenChange={(v) => setOpenFilter(v ? "metro" : null)} />
         </div>

@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { PartyPopper, MessageCircleHeart } from "lucide-react";
 import { apiFetch } from "@/lib/apiClient";
 import type { MatchWithIdea } from "@/lib/types";
-import { card, pill, pageHeading, mutedText } from "@/lib/ui";
+import { card, pill, pageHeading, mutedText, pastelTone } from "@/lib/ui";
 
 export default function MatchesScreen() {
   const [matches, setMatches] = useState<MatchWithIdea[] | null>(null);
@@ -25,12 +25,15 @@ export default function MatchesScreen() {
   }
 
   return (
-    <div className="flex flex-col gap-3 max-w-2xl mx-auto p-4 pb-6">
-      <h1 className={pageHeading}>Мэтчи</h1>
+    <div className="flex flex-col gap-4 max-w-2xl mx-auto p-4 pb-6">
+      <div>
+        <span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--app-muted)]">Наше</span>
+        <h1 className={`${pageHeading} mt-1`}>Мэтчи</h1>
+      </div>
       {matches.map((m) => (
-        <div key={m.id} className={`${card} flex flex-col gap-1.5`}>
-          <h2 className="flex items-start gap-1.5 text-[16px] font-semibold">
-            <PartyPopper className="text-[var(--tg-button)]" size={18} />
+        <div key={m.id} className={`${card} ${pastelTone(m.dateIdea.id)} flex flex-col gap-2`}>
+          <h2 className="flex items-start gap-2 text-[19px] font-semibold leading-[1.05]">
+            <PartyPopper className="mt-0.5 shrink-0" size={19} />
             {m.dateIdea.title}
           </h2>
           {(m.dateIdea.address || m.dateIdea.metro) && (

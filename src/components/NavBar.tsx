@@ -30,7 +30,7 @@ export default function NavBar() {
 
   return (
     <nav
-      className="fixed inset-x-0 bottom-0 z-20 mx-3 flex justify-center gap-1 rounded-full border border-black/5 bg-[var(--tg-secondary-bg)]/90 px-1.5 py-1.5 shadow-[0_8px_24px_rgba(0,0,0,0.12)] backdrop-blur-xl dark:border-white/10 dark:shadow-[0_8px_24px_rgba(0,0,0,0.28)]"
+      className="fixed inset-x-0 bottom-0 z-20 mx-3 flex justify-center gap-0.5 rounded-full border border-white/10 bg-[var(--app-ink)]/95 px-1.5 py-1.5 shadow-[0_10px_24px_rgba(28,26,23,0.28)] backdrop-blur-xl"
       style={{ marginBottom: "calc(var(--safe-bottom) + 12px)" }}
     >
       {links.map((link) => {
@@ -40,10 +40,10 @@ export default function NavBar() {
           <Link
             key={link.href}
             href={link.href}
-            className={`flex flex-1 max-w-24 flex-col items-center justify-center gap-0.5 rounded-full py-2 text-[11px] font-medium transition ${
+            className={`flex flex-1 max-w-24 flex-col items-center justify-center gap-0.5 rounded-full py-2 text-[10px] font-semibold transition ${
               active
-                ? "bg-[var(--tg-button)]/12 text-[var(--tg-button)]"
-                : "text-[var(--tg-hint)] active:bg-black/5 dark:active:bg-white/5"
+                ? "bg-[var(--app-yellow)] text-[#1c1a17]"
+                : "text-white/65 active:bg-white/10"
             }`}
           >
             <Icon size={20} strokeWidth={2} />

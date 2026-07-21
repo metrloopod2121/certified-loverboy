@@ -41,19 +41,19 @@ export default function MultiSelectFilter({
       <button
         type="button"
         onClick={() => onOpenChange(!open)}
-        className={`${select} inline-flex items-center gap-1 ${selected.length > 0 ? "border-[var(--tg-button)] text-[var(--tg-button)]" : ""}`}
+        className={`${select} inline-flex items-center gap-1 ${selected.length > 0 ? "border-[var(--app-ink)] bg-[var(--app-yellow)]" : ""}`}
       >
         {label}
         {selected.length > 0 ? ` (${selected.length})` : ""}
         <ChevronDown size={14} />
       </button>
       {open && (
-        <div className="absolute z-[100] mt-1 max-h-72 w-56 overflow-y-auto rounded-xl border border-black/10 bg-[var(--tg-bg)] p-2 shadow-lg dark:border-white/15">
+        <div className="absolute z-[100] mt-1 max-h-72 w-56 overflow-y-auto rounded-xl border border-[var(--app-outline)]/15 bg-[var(--app-surface)] p-2 shadow-[0_8px_20px_rgba(28,26,23,0.16)]">
           {selected.length > 0 && (
             <button
               type="button"
               onClick={() => onChange([])}
-              className="mb-1 w-full rounded-lg px-2 py-1 text-left text-[12px] text-[var(--tg-link)] active:bg-black/5 dark:active:bg-white/5"
+              className="mb-1 w-full rounded-lg px-2 py-1 text-left text-[12px] font-semibold text-[var(--app-ink)] active:bg-black/5"
             >
               Сбросить
             </button>
@@ -61,13 +61,13 @@ export default function MultiSelectFilter({
           {options.map((option) => (
             <label
               key={option}
-              className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-[14px] active:bg-black/5 dark:active:bg-white/5"
+              className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-[14px] active:bg-black/5"
             >
               <input
                 type="checkbox"
                 checked={selected.includes(option)}
                 onChange={() => toggle(option)}
-                className="h-4 w-4 accent-[var(--tg-button)]"
+                className="h-4 w-4 accent-[var(--app-ink)]"
               />
               {option}
             </label>

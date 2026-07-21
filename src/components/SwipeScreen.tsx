@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { X, Heart, Inbox } from "lucide-react";
 import { apiFetch } from "@/lib/apiClient";
 import type { DateIdea } from "@/lib/types";
-import { mutedText } from "@/lib/ui";
+import { mutedText, pastelTone, pill } from "@/lib/ui";
 
 function normalizeText(value: string) {
   return value.replace(/\s+/g, " ").trim();
@@ -45,7 +45,7 @@ export default function SwipeScreen() {
     }
   }
 
-  if (!stack) return <div className="p-8 text-center text-sm opacity-60">Загрузка…</div>;
+  if (!stack) return <div className={`p-8 text-center ${mutedText}`}>Загрузка…</div>;
 
   if (stack.length === 0) {
     return (
@@ -63,9 +63,16 @@ export default function SwipeScreen() {
   const swipeDescription = idea.swipeDescription?.trim();
 
   return (
-    <div className="flex flex-col items-center gap-6 max-w-md mx-auto p-4 pt-6">
+    <div className="flex flex-col items-center gap-5 max-w-md mx-auto p-4 pt-3">
+      <div className="flex w-full items-end justify-between px-1">
+        <div>
+          <span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--app-muted)]">На сегодня</span>
+          <h1 className="mt-1 text-[30px] font-semibold leading-[0.95]">Выбери вайб</h1>
+        </div>
+        <span className="rounded-full bg-[var(--app-ink)] px-3 py-1.5 text-[12px] font-semibold text-[var(--app-canvas)]">{stack.length}</span>
+      </div>
       <div
-        className={`w-full rounded-3xl border border-black/5 bg-[var(--tg-secondary-bg)] p-6 shadow-md dark:border-white/10 min-h-[300px] flex flex-col gap-4 transition-all duration-200 ease-out ${
+        className={`w-full rounded-[28px] border border-[var(--app-outline)]/10 ${pastelTone(idea.id)} p-6 shadow-[0_4px_0_rgba(28,26,23,0.12)] min-h-[330px] flex flex-col gap-4 transition-all duration-200 ease-out ${
           exiting === "LIKE"
             ? "translate-x-28 rotate-6 opacity-0"
             : exiting === "PASS"
@@ -74,18 +81,18 @@ export default function SwipeScreen() {
         }`}
       >
         <div className="flex flex-col gap-2">
-          <h2 className="text-[22px] font-semibold leading-tight">{idea.title}</h2>
+          <h2 className="text-[32px] font-semibold leading-[0.94]">{idea.title}</h2>
           {location && <p className={mutedText}>{location}</p>}
         </div>
 
         {idea.priceNote && (
-          <p className="text-[14px] font-medium text-[var(--tg-button)]">
+          <p className="text-[14px] font-semibold">
             {idea.priceNote}
           </p>
         )}
 
         {swipeDescription && (
-          <p className="whitespace-pre-wrap text-[15px] leading-snug">
+          <p className="whitespace-pre-wrap text-[16px] leading-snug">
             {swipeDescription}
           </p>
         )}
@@ -95,32 +102,32 @@ export default function SwipeScreen() {
             {idea.tags
               .slice(0, 4)
               .map((t) => (
-                <span key={t.tag.id} className="text-[12px] text-[var(--tg-hint)]">#{t.tag.name}</span>
+                <span key={t.tag.id} className={pill}>#{t.tag.name}</span>
               ))}
           </div>
         )}
       </div>
 
-      <div className="flex gap-8">
+      <div className="flex gap-6">
         <button
           onClick={() => swipe("PASS")}
           disabled={swiping}
           aria-label="Не то"
-          className="w-16 h-16 rounded-full bg-black/5 dark:bg-white/10 flex items-center justify-center active:scale-90 transition disabled:opacity-50"
+          className="flex size-16 items-center justify-center rounded-full border border-[var(--app-outline)]/15 bg-[var(--app-surface)] text-[var(--app-ink)] shadow-[0_2px_0_rgba(28,26,23,0.1)] active:scale-90 transition disabled:opacity-50"
         >
-          <X size={28} className="text-[var(--tg-text)]" />
+          <X size={28} />
         </button>
         <button
           onClick={() => swipe("LIKE")}
           disabled={swiping}
           aria-label="Нравится"
-          className="w-16 h-16 rounded-full bg-[var(--tg-button)] text-[var(--tg-button-text)] flex items-center justify-center active:scale-90 transition disabled:opacity-50 shadow-lg shadow-[var(--tg-button)]/30"
+          className="flex size-16 items-center justify-center rounded-full bg-[var(--app-ink)] text-[var(--app-yellow)] shadow-[0_3px_0_rgba(28,26,23,0.2)] active:scale-90 transition disabled:opacity-50"
         >
           <Heart size={28} fill="currentColor" />
         </button>
       </div>
 
-      <p className={mutedText}>Осталось: {stack.length}</p>
+      <p className={mutedText}>В колоде ещё {stack.length}</p>
     </div>
   );
 }

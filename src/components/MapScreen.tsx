@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import { apiFetch } from "@/lib/apiClient";
 import type { DateIdea } from "@/lib/types";
-import { mutedText } from "@/lib/ui";
+import { pageHeading, mutedText } from "@/lib/ui";
 import MultiSelectFilter from "@/components/MultiSelectFilter";
 
 const LeafletMap = dynamic(() => import("@/components/LeafletMap"), { ssr: false });
@@ -51,35 +51,29 @@ export default function MapScreen() {
   }, [withCoords, tagFilters, metroFilters]);
 
   return (
-    <div className="flex flex-col h-full">
-      <div className="relative z-10 flex gap-2 p-3 border-b border-black/5 dark:border-white/10 bg-[var(--tg-bg)]">
-        <MultiSelectFilter
-          label="Теги"
-          options={allTags}
-          selected={tagFilters}
-          onChange={setTagFilters}
-          open={openFilter === "tags"}
-          onOpenChange={(v) => setOpenFilter(v ? "tags" : null)}
-        />
-        <MultiSelectFilter
-          label="Метро"
-          options={allMetro}
-          selected={metroFilters}
-          onChange={setMetroFilters}
-          open={openFilter === "metro"}
-          onOpenChange={(v) => setOpenFilter(v ? "metro" : null)}
-        />
+    <div className="flex h-full flex-col gap-3 p-4 pt-3">
+      <div className="flex items-end justify-between">
+        <div>
+          <span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--app-muted)]">В Москве</span>
+          <h1 className={`${pageHeading} mt-1`}>Карта идей</h1>
+        </div>
+        {ideas && <span className="rounded-full bg-[var(--app-ink)] px-3 py-1.5 text-[12px] font-semibold text-[var(--app-canvas)]">{filtered.length}</span>}
       </div>
 
-      {error && <p className="p-4 text-[14px] text-red-500">{error}</p>}
+      <div className="relative z-10 flex flex-wrap gap-2">
+        <MultiSelectFilter label="Теги" options={allTags} selected={tagFilters} onChange={setTagFilters} open={openFilter === "tags"} onOpenChange={(v) => setOpenFilter(v ? "tags" : null)} />
+        <MultiSelectFilter label="Метро" options={allMetro} selected={metroFilters} onChange={setMetroFilters} open={openFilter === "metro"} onOpenChange={(v) => setOpenFilter(v ? "metro" : null)} />
+      </div>
+
+      {error && <p className="rounded-xl bg-[var(--app-coral)] p-3 text-[14px] font-medium text-[var(--app-ink)]">{error}</p>}
 
       {ideas && withCoords.length === 0 && (
-        <p className={`p-4 ${mutedText}`}>
+        <p className={`rounded-[22px] bg-[var(--app-lilac)] p-4 ${mutedText}`}>
           Ни у одной свиданки нет координат — открой её в «Хранилище» → «Правка» и впиши координаты, тогда она появится тут.
         </p>
       )}
 
-      <div className="relative z-0 h-[75dvh]">
+      <div className="relative z-0 min-h-[62dvh] flex-1 overflow-hidden rounded-[22px] border border-[var(--app-outline)]/10 bg-[var(--app-surface)] shadow-[0_2px_0_rgba(28,26,23,0.08)]">
         {ideas && !error && <LeafletMap ideas={filtered} />}
         {!ideas && !error && <p className={`p-4 ${mutedText}`}>Загрузка…</p>}
       </div>

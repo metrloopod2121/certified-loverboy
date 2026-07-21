@@ -6,7 +6,7 @@ import { apiFetch } from "@/lib/apiClient";
 import { dateIdeaToInput, type DateIdea, type DateIdeaInput } from "@/lib/types";
 import DateIdeaForm from "@/components/DateIdeaForm";
 import MultiSelectFilter from "@/components/MultiSelectFilter";
-import { card, select, buttonPrimary, pill, iconButton, pageHeading, mutedText } from "@/lib/ui";
+import { card, select, pill, iconButton, pageHeading, mutedText, pastelTone } from "@/lib/ui";
 
 type Sort = "newest" | "title";
 
@@ -83,18 +83,25 @@ export default function StorageScreen({ readOnly = false }: { readOnly?: boolean
   }
 
   return (
-    <div className="flex flex-col gap-4 max-w-2xl mx-auto p-4 pb-6">
+    <div className="flex flex-col gap-5 max-w-2xl mx-auto p-4 pb-6">
       <div className="flex items-center justify-between">
-        <h1 className={pageHeading}>Хранилище свиданок</h1>
+        <div className="flex flex-col gap-1">
+          <span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--app-muted)]">На двоих</span>
+          <h1 className={pageHeading}>Идеи<br />для свиданий</h1>
+        </div>
         {!readOnly && (
-          <button onClick={() => setShowForm((v) => !v)} className={buttonPrimary}>
+          <button
+            onClick={() => setShowForm((v) => !v)}
+            aria-label={showForm ? "Закрыть форму" : "Добавить свиданку"}
+            title={showForm ? "Закрыть форму" : "Добавить свиданку"}
+            className="inline-flex size-12 items-center justify-center rounded-full bg-[var(--app-ink)] text-[var(--app-canvas)] shadow-[0_3px_0_rgba(28,26,23,0.18)] active:scale-90 transition"
+          >
             {showForm ? <X size={18} /> : <Plus size={18} />}
-            {showForm ? "Закрыть" : "Добавить"}
           </button>
         )}
       </div>
 
-      <div className="relative z-10 flex gap-2 flex-wrap">
+      <div className="relative z-10 flex flex-wrap gap-2">
         <MultiSelectFilter
           label="Теги"
           options={allTags}
@@ -131,22 +138,22 @@ export default function StorageScreen({ readOnly = false }: { readOnly?: boolean
               onCancel={() => setEditing(null)}
             />
           ) : (
-            <div key={idea.id} className={`${card} flex flex-col gap-2 transition`}>
+            <div key={idea.id} className={`${card} ${pastelTone(idea.id)} flex flex-col gap-2.5 transition`}>
               <div className="flex justify-between items-start gap-2">
-                <h2 className="text-[16px] font-semibold">{idea.title}</h2>
+                <h2 className="text-[19px] font-semibold leading-[1.05]">{idea.title}</h2>
                 {!readOnly && (
                   <div className="flex gap-1 shrink-0">
                     <button
                       onClick={() => setEditing(idea)}
                       aria-label="Править"
-                      className={`${iconButton} bg-black/5 dark:bg-white/10 text-[var(--tg-text)]`}
+                      className={`${iconButton} bg-white/60 text-[var(--app-ink)] ring-1 ring-[var(--app-outline)]/10`}
                     >
                       <Pencil size={16} />
                     </button>
                     <button
                       onClick={() => remove(idea.id)}
                       aria-label="Удалить"
-                      className={`${iconButton} bg-red-500/10 text-red-500`}
+                      className={`${iconButton} bg-white/60 text-red-600 ring-1 ring-[var(--app-outline)]/10`}
                     >
                       <Trash2 size={16} />
                     </button>
@@ -158,7 +165,7 @@ export default function StorageScreen({ readOnly = false }: { readOnly?: boolean
                   {[idea.address, idea.metro && `м. ${idea.metro}`].filter(Boolean).join(" · ")}
                 </p>
               )}
-              {idea.priceNote && <p className="text-[14px]">{idea.priceNote}</p>}
+              {idea.priceNote && <p className="text-[14px] font-semibold">{idea.priceNote}</p>}
               {idea.swipeDescription && (
                 <p className="text-[14px] leading-snug">{idea.swipeDescription}</p>
               )}
@@ -173,7 +180,7 @@ export default function StorageScreen({ readOnly = false }: { readOnly?: boolean
           )
         )}
         {ideas && filtered.length === 0 && (
-          <p className={mutedText}>Пока пусто — добавь первую свиданку.</p>
+          <p className={`${card} ${mutedText}`}>Пока пусто — добавь первую свиданку.</p>
         )}
       </div>
     </div>

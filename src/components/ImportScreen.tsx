@@ -57,10 +57,13 @@ export default function ImportScreen() {
   }
 
   return (
-    <div className="flex flex-col gap-4 max-w-2xl mx-auto p-4 pb-6">
-      <h1 className={pageHeading}>Импорт из markdown</h1>
+    <div className="flex flex-col gap-5 max-w-2xl mx-auto p-4 pb-6">
+      <div>
+        <span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--app-muted)]">Для владельца</span>
+        <h1 className={`${pageHeading} mt-1`}>Импорт<br />идей</h1>
+      </div>
 
-      <div className="flex flex-col gap-1.5">
+      <div className="flex flex-col gap-2 rounded-[22px] border border-[var(--app-outline)]/10 bg-[var(--app-yellow)] p-4 shadow-[0_2px_0_rgba(28,26,23,0.08)]">
         <span className={mutedText}>Файлы (.md / .txt) — можно выбрать сразу несколько</span>
         <input
           ref={fileInputRef}
@@ -73,21 +76,21 @@ export default function ImportScreen() {
         <button
           type="button"
           onClick={() => fileInputRef.current?.click()}
-          className={`${buttonSecondary} w-full`}
+          className={`${buttonSecondary} w-full bg-white/70`}
         >
           <Upload size={18} />
           Выбрать файлы
         </button>
       </div>
 
-      <div className="flex flex-col gap-1.5">
+      <div className="flex flex-col gap-2 rounded-[22px] border border-[var(--app-outline)]/10 bg-[var(--app-lilac)] p-4 shadow-[0_2px_0_rgba(28,26,23,0.08)]">
         <span className={mutedText}>…или вставить текст одной свиданки</span>
         <textarea
           value={raw}
           onChange={(e) => setRaw(e.target.value)}
           placeholder={"# Название\nАдрес: ...\nМетро: ...\nКоординаты: 55.75, 37.61\nТеги: романтика, искусство\nЦена: 1500-3000 ₽\nОписание для свайпа: короткий текст для карточки\n\nСвободное описание."}
           rows={8}
-          className={`${input} font-mono text-[13px]`}
+          className={`${input} bg-white/70 font-mono text-[13px]`}
         />
         <button onClick={handleParseText} disabled={!raw.trim()} className={`${buttonPrimary} w-full mt-1`}>
           Разобрать
@@ -95,13 +98,13 @@ export default function ImportScreen() {
       </div>
 
       {savedCount > 0 && (
-        <p className="flex items-center gap-1 text-[14px] text-emerald-500">
+        <p className="flex items-center gap-1 rounded-xl bg-[var(--app-mint)] px-3 py-2 text-[14px] font-semibold text-[var(--app-ink)]">
           <Check size={16} /> Сохранено: {savedCount}
         </p>
       )}
 
       {items.length > 0 && (
-        <p className={mutedText}>
+        <p className={`${mutedText} rounded-xl bg-[var(--app-surface)] px-3 py-2`}>
           Разобрано {items.length} {items.length === 1 ? "файл" : "файла(ов)"} — проверь и сохрани каждую:
         </p>
       )}

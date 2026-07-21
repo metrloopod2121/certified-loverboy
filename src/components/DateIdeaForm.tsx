@@ -80,8 +80,12 @@ export default function DateIdeaForm({
   return (
     <form
       onSubmit={handleSubmit}
-      className="flex flex-col gap-3 rounded-2xl border border-black/5 bg-[var(--tg-secondary-bg)] p-4 dark:border-white/10"
+      className="flex flex-col gap-3 rounded-[22px] border border-[var(--app-outline)]/10 bg-[var(--app-mint)] p-4 shadow-[0_2px_0_rgba(28,26,23,0.08)]"
     >
+      <div>
+        <span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--app-muted)]">Карточка идеи</span>
+        <h2 className="mt-1 text-[20px] font-semibold leading-none">Детали свидания</h2>
+      </div>
       <div className="flex flex-col gap-1">
         <span className={labelClass}>Название</span>
         <input required placeholder="Пикник в парке" value={title} onChange={(e) => setTitle(e.target.value)} className={input} />
@@ -155,7 +159,7 @@ export default function DateIdeaForm({
         />
       </div>
 
-      {error && <p className="text-[13px] text-red-500">{error}</p>}
+      {error && <p className="rounded-xl bg-white/65 px-3 py-2 text-[13px] font-medium text-red-600">{error}</p>}
 
       <div className="flex gap-2 pt-1">
         <button type="submit" disabled={saving} className={buttonPrimary}>

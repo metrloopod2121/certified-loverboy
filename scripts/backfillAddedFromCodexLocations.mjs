@@ -60,12 +60,15 @@ function yandexMapsUrl(lat, lng) {
 const db = new Database(path.resolve(process.cwd(), "data/app.db"));
 const findIdea = db.prepare("SELECT id FROM DateIdea WHERE title = ?");
 const deleteLocations = db.prepare("DELETE FROM Location WHERE dateIdeaId = ?");
+const findTag = db.prepare("SELECT id FROM Tag WHERE name = ?");
+const deleteTagRelation = db.prepare("DELETE FROM TagsOnDateIdeas WHERE dateIdeaId = ? AND tagId = ?");
 const insertLocation = db.prepare(
   "INSERT INTO Location (id, dateIdeaId, address, metro, lat, lng, url) VALUES (?, ?, ?, ?, ?, ?, ?)"
 );
 
 const backfill = db.transaction(() => {
   let locationCount = 0;
+  let removedTagCount = 0;
 
   for (const idea of ideas) {
     const matches = findIdea.all(idea.title);
@@ -86,10 +89,18 @@ const backfill = db.transaction(() => {
       );
       locationCount += 1;
     }
+
+    const stations = new Set(
+      idea.locations.flatMap(([, metro]) => metro.split(/[;,]/u).map((station) => station.trim()).filter(Boolean))
+    );
+    for (const station of stations) {
+      const tag = findTag.get(station);
+      if (tag) removedTagCount += deleteTagRelation.run(matches[0].id, tag.id).changes;
+    }
   }
 
-  return locationCount;
+  return { locationCount, removedTagCount };
 });
 
-const locationCount = backfill();
-console.log(`Updated ${ideas.length} ideas and ${locationCount} locations.`);
+const { locationCount, removedTagCount } = backfill();
+console.log(`Updated ${ideas.length} ideas and ${locationCount} locations; removed ${removedTagCount} metro tags.`);

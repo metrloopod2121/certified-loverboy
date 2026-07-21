@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { requireAuth, isAuthUser } from "@/lib/apiAuth";
 import { resolveTagIds } from "@/lib/tags";
+import { withoutMetroTags } from "@/lib/metro";
 import type { DateIdeaType, LocationInput } from "@/lib/types";
 
 function parseIdeaType(value: unknown): DateIdeaType {
@@ -24,16 +25,20 @@ export async function PATCH(
     if (key in body) data[key] = body[key];
   }
 
+  const locations: LocationInput[] | null = Array.isArray(body.locations) ? body.locations : null;
+
   if (Array.isArray(body.tags)) {
-    const tagIds = await resolveTagIds(body.tags);
+    const existingLocations = locations
+      ? locations
+      : (await prisma.dateIdea.findUnique({ where: { id }, select: { locations: true } }))?.locations ?? [];
+    const tagIds = await resolveTagIds(withoutMetroTags(body.tags, existingLocations.map((location) => location.metro)));
     data.tags = {
       deleteMany: {},
       create: tagIds.map((tagId) => ({ tagId })),
     };
   }
 
-  if (Array.isArray(body.locations)) {
-    const locations: LocationInput[] = body.locations;
+  if (locations) {
     data.locations = {
       deleteMany: {},
       create: locations.map((loc) => ({

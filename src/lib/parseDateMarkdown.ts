@@ -1,4 +1,5 @@
 import { parseCoordinates, parseMapsLink } from "@/lib/coords";
+import { withoutMetroTags } from "@/lib/metro";
 import type { DateIdeaInput } from "@/lib/types";
 
 export type ParsedDateIdea = Pick<
@@ -155,6 +156,7 @@ export function parseDateMarkdown(raw: string): ParsedDateIdea {
   if (result.locations.length === 0) {
     result.locations.push(emptyLocation());
   }
+  result.tags = withoutMetroTags(result.tags, result.locations.map((location) => location.metro));
   result.description = descLines.join("\n").trim();
   return result;
 }

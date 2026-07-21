@@ -33,6 +33,13 @@ export function metroStations(value: string | null | undefined) {
     .filter(Boolean);
 }
 
+export function withoutMetroTags(tags: unknown[], metroValues: Array<string | null | undefined>) {
+  const stations = new Set(metroValues.flatMap(metroStations).map(normalizeStation));
+  return tags.filter((tag): tag is string =>
+    typeof tag === "string" && !stations.has(normalizeStation(tag))
+  );
+}
+
 export function metroPastelTone(station: string | null | undefined) {
   const firstStation = metroStations(station)[0];
   if (!firstStation) return null;

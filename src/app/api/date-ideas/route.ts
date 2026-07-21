@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { requireAuth, isAuthUser } from "@/lib/apiAuth";
 import { resolveTagIds } from "@/lib/tags";
+import { withoutMetroTags } from "@/lib/metro";
 import type { DateIdeaType, LocationInput } from "@/lib/types";
 
 function parseIdeaType(value: unknown): DateIdeaType {
@@ -30,8 +31,8 @@ export async function POST(request: Request) {
   if (!isAuthUser(auth)) return auth;
 
   const body = await request.json();
-  const tagIds = await resolveTagIds(body.tags ?? []);
   const locations: LocationInput[] = Array.isArray(body.locations) ? body.locations : [];
+  const tagIds = await resolveTagIds(withoutMetroTags(body.tags ?? [], locations.map((location) => location.metro)));
 
   const idea = await prisma.dateIdea.create({
     data: {

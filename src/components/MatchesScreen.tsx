@@ -29,7 +29,7 @@ export default function MatchesScreen() {
       <h1 className={pageHeading}>Мэтчи</h1>
       {matches.map((m) => (
         <div key={m.id} className={`${card} flex flex-col gap-1.5`}>
-          <h2 className="flex items-center gap-1.5 text-[16px] font-semibold">
+          <h2 className="flex items-start gap-1.5 text-[16px] font-semibold">
             <PartyPopper className="text-[var(--tg-button)]" size={18} />
             {m.dateIdea.title}
           </h2>

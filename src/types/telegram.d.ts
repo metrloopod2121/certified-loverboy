@@ -24,6 +24,7 @@ declare global {
     Telegram?: {
       WebApp?: {
         initData: string;
+        colorScheme: "light" | "dark";
         themeParams: ThemeParams;
         safeAreaInset: SafeAreaInset;
         contentSafeAreaInset: SafeAreaInset;

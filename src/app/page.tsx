@@ -4,12 +4,13 @@ import { Lock } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import StorageScreen from "@/components/StorageScreen";
 import { mutedText } from "@/lib/ui";
+import SplashScreen from "@/components/SplashScreen";
 
 export default function Home() {
   const auth = useAuth();
 
   if (auth.status === "loading") {
-    return <div className={`p-8 text-center ${mutedText}`}>Загрузка…</div>;
+    return <SplashScreen />;
   }
 
   if (auth.status === "unauthorized") {

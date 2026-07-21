@@ -31,6 +31,7 @@ declare global {
         isExpanded: boolean;
         ready: () => void;
         expand: () => void;
+        requestFullscreen?: () => void;
         setHeaderColor?: (color: string) => void;
         setBackgroundColor?: (color: string) => void;
         onEvent: (event: WebAppEvent, callback: () => void) => void;

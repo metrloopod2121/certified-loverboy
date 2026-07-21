@@ -58,6 +58,11 @@ export default function TelegramInit() {
     webApp.onEvent("viewportChanged", applySafeArea);
     webApp.ready();
     webApp.expand();
+    try {
+      webApp.requestFullscreen?.();
+    } catch {
+      // older Telegram clients don't support fullscreen — ignore
+    }
 
     const frame = requestAnimationFrame(applySafeArea);
     const settled = window.setTimeout(applySafeArea, 350);

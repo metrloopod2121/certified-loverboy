@@ -3,6 +3,7 @@
 import { Lock } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { mutedText } from "@/lib/ui";
+import SplashScreen from "@/components/SplashScreen";
 
 export default function AuthGate({
   allow,
@@ -14,7 +15,7 @@ export default function AuthGate({
   const auth = useAuth();
 
   if (auth.status === "loading") {
-    return <div className={`p-8 text-center ${mutedText}`}>Загрузка…</div>;
+    return <SplashScreen />;
   }
 
   if (auth.status === "unauthorized" || !allow.includes(auth.role)) {

@@ -1,8 +1,11 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from "react";
 import { ChevronDown } from "lucide-react";
 import { select } from "@/lib/ui";
+
+const dropdownWidth = 224;
+const viewportPadding = 16;
 
 export default function MultiSelectFilter({
   label,
@@ -22,6 +25,7 @@ export default function MultiSelectFilter({
   fullWidth?: boolean;
 }) {
   const ref = useRef<HTMLDivElement>(null);
+  const [dropdownStyle, setDropdownStyle] = useState<CSSProperties>({ width: dropdownWidth });
 
   useEffect(() => {
     if (!open) return;
@@ -31,6 +35,36 @@ export default function MultiSelectFilter({
     document.addEventListener("mousedown", onClickOutside);
     return () => document.removeEventListener("mousedown", onClickOutside);
   }, [open, onOpenChange]);
+
+  useLayoutEffect(() => {
+    if (!open) return;
+
+    function updateDropdownPosition() {
+      if (!ref.current) return;
+
+      const rect = ref.current.getBoundingClientRect();
+      const width = Math.max(0, Math.min(dropdownWidth, window.innerWidth - viewportPadding * 2));
+      let left = 0;
+
+      if (rect.left + width > window.innerWidth - viewportPadding) {
+        left = window.innerWidth - viewportPadding - rect.left - width;
+      }
+
+      if (rect.left + left < viewportPadding) {
+        left = viewportPadding - rect.left;
+      }
+
+      setDropdownStyle({ left, width });
+    }
+
+    updateDropdownPosition();
+    window.addEventListener("resize", updateDropdownPosition);
+    window.addEventListener("scroll", updateDropdownPosition, true);
+    return () => {
+      window.removeEventListener("resize", updateDropdownPosition);
+      window.removeEventListener("scroll", updateDropdownPosition, true);
+    };
+  }, [open]);
 
   function toggle(option: string) {
     onChange(selected.includes(option) ? selected.filter((o) => o !== option) : [...selected, option]);
@@ -50,7 +84,10 @@ export default function MultiSelectFilter({
         <ChevronDown size={14} />
       </button>
       {open && (
-        <div className="absolute z-[100] mt-1 max-h-72 w-56 overflow-y-auto rounded-xl border border-[var(--app-outline)]/15 bg-[var(--app-surface)] p-2 shadow-[0_8px_20px_rgba(28,26,23,0.16)]">
+        <div
+          className="absolute z-[100] mt-1 max-h-72 max-w-[calc(100vw-2rem)] overflow-y-auto rounded-xl border border-[var(--app-outline)]/15 bg-[var(--app-surface)] p-2 shadow-[0_8px_20px_rgba(28,26,23,0.16)]"
+          style={dropdownStyle}
+        >
           {selected.length > 0 && (
             <button
               type="button"
@@ -71,7 +108,7 @@ export default function MultiSelectFilter({
                 onChange={() => toggle(option)}
                 className="h-4 w-4 accent-[var(--app-ink)]"
               />
-              {option}
+              <span className="min-w-0 break-words">{option}</span>
             </label>
           ))}
         </div>

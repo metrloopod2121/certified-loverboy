@@ -8,8 +8,6 @@ export type DateIdea = {
   description: string | null;
   swipeDescription: string | null;
   priceNote: string | null;
-  inPartnerDeck: boolean;
-  showPriceToPartner: boolean;
   tags: { tag: { id: string; name: string } }[];
   createdAt: string;
   updatedAt: string;
@@ -25,8 +23,6 @@ export type DateIdeaInput = {
   swipeDescription: string;
   priceNote: string;
   tags: string[];
-  inPartnerDeck: boolean;
-  showPriceToPartner: boolean;
 };
 
 export type MatchWithIdea = {
@@ -47,7 +43,5 @@ export function dateIdeaToInput(idea: DateIdea): DateIdeaInput {
     swipeDescription: idea.swipeDescription ?? "",
     priceNote: idea.priceNote ?? "",
     tags: idea.tags.map((t) => t.tag.name),
-    inPartnerDeck: idea.inPartnerDeck,
-    showPriceToPartner: idea.showPriceToPartner,
   };
 }

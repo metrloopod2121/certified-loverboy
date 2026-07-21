@@ -76,14 +76,6 @@ export default function StorageScreen() {
     await reload();
   }
 
-  async function toggle(idea: DateIdea, field: "inPartnerDeck" | "showPriceToPartner") {
-    await apiFetch(`/api/date-ideas/${idea.id}`, {
-      method: "PATCH",
-      body: JSON.stringify({ [field]: !idea[field] }),
-    });
-    await reload();
-  }
-
   async function remove(id: string) {
     await apiFetch(`/api/date-ideas/${id}`, { method: "DELETE" });
     await reload();
@@ -158,34 +150,6 @@ export default function StorageScreen() {
                   ))}
                 </div>
               )}
-              <div className="flex flex-col gap-2 pt-2 border-t border-black/5 dark:border-white/10 mt-1">
-                <label className="flex items-start justify-between gap-3">
-                  <span className="flex flex-col">
-                    <span className="text-[14px]">Показывать партнёрше</span>
-                    <span className={mutedText}>Попадёт в её колоду для свайпа</span>
-                  </span>
-                  <input
-                    type="checkbox"
-                    checked={idea.inPartnerDeck}
-                    onChange={() => toggle(idea, "inPartnerDeck")}
-                    className="h-5 w-5 shrink-0 accent-[var(--tg-button)]"
-                  />
-                </label>
-                {idea.inPartnerDeck && (
-                  <label className="flex items-start justify-between gap-3">
-                    <span className="flex flex-col">
-                      <span className="text-[14px]">Цена видна ей</span>
-                      <span className={mutedText}>По умолчанию скрыта от партнёрши</span>
-                    </span>
-                    <input
-                      type="checkbox"
-                      checked={idea.showPriceToPartner}
-                      onChange={() => toggle(idea, "showPriceToPartner")}
-                      className="h-5 w-5 shrink-0 accent-[var(--tg-button)]"
-                    />
-                  </label>
-                )}
-              </div>
             </div>
           )
         )}

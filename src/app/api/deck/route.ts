@@ -22,18 +22,13 @@ export async function GET(request: Request) {
   const swipedIds = already.map((s) => s.dateIdeaId);
 
   const ideas = await prisma.dateIdea.findMany({
-    where: {
-      id: { notIn: swipedIds },
-      ...(auth.role === "PARTNER" ? { inPartnerDeck: true } : {}),
-    },
+    where: { id: { notIn: swipedIds } },
     include: { tags: { include: { tag: true } } },
     orderBy: { createdAt: "asc" },
   });
 
   const shaped = ideas.map((idea) =>
-    auth.role === "PARTNER" && !idea.showPriceToPartner
-      ? { ...idea, priceNote: null }
-      : idea
+    auth.role === "PARTNER" ? { ...idea, priceNote: null } : idea
   );
 
   return NextResponse.json(shuffle(shaped));

@@ -26,8 +26,6 @@ export default function DateIdeaForm({
   const [swipeDescription, setSwipeDescription] = useState(initial?.swipeDescription ?? "");
   const [priceNote, setPriceNote] = useState(initial?.priceNote ?? "");
   const [tags, setTags] = useState(initial?.tags?.join(", ") ?? "");
-  const [inPartnerDeck, setInPartnerDeck] = useState(initial?.inPartnerDeck ?? true);
-  const [showPriceToPartner, setShowPriceToPartner] = useState(initial?.showPriceToPartner ?? false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showPicker, setShowPicker] = useState(false);
@@ -71,8 +69,6 @@ export default function DateIdeaForm({
         swipeDescription,
         priceNote,
         tags: tags.split(",").map((t) => t.trim()).filter(Boolean),
-        inPartnerDeck,
-        showPriceToPartner,
       });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Не удалось сохранить");
@@ -157,35 +153,6 @@ export default function DateIdeaForm({
           className={input}
           rows={3}
         />
-      </div>
-
-      <div className="flex flex-col gap-3 rounded-xl bg-black/[0.03] p-3 dark:bg-white/[0.05]">
-        <label className="flex items-start justify-between gap-3">
-          <span className="flex flex-col">
-            <span className="text-[14px]">Показывать партнёрше</span>
-            <span className={labelClass}>Попадёт в её колоду для свайпа</span>
-          </span>
-          <input
-            type="checkbox"
-            checked={inPartnerDeck}
-            onChange={(e) => setInPartnerDeck(e.target.checked)}
-            className="h-5 w-5 shrink-0 accent-[var(--tg-button)]"
-          />
-        </label>
-        {inPartnerDeck && (
-          <label className="flex items-start justify-between gap-3">
-            <span className="flex flex-col">
-              <span className="text-[14px]">Цена видна ей</span>
-              <span className={labelClass}>По умолчанию скрыта от партнёрши</span>
-            </span>
-            <input
-              type="checkbox"
-              checked={showPriceToPartner}
-              onChange={(e) => setShowPriceToPartner(e.target.checked)}
-              className="h-5 w-5 shrink-0 accent-[var(--tg-button)]"
-            />
-          </label>
-        )}
       </div>
 
       {error && <p className="text-[13px] text-red-500">{error}</p>}

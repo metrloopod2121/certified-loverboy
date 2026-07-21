@@ -31,8 +31,6 @@ export async function POST(request: Request) {
       description: body.description || null,
       swipeDescription: body.swipeDescription || null,
       priceNote: body.priceNote || null,
-      inPartnerDeck: Boolean(body.inPartnerDeck),
-      showPriceToPartner: Boolean(body.showPriceToPartner),
       tags: { create: tagIds.map((tagId) => ({ tagId })) },
     },
     include: { tags: { include: { tag: true } } },

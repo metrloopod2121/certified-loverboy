@@ -23,8 +23,6 @@ export async function PATCH(
     "description",
     "swipeDescription",
     "priceNote",
-    "inPartnerDeck",
-    "showPriceToPartner",
   ]) {
     if (key in body) data[key] = body[key];
   }

@@ -89,7 +89,7 @@ export default function ImportScreen() {
           rows={8}
           className={`${input} font-mono text-[13px]`}
         />
-        <button onClick={handleParseText} disabled={!raw.trim()} className={`${buttonPrimary} self-start`}>
+        <button onClick={handleParseText} disabled={!raw.trim()} className={`${buttonPrimary} w-full mt-1`}>
           Разобрать
         </button>
       </div>

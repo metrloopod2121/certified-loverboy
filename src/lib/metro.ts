@@ -84,21 +84,21 @@ const LINE_STATIONS: Record<string, string[]> = {
   ],
 };
 
-const LINE_COLORS: Record<string, { name: string; className: string }> = {
-  sokolnicheskaya: { name: "Сокольническая", className: "bg-[var(--metro-red)]" },
-  zamoskvoretskaya: { name: "Замоскворецкая", className: "bg-[var(--metro-green)]" },
-  "arbatsko-pokrovskaya": { name: "Арбатско-Покровская", className: "bg-[var(--metro-blue)]" },
-  filyovskaya: { name: "Филёвская", className: "bg-[var(--metro-azure)]" },
-  koltsevaya: { name: "Кольцевая", className: "bg-[var(--metro-brown)]" },
-  "kaluzhsko-rizhskaya": { name: "Калужско-Рижская", className: "bg-[var(--metro-orange)]" },
-  "tagansko-krasnopresnenskaya": { name: "Таганско-Краснопресненская", className: "bg-[var(--metro-purple)]" },
-  "kalininsko-solntsevskaya": { name: "Калининско-Солнцевская", className: "bg-[var(--metro-yellow)]" },
-  "serpukhovsko-timiryazevskaya": { name: "Серпуховско-Тимирязевская", className: "bg-[var(--metro-gray)]" },
-  "lyublinsko-dmitrovskaya": { name: "Люблинско-Дмитровская", className: "bg-[var(--metro-mint)]" },
-  "bolshaya-koltsevaya": { name: "Большая кольцевая", className: "bg-[var(--metro-teal)]" },
-  butovskaya: { name: "Бутовская", className: "bg-[var(--metro-turquoise)]" },
-  mtsk: { name: "МЦК", className: "bg-[var(--metro-tan)]" },
-  nekrasovskaya: { name: "Некрасовская", className: "bg-[var(--metro-pink)]" },
+const LINE_COLORS: Record<string, { name: string; className: string; cardClassName: string }> = {
+  sokolnicheskaya: { name: "Сокольническая", className: "bg-[var(--metro-red)]", cardClassName: "bg-[var(--metro-red-pale)]" },
+  zamoskvoretskaya: { name: "Замоскворецкая", className: "bg-[var(--metro-green)]", cardClassName: "bg-[var(--metro-green-pale)]" },
+  "arbatsko-pokrovskaya": { name: "Арбатско-Покровская", className: "bg-[var(--metro-blue)]", cardClassName: "bg-[var(--metro-blue-pale)]" },
+  filyovskaya: { name: "Филёвская", className: "bg-[var(--metro-azure)]", cardClassName: "bg-[var(--metro-azure-pale)]" },
+  koltsevaya: { name: "Кольцевая", className: "bg-[var(--metro-brown)]", cardClassName: "bg-[var(--metro-brown-pale)]" },
+  "kaluzhsko-rizhskaya": { name: "Калужско-Рижская", className: "bg-[var(--metro-orange)]", cardClassName: "bg-[var(--metro-orange-pale)]" },
+  "tagansko-krasnopresnenskaya": { name: "Таганско-Краснопресненская", className: "bg-[var(--metro-purple)]", cardClassName: "bg-[var(--metro-purple-pale)]" },
+  "kalininsko-solntsevskaya": { name: "Калининско-Солнцевская", className: "bg-[var(--metro-yellow)]", cardClassName: "bg-[var(--metro-yellow-pale)]" },
+  "serpukhovsko-timiryazevskaya": { name: "Серпуховско-Тимирязевская", className: "bg-[var(--metro-gray)]", cardClassName: "bg-[var(--metro-gray-pale)]" },
+  "lyublinsko-dmitrovskaya": { name: "Люблинско-Дмитровская", className: "bg-[var(--metro-mint)]", cardClassName: "bg-[var(--metro-mint-pale)]" },
+  "bolshaya-koltsevaya": { name: "Большая кольцевая", className: "bg-[var(--metro-teal)]", cardClassName: "bg-[var(--metro-teal-pale)]" },
+  butovskaya: { name: "Бутовская", className: "bg-[var(--metro-turquoise)]", cardClassName: "bg-[var(--metro-turquoise-pale)]" },
+  mtsk: { name: "МЦК", className: "bg-[var(--metro-tan)]", cardClassName: "bg-[var(--metro-tan-pale)]" },
+  nekrasovskaya: { name: "Некрасовская", className: "bg-[var(--metro-pink)]", cardClassName: "bg-[var(--metro-pink-pale)]" },
 };
 
 const stationLines: Record<string, string> = {};
@@ -135,8 +135,11 @@ export function metroLineTone(station: string | null | undefined): string | null
   return line ? LINE_COLORS[line].className : null;
 }
 
-/** Same lookup, but takes a raw (possibly multi-station) `metro` field and uses the first station. */
-export function metroPastelTone(station: string | null | undefined) {
+/** Pale card-background version of the same lookup, for a raw (possibly multi-station) `metro` field
+ *  — uses the first station. */
+export function metroPastelTone(station: string | null | undefined): string | null {
   const firstStation = metroStations(station)[0];
-  return metroLineTone(firstStation);
+  if (!firstStation) return null;
+  const line = stationLines[normalizeStation(firstStation)];
+  return line ? LINE_COLORS[line].cardClassName : null;
 }

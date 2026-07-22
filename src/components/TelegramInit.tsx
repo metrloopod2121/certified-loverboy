@@ -40,7 +40,9 @@ export default function TelegramInit() {
     webApp.ready();
     webApp.expand();
     try {
-      webApp.requestFullscreen?.();
+      // requestFullscreen can return a rejected promise (not just throw) on
+      // clients that don't support it — Telegram Desktop in particular.
+      Promise.resolve(webApp.requestFullscreen?.()).catch(() => {});
     } catch {
       // older Telegram clients don't support fullscreen — ignore
     }

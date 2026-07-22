@@ -25,6 +25,10 @@ type TelegramMessage = {
   from?: { id: number };
   text?: string;
   caption?: string;
+  // Present when this message is one photo/video out of a multi-photo post. Telegram delivers
+  // an album as separate messages (one webhook call each) and puts the caption on only one of
+  // them — the rest arrive with no text at all.
+  media_group_id?: string;
   // Bot API 7.0+ shape. Older field (forward_from_chat) kept alongside for servers still on
   // an earlier Bot API version — both are checked.
   forward_origin?: { type: string; chat?: TelegramForwardChat; message_id?: number };
@@ -89,6 +93,13 @@ async function handleChannelForwardPost(message: TelegramMessage) {
   const chatId = String(message.chat.id);
   const text = (message.text ?? message.caption ?? "").trim();
   if (!text) {
+    // Multi-photo posts arrive as one message per photo, all sharing a media_group_id, with
+    // the caption on only one of them — silently skip the caption-less ones instead of
+    // spamming an error per photo. A genuinely caption-less single-photo forward still errors.
+    if (message.media_group_id) {
+      console.log(`[import] album photo without caption, skipping chatId=${chatId} group=${message.media_group_id}`);
+      return;
+    }
     await sendTelegramMessage(chatId, "В пересланном посте нет текста — не смог разобрать. Добавь вручную в приложении.");
     return;
   }

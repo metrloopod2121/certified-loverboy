@@ -19,12 +19,19 @@ import {
 
 type TelegramForwardChat = { type: string; username?: string };
 
+type TelegramMessageEntity = { type: string; offset: number; length: number; url?: string };
+
 type TelegramMessage = {
   message_id: number;
   chat: { id: number };
   from?: { id: number };
   text?: string;
   caption?: string;
+  // Formatting entities for text/caption respectively. Post links are almost always styled as
+  // clickable words ("Забронировать", "На карте") rather than typed out — the actual URL only
+  // shows up here (type "text_link" + url), never in the visible text itself.
+  entities?: TelegramMessageEntity[];
+  caption_entities?: TelegramMessageEntity[];
   // Present when this message is one photo/video out of a multi-photo post. Telegram delivers
   // an album as separate messages (one webhook call each) and puts the caption on only one of
   // them — the rest arrive with no text at all.
@@ -34,6 +41,22 @@ type TelegramMessage = {
   forward_origin?: { type: string; chat?: TelegramForwardChat; message_id?: number };
   forward_from_chat?: TelegramForwardChat;
 };
+
+/** Pulls URLs hidden behind styled link text (Bot API only exposes these via entities, never
+ *  in the plain text/caption string) so they still reach the parser and the venue link field. */
+function hiddenLinksFromMessage(message: TelegramMessage): string[] {
+  const entities = message.caption ? message.caption_entities : message.entities;
+  if (!entities) return [];
+  return entities
+    .filter((entity): entity is TelegramMessageEntity & { url: string } => entity.type === "text_link" && Boolean(entity.url))
+    .map((entity) => entity.url);
+}
+
+/** Appends any hidden link URLs to the visible text so downstream parsing (coordinate lookup,
+ *  LLM extraction) sees them the same as a plain typed-out URL would be seen. */
+function textWithHiddenLinks(text: string, links: string[]): string {
+  return links.length > 0 ? `${text}\n\n${links.join("\n")}` : text;
+}
 
 /** Minimum length before a plain (non-forwarded) owner text message is treated as a pasted
  *  post — guards against accidental LLM calls on short one-off chat messages. */
@@ -106,7 +129,8 @@ async function handleChannelForwardPost(message: TelegramMessage) {
 
   await sendTelegramMessage(chatId, "Смотрю пересланный пост, секунду…");
 
-  const parsed = await parsePostText(text);
+  const hiddenLinks = hiddenLinksFromMessage(message);
+  const parsed = await parsePostText(textWithHiddenLinks(text, hiddenLinks));
   if (!parsed) {
     console.log(`[import] channel forward parse failed chatId=${chatId}`);
     await sendTelegramMessage(chatId, "Не смог разобрать пост. Попробуй прислать текст сообщением или добавь вручную в приложении.");
@@ -114,7 +138,7 @@ async function handleChannelForwardPost(message: TelegramMessage) {
   }
 
   const pending = await prisma.pendingImport.create({
-    data: { chatId, sourceUrl: forwardedChannelSourceUrl(message), payload: JSON.stringify(parsed) },
+    data: { chatId, sourceUrl: hiddenLinks[0] ?? forwardedChannelSourceUrl(message), payload: JSON.stringify(parsed) },
   });
 
   await sendTelegramMessageWithButtons(chatId, formatIdeaPreview(parsed, "📩 Пост из канала:"), [
@@ -134,7 +158,8 @@ async function handlePastedPostText(message: TelegramMessage) {
 
   await sendTelegramMessage(chatId, "Смотрю текст, секунду…");
 
-  const parsed = await parsePostText(text);
+  const hiddenLinks = hiddenLinksFromMessage(message);
+  const parsed = await parsePostText(textWithHiddenLinks(text, hiddenLinks));
   if (!parsed) {
     console.log(`[import] pasted text parse failed chatId=${chatId}`);
     await sendTelegramMessage(chatId, "Не смог разобрать текст. Добавь вручную в приложении.");
@@ -142,7 +167,7 @@ async function handlePastedPostText(message: TelegramMessage) {
   }
 
   const pending = await prisma.pendingImport.create({
-    data: { chatId, sourceUrl: "", payload: JSON.stringify(parsed) },
+    data: { chatId, sourceUrl: hiddenLinks[0] ?? "", payload: JSON.stringify(parsed) },
   });
 
   await sendTelegramMessageWithButtons(chatId, formatIdeaPreview(parsed, "📋 Вставленный текст:"), [

@@ -1,14 +1,28 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ChevronDown, Pencil, Trash2, Plus, X, Link as LinkIcon, Utensils } from "lucide-react";
+import { ChevronDown, Pencil, Trash2, Plus, X, Link as LinkIcon, Utensils, Upload, PencilLine, FileUp } from "lucide-react";
 import { apiFetch } from "@/lib/apiClient";
 import { dateIdeaToInput, type DateIdea, type DateIdeaInput } from "@/lib/types";
 import DateIdeaForm from "@/components/DateIdeaForm";
 import MultiSelectFilter from "@/components/MultiSelectFilter";
 import IdeaTypeFilter from "@/components/IdeaTypeFilter";
 import { useIdeaTypeFilter } from "@/components/IdeaTypeFilterProvider";
-import { card, select, pill, iconButton, pageHeading, mutedText, pastelTone } from "@/lib/ui";
+import { parseDateMarkdown, type ParsedDateIdea } from "@/lib/parseDateMarkdown";
+import {
+  card,
+  select,
+  pill,
+  iconButton,
+  pageHeading,
+  mutedText,
+  pastelTone,
+  buttonSecondary,
+  buttonGhost,
+  pillToggle,
+  pillToggleActive,
+  pillToggleInactive,
+} from "@/lib/ui";
 import { metroPastelTone, metroStations } from "@/lib/metro";
 
 type Sort = "newest" | "title";
@@ -18,12 +32,22 @@ const sortOptions: { value: Sort; label: string }[] = [
   { value: "title", label: "По названию" },
 ];
 
+type PendingImport = {
+  id: string;
+  source: string;
+  parsed: ParsedDateIdea;
+};
+
+let nextImportId = 0;
+
 export default function StorageScreen({ readOnly = false }: { readOnly?: boolean }) {
   const [ideas, setIdeas] = useState<DateIdea[] | null>(null);
   const [tagFilters, setTagFilters] = useState<string[]>([]);
   const [metroFilters, setMetroFilters] = useState<string[]>([]);
   const [sort, setSort] = useState<Sort>("newest");
-  const [showForm, setShowForm] = useState(false);
+  const [addMode, setAddMode] = useState<"none" | "manual" | "import">("none");
+  const [importItems, setImportItems] = useState<PendingImport[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [editing, setEditing] = useState<DateIdea | null>(null);
   const [openFilter, setOpenFilter] = useState<"tags" | "metro" | "sort" | null>(null);
   const sortRef = useRef<HTMLDivElement>(null);
@@ -87,9 +111,14 @@ export default function StorageScreen({ readOnly = false }: { readOnly?: boolean
     return result;
   }, [ideas, tagFilters, metroFilters, sort, typeFilter]);
 
+  function toggleAddPanel() {
+    setAddMode((m) => (m === "none" ? "manual" : "none"));
+    setImportItems([]);
+  }
+
   async function createIdea(input: DateIdeaInput) {
     await apiFetch("/api/date-ideas", { method: "POST", body: JSON.stringify(input) });
-    setShowForm(false);
+    setAddMode("none");
     await reload();
   }
 
@@ -104,20 +133,45 @@ export default function StorageScreen({ readOnly = false }: { readOnly?: boolean
     await reload();
   }
 
+  async function handleFiles(e: React.ChangeEvent<HTMLInputElement>) {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    const newItems = await Promise.all(
+      Array.from(files).map(async (file) => ({
+        id: `f${nextImportId++}`,
+        source: file.name,
+        parsed: parseDateMarkdown(await file.text()),
+      }))
+    );
+    setImportItems((prev) => [...prev, ...newItems]);
+    e.target.value = "";
+  }
+
+  function dismissImportItem(id: string) {
+    setImportItems((prev) => prev.filter((i) => i.id !== id));
+  }
+
+  async function saveImportItem(id: string, input: DateIdeaInput) {
+    await apiFetch("/api/date-ideas", { method: "POST", body: JSON.stringify(input) });
+    dismissImportItem(id);
+    await reload();
+  }
+
   return (
     <div className="flex flex-col gap-5 max-w-2xl mx-auto p-4 pt-6 pb-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className={`${pageHeading} whitespace-nowrap`}>Идеи для свиданий</h1>
+          <h1 className={`${pageHeading} whitespace-nowrap`}>База идей</h1>
         </div>
         {!readOnly && (
           <button
-            onClick={() => setShowForm((v) => !v)}
-            aria-label={showForm ? "Закрыть форму" : "Добавить свиданку"}
-            title={showForm ? "Закрыть форму" : "Добавить свиданку"}
+            onClick={toggleAddPanel}
+            aria-label={addMode === "none" ? "Добавить запись" : "Закрыть форму"}
+            title={addMode === "none" ? "Добавить запись" : "Закрыть форму"}
             className="inline-flex size-12 items-center justify-center rounded-full bg-[var(--app-ink)] text-[var(--app-canvas)] shadow-[0_3px_0_rgba(28,26,23,0.18)] active:scale-90 transition"
           >
-            {showForm ? <X size={18} /> : <Plus size={18} />}
+            {addMode === "none" ? <Plus size={18} /> : <X size={18} />}
           </button>
         )}
       </div>
@@ -175,7 +229,74 @@ export default function StorageScreen({ readOnly = false }: { readOnly?: boolean
         </div>
       </div>
 
-      {!readOnly && showForm && <DateIdeaForm onSubmit={createIdea} onCancel={() => setShowForm(false)} />}
+      {!readOnly && addMode !== "none" && (
+        <div className="panel-appear flex flex-col gap-3">
+          <div className="inline-flex w-fit gap-1 self-start rounded-full bg-[var(--app-overlay)] p-1 ring-1 ring-[var(--app-outline)]/10">
+            <button
+              type="button"
+              onClick={() => setAddMode("manual")}
+              className={`${pillToggle} inline-flex items-center gap-1 border-0 ${addMode === "manual" ? pillToggleActive : pillToggleInactive}`}
+            >
+              <PencilLine size={14} />
+              Вручную
+            </button>
+            <button
+              type="button"
+              onClick={() => setAddMode("import")}
+              className={`${pillToggle} inline-flex items-center gap-1 border-0 ${addMode === "import" ? pillToggleActive : pillToggleInactive}`}
+            >
+              <FileUp size={14} />
+              Импорт файла
+            </button>
+          </div>
+
+          {addMode === "manual" && <DateIdeaForm onSubmit={createIdea} onCancel={() => setAddMode("none")} />}
+
+          {addMode === "import" && (
+            <div className="flex flex-col gap-4">
+              <div className="flex flex-col gap-2 rounded-[22px] border border-[var(--app-outline)]/10 bg-[var(--app-yellow)] p-4 shadow-[0_2px_0_rgba(28,26,23,0.08)]">
+                <span className={mutedText}>Файлы (.md / .txt) — можно выбрать сразу несколько</span>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".md,.txt"
+                  multiple
+                  onChange={handleFiles}
+                  className="hidden"
+                />
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className={`${buttonSecondary} w-full bg-[var(--app-overlay)]`}
+                >
+                  <Upload size={18} />
+                  Выбрать файлы
+                </button>
+              </div>
+
+              {importItems.length > 0 && (
+                <p className={mutedText}>
+                  Разобрано {importItems.length} {importItems.length === 1 ? "файл" : "файла(ов)"} — проверь и сохрани каждую:
+                </p>
+              )}
+
+              {importItems.map((item) => (
+                <div key={item.id} className="panel-appear flex flex-col gap-2">
+                  <div className="flex items-center justify-between">
+                    <span className={mutedText}>{item.source}</span>
+                    <button onClick={() => dismissImportItem(item.id)} className={buttonGhost}>Пропустить</button>
+                  </div>
+                  <DateIdeaForm
+                    initial={item.parsed}
+                    onSubmit={(input) => saveImportItem(item.id, input)}
+                    onCancel={() => dismissImportItem(item.id)}
+                  />
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {!ideas && <p className={mutedText}>Загрузка…</p>}
 

@@ -2,13 +2,12 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { FolderHeart, Map, Inbox, Heart, PartyPopper, type LucideIcon } from "lucide-react";
+import { FolderHeart, Map, Heart, PartyPopper, type LucideIcon } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 
 const OWNER_LINKS: { href: string; label: string; icon: LucideIcon }[] = [
   { href: "/", label: "Идеи", icon: FolderHeart },
   { href: "/map", label: "Карта", icon: Map },
-  { href: "/import", label: "Импорт", icon: Inbox },
   { href: "/swipe", label: "Свайп", icon: Heart },
   { href: "/matches", label: "Мэтчи", icon: PartyPopper },
 ];

@@ -52,7 +52,15 @@ export default function DateIdeaForm({
     if (/https?:\/\//.test(value)) {
       const parsed = parseMapsLink(value);
       if (parsed) {
-        updateLocation(index, { coords: formatCoordinates(parsed.lat, parsed.lng) });
+        // Keep the original link too (not just the extracted point) so the popup/list
+        // can still take you to the actual venue page, not just a bare map pin.
+        setLocations((prev) =>
+          prev.map((loc, i) =>
+            i === index
+              ? { ...loc, coords: formatCoordinates(parsed.lat, parsed.lng), url: loc.url.trim() ? loc.url : value }
+              : loc
+          )
+        );
         return;
       }
     }
@@ -115,7 +123,7 @@ export default function DateIdeaForm({
   return (
     <form
       onSubmit={handleSubmit}
-      className="flex flex-col gap-3 rounded-[22px] border border-[var(--app-outline)]/10 bg-[var(--app-mint)] p-4 shadow-[0_2px_0_rgba(28,26,23,0.08)]"
+      className="panel-appear flex flex-col gap-3 rounded-[22px] border border-[var(--app-outline)]/10 bg-[var(--app-mint)] p-4 shadow-[0_2px_0_rgba(28,26,23,0.08)]"
     >
       <div>
         <h2 className="text-[20px] font-semibold leading-none">{type === "FOOD" ? "Детали заведения" : "Детали свидания"}</h2>

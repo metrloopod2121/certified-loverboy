@@ -43,7 +43,7 @@ export default function MatchesScreen() {
   if (filteredMatches.length === 0) {
     return (
       <div className="flex min-h-[calc(100dvh-82px)] flex-col gap-4 p-4 pt-6">
-        <h1 className={pageHeading}>Мэтчи</h1>
+        <h1 className={pageHeading}>Matches</h1>
         <IdeaTypeFilter fullWidth />
         <div className="flex flex-1 flex-col items-center justify-center gap-2 text-center">
           <MessageCircleHeart className="text-[var(--tg-hint)]" size={36} strokeWidth={1.5} />
@@ -56,7 +56,7 @@ export default function MatchesScreen() {
   return (
     <div className="flex flex-col gap-4 max-w-2xl mx-auto p-4 pt-6 pb-6">
       <div>
-        <h1 className={pageHeading}>Мэтчи</h1>
+        <h1 className={pageHeading}>Matches</h1>
       </div>
       <IdeaTypeFilter fullWidth />
       {filteredMatches.map((m) => (

@@ -84,7 +84,7 @@ export default function MapScreen() {
         style={{ paddingTop: "calc(var(--safe-top) + var(--content-top-gap))" }}
       >
         <div className="flex items-center justify-between rounded-[18px] border border-[var(--app-outline)]/10 bg-[var(--app-surface)]/70 px-3 py-3 shadow-[0_4px_16px_rgba(28,26,23,0.12)] backdrop-blur-xl">
-          <h1 className={pageHeading}>Карта идей</h1>
+          <h1 className={pageHeading}>Map</h1>
           {ideas && <span className="rounded-full bg-[var(--app-ink)] px-3 py-1.5 text-[12px] font-semibold text-[var(--app-canvas)]">{filtered.length}</span>}
         </div>
 

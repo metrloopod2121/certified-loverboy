@@ -58,7 +58,7 @@ export default function SwipeScreen() {
   if (stack.length === 0) {
     return (
       <div className="flex min-h-[calc(100dvh-82px)] flex-col gap-4 p-4 pt-6">
-        <h1 className="text-[22px] font-semibold leading-none">Выбери вайб</h1>
+        <h1 className="text-[22px] font-semibold leading-none">Swipe</h1>
         <IdeaTypeFilter fullWidth />
         <div className="flex flex-1 flex-col items-center justify-center gap-2 text-center">
           <Inbox className="text-[var(--tg-hint)]" size={36} strokeWidth={1.5} />
@@ -82,7 +82,7 @@ export default function SwipeScreen() {
     <div className="flex flex-col items-center gap-5 max-w-md mx-auto p-4 pt-6">
       <div className="flex w-full items-end justify-between px-1">
         <div>
-          <h1 className="text-[22px] font-semibold leading-none">Выбери вайб</h1>
+          <h1 className="text-[22px] font-semibold leading-none">Swipe</h1>
         </div>
         <span className="rounded-full bg-[var(--app-ink)] px-3 py-1.5 text-[12px] font-semibold text-[var(--app-canvas)]">{stack.length}</span>
       </div>

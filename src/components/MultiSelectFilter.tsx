@@ -107,7 +107,7 @@ export default function MultiSelectFilter({
                 onChange={() => toggle(option)}
                 className="peer sr-only"
               />
-              <span className="flex size-4 shrink-0 items-center justify-center rounded-[5px] border-2 border-[var(--app-pink)] bg-[var(--app-surface)] text-[#1c1a17] transition peer-checked:border-[var(--app-pink)] peer-checked:bg-[var(--app-pink)] dark:border-[#ff8ac7] dark:peer-checked:border-[#ff8ac7] dark:peer-checked:bg-[#ff8ac7]">
+              <span className="flex size-4 shrink-0 items-center justify-center rounded-[5px] border-2 border-[var(--app-pink)] bg-[var(--app-surface)] text-[#1c1a17] transition peer-checked:border-[var(--app-pink)] peer-checked:bg-[var(--app-pink)]">
                 <Check size={12} strokeWidth={3} className={`${selected.includes(option) ? "opacity-100" : "opacity-0"} transition`} />
               </span>
               <span className="min-w-0 break-words">{option}</span>

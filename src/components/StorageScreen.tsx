@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ChevronDown, Pencil, Trash2, Plus, X, Link as LinkIcon, Utensils, Upload, PencilLine, FileUp } from "lucide-react";
+import { ChevronDown, Pencil, Trash2, Plus, X, Link as LinkIcon, Utensils, Upload, PencilLine, FileUp, Navigation, MapPin } from "lucide-react";
 import { apiFetch } from "@/lib/apiClient";
 import { dateIdeaToInput, type DateIdea, type DateIdeaInput } from "@/lib/types";
 import DateIdeaForm from "@/components/DateIdeaForm";
@@ -9,8 +9,11 @@ import MultiSelectFilter from "@/components/MultiSelectFilter";
 import IdeaTypeFilter from "@/components/IdeaTypeFilter";
 import { useIdeaTypeFilter } from "@/components/IdeaTypeFilterProvider";
 import { parseDateMarkdown, type ParsedDateIdea } from "@/lib/parseDateMarkdown";
+import { parseCoordinates, parseMapsLink } from "@/lib/coords";
+import { distanceKm, formatDistanceKm, type LatLng } from "@/lib/geo";
 import {
   card,
+  input,
   select,
   pill,
   iconButton,
@@ -25,12 +28,28 @@ import {
 } from "@/lib/ui";
 import { metroPastelTone, metroStations } from "@/lib/metro";
 
-type Sort = "newest" | "title";
+type Sort = "newest" | "title" | "nearby";
 
 const sortOptions: { value: Sort; label: string }[] = [
   { value: "newest", label: "Newest" },
   { value: "title", label: "Title" },
+  { value: "nearby", label: "Nearby" },
 ];
+
+const LOCATION_STORAGE_KEY = "certified-loverboy:user-location";
+
+function loadSavedLocation(): LatLng | null {
+  if (typeof window === "undefined") return null;
+  const saved = window.localStorage.getItem(LOCATION_STORAGE_KEY);
+  if (!saved) return null;
+  try {
+    const parsed = JSON.parse(saved);
+    if (typeof parsed.lat === "number" && typeof parsed.lng === "number") return parsed;
+  } catch {
+    return null;
+  }
+  return null;
+}
 
 type PendingImport = {
   id: string;
@@ -53,6 +72,10 @@ export default function StorageScreen({ readOnly = false }: { readOnly?: boolean
   const sortRef = useRef<HTMLDivElement>(null);
   const { filter: typeFilter } = useIdeaTypeFilter();
   const sortLabel = sortOptions.find((option) => option.value === sort)?.label ?? "Sort";
+  const [userLocation, setUserLocation] = useState<LatLng | null>(() => loadSavedLocation());
+  const [locatingMe, setLocatingMe] = useState(false);
+  const [locationError, setLocationError] = useState<string | null>(null);
+  const [manualLocationInput, setManualLocationInput] = useState("");
 
   async function reload() {
     const data = await apiFetch("/api/date-ideas");
@@ -94,6 +117,17 @@ export default function StorageScreen({ readOnly = false }: { readOnly?: boolean
     return [...set].sort();
   }, [ideas]);
 
+  const distanceById = useMemo(() => {
+    const map = new Map<string, number>();
+    if (!ideas || !userLocation) return map;
+    for (const idea of ideas) {
+      const coords = idea.locations.filter((loc): loc is typeof loc & { lat: number; lng: number } => loc.lat != null && loc.lng != null);
+      if (coords.length === 0) continue;
+      map.set(idea.id, Math.min(...coords.map((loc) => distanceKm(userLocation, loc))));
+    }
+    return map;
+  }, [ideas, userLocation]);
+
   const filtered = useMemo(() => {
     if (!ideas) return [];
     let result = typeFilter === "ALL" ? ideas : ideas.filter((idea) => idea.type === typeFilter);
@@ -103,13 +137,54 @@ export default function StorageScreen({ readOnly = false }: { readOnly?: boolean
     if (metroFilters.length > 0) {
       result = result.filter((idea) => idea.locations.some((loc) => metroStations(loc.metro).some((station) => metroFilters.includes(station))));
     }
-    result = [...result].sort((a, b) =>
-      sort === "title"
-        ? a.title.localeCompare(b.title)
-        : b.createdAt.localeCompare(a.createdAt)
-    );
+    result = [...result].sort((a, b) => {
+      if (sort === "title") return a.title.localeCompare(b.title);
+      if (sort === "nearby") return (distanceById.get(a.id) ?? Infinity) - (distanceById.get(b.id) ?? Infinity);
+      return b.createdAt.localeCompare(a.createdAt);
+    });
     return result;
-  }, [ideas, tagFilters, metroFilters, sort, typeFilter]);
+  }, [ideas, tagFilters, metroFilters, sort, typeFilter, distanceById]);
+
+  function saveLocation(loc: LatLng) {
+    setUserLocation(loc);
+    setLocationError(null);
+    window.localStorage.setItem(LOCATION_STORAGE_KEY, JSON.stringify(loc));
+  }
+
+  function clearLocation() {
+    setUserLocation(null);
+    window.localStorage.removeItem(LOCATION_STORAGE_KEY);
+  }
+
+  function useMyLocation() {
+    if (!navigator.geolocation) {
+      setLocationError("Geolocation isn't supported here");
+      return;
+    }
+    setLocatingMe(true);
+    setLocationError(null);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        saveLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+        setLocatingMe(false);
+      },
+      (err) => {
+        setLocationError(err.message || "Couldn't get your location");
+        setLocatingMe(false);
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  }
+
+  function applyManualLocation() {
+    const parsed = parseCoordinates(manualLocationInput) ?? parseMapsLink(manualLocationInput);
+    if (!parsed) {
+      setLocationError("Enter coordinates like 55.75, 37.61 or a maps link");
+      return;
+    }
+    saveLocation(parsed);
+    setManualLocationInput("");
+  }
 
   function toggleAddPanel() {
     setAddMode((m) => (m === "none" ? "manual" : "none"));
@@ -228,6 +303,41 @@ export default function StorageScreen({ readOnly = false }: { readOnly?: boolean
           </div>
         </div>
       </div>
+
+      {sort === "nearby" && (
+        <div className="panel-appear flex flex-col gap-2 rounded-[18px] border border-[var(--app-outline)]/10 bg-[var(--app-overlay)] px-3 py-2.5">
+          {userLocation ? (
+            <div className="flex items-center justify-between gap-2">
+              <span className={mutedText}>
+                <MapPin className="mr-1 inline align-text-bottom" size={14} />
+                Location set — sorting by distance
+              </span>
+              <button type="button" onClick={clearLocation} className={buttonGhost}>
+                Change
+              </button>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-2">
+              <button type="button" onClick={useMyLocation} disabled={locatingMe} className={`${buttonSecondary} w-full`}>
+                <Navigation size={16} />
+                {locatingMe ? "Locating…" : "Use my location"}
+              </button>
+              <div className="flex gap-2">
+                <input
+                  placeholder="55.75, 37.61 or a maps link"
+                  value={manualLocationInput}
+                  onChange={(e) => setManualLocationInput(e.target.value)}
+                  className={input}
+                />
+                <button type="button" onClick={applyManualLocation} className={buttonGhost}>
+                  Set
+                </button>
+              </div>
+            </div>
+          )}
+          {locationError && <p className="text-[13px] font-medium text-red-500">{locationError}</p>}
+        </div>
+      )}
 
       {!readOnly && addMode !== "none" && (
         <div className="panel-appear flex flex-col gap-3">
@@ -350,6 +460,12 @@ export default function StorageScreen({ readOnly = false }: { readOnly?: boolean
                     </div>
                   ))}
                 </div>
+              )}
+              {sort === "nearby" && userLocation && (
+                <p className={mutedText}>
+                  <MapPin className="mr-1 inline align-text-bottom" size={12} />
+                  {distanceById.has(idea.id) ? `${formatDistanceKm(distanceById.get(idea.id)!)} away` : "No coordinates"}
+                </p>
               )}
               {idea.priceNote && <p className="text-[14px] font-semibold">{idea.priceNote}</p>}
               {idea.swipeDescription && (

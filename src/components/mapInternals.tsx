@@ -19,16 +19,16 @@ export const pickerMarkerIcon = L.divIcon({
 
 export const MOSCOW_CENTER: [number, number] = [55.751244, 37.618423];
 
-export function OpenFreeMapLayer({ dark }: { dark: boolean }) {
+// Map always uses the light "liberty" style, regardless of device/Telegram theme.
+export function OpenFreeMapLayer() {
   const map = useMap();
 
   useEffect(() => {
-    const style = `https://tiles.openfreemap.org/styles/${dark ? "dark" : "liberty"}`;
-    const layer = L.maplibreGL({ style }).addTo(map);
+    const layer = L.maplibreGL({ style: "https://tiles.openfreemap.org/styles/liberty" }).addTo(map);
     return () => {
       map.removeLayer(layer);
     };
-  }, [map, dark]);
+  }, [map]);
 
   return null;
 }

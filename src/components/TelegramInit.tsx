@@ -2,36 +2,16 @@
 
 import { useEffect } from "react";
 
-const VAR_MAP: Record<string, string> = {
-  bg_color: "--tg-bg",
-  text_color: "--tg-text",
-  hint_color: "--tg-hint",
-  link_color: "--tg-link",
-  button_color: "--tg-button",
-  button_text_color: "--tg-button-text",
-  secondary_bg_color: "--tg-secondary-bg",
-};
-
 const FULL_HEIGHT_TOP_FALLBACK = 52;
+
+// The app always uses the light design regardless of the user's Telegram
+// theme, so the native header/background just gets set once to match it.
+const APP_BG = "#fff9ee";
 
 export default function TelegramInit() {
   useEffect(() => {
     const webApp = window.Telegram?.WebApp;
     if (!webApp) return;
-
-    function applyTheme() {
-      if (!webApp) return;
-      const root = document.documentElement.style;
-      const theme = webApp.themeParams ?? {};
-      for (const [key, cssVar] of Object.entries(VAR_MAP)) {
-        const value = theme[key as keyof typeof theme];
-        if (value) root.setProperty(cssVar, value);
-      }
-      if (theme.bg_color) {
-        webApp.setHeaderColor?.(theme.bg_color);
-        webApp.setBackgroundColor?.(theme.bg_color);
-      }
-    }
 
     function applySafeArea() {
       if (!webApp) return;
@@ -49,9 +29,10 @@ export default function TelegramInit() {
       root.setProperty("--tg-expanded-top-fallback", needsTopFallback ? `${FULL_HEIGHT_TOP_FALLBACK}px` : "0px");
     }
 
-    applyTheme();
+    webApp.setHeaderColor?.(APP_BG);
+    webApp.setBackgroundColor?.(APP_BG);
+
     applySafeArea();
-    webApp.onEvent("themeChanged", applyTheme);
     webApp.onEvent("safeAreaChanged", applySafeArea);
     webApp.onEvent("contentSafeAreaChanged", applySafeArea);
     webApp.onEvent("fullscreenChanged", applySafeArea);
@@ -69,7 +50,6 @@ export default function TelegramInit() {
     return () => {
       cancelAnimationFrame(frame);
       window.clearTimeout(settled);
-      webApp.offEvent("themeChanged", applyTheme);
       webApp.offEvent("safeAreaChanged", applySafeArea);
       webApp.offEvent("contentSafeAreaChanged", applySafeArea);
       webApp.offEvent("fullscreenChanged", applySafeArea);

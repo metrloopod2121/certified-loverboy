@@ -33,35 +33,6 @@
   --safe-bottom: max(env(safe-area-inset-bottom, 0px), var(--tg-safe-area-inset-bottom, 0px), var(--tg-content-safe-area-inset-bottom, 0px), var(--tg-safe-bottom-js));
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --tg-bg: #17212b;
-    --tg-text: #f0f0f0;
-    --tg-hint: #7d8b99;
-    --tg-link: #6ab3f3;
-    --tg-button: #5288c1;
-    --tg-button-text: #ffffff;
-    --tg-secondary-bg: #1f2a36;
-    --app-canvas: #11110f;
-    --app-surface: #1c1b18;
-    --app-ink: #fffaf0;
-    --app-muted: #c1bcb2;
-    --app-outline: #fffaf0;
-    --app-yellow: #745a00;
-    --app-mint: #356145;
-    --app-pink: #7b345b;
-    --app-blue: #3f5e91;
-    --app-lilac: #5a4d82;
-    --app-coral: #824638;
-    --metro-red: #713432;
-    --metro-green: #345e43;
-    --metro-orange: #704b20;
-    --metro-gray: #494b49;
-    --app-overlay: rgb(255 255 255 / 0.16);
-    --app-subtle-overlay: rgb(255 255 255 / 0.1);
-  }
-}
-
 @theme inline {
   --color-background: var(--tg-bg);
   --color-foreground: var(--tg-text);

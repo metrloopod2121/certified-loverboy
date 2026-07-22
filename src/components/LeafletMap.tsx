@@ -5,7 +5,7 @@ import "leaflet/dist/leaflet.css";
 import "maplibre-gl/dist/maplibre-gl.css";
 import "@maplibre/maplibre-gl-leaflet";
 import "./leaflet-theme.css";
-import { OpenFreeMapLayer, InvalidateSizeOnMount, dateMarkerIcon, MOSCOW_CENTER } from "./mapInternals";
+import { OpenFreeMapLayer, InvalidateSizeOnMount, dateMarkerIcon, venueMarkerIcon, MOSCOW_CENTER } from "./mapInternals";
 
 export type MapMarker = {
   id: string;
@@ -25,7 +25,11 @@ export default function LeafletMap({ markers }: { markers: MapMarker[] }) {
       <InvalidateSizeOnMount />
       <OpenFreeMapLayer />
       {markers.map((marker) => (
-        <Marker key={marker.id} position={[marker.lat, marker.lng]} icon={dateMarkerIcon}>
+        <Marker
+          key={marker.id}
+          position={[marker.lat, marker.lng]}
+          icon={marker.tags.includes("date") ? dateMarkerIcon : venueMarkerIcon}
+        >
           <Popup>
             <strong>{marker.title}</strong>
             {marker.address && <div>{marker.address}</div>}

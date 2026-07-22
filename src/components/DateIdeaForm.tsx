@@ -2,10 +2,10 @@
 
 import { useState } from "react";
 import dynamic from "next/dynamic";
-import { Heart, MapPin, Plus, Utensils, X } from "lucide-react";
-import type { DateIdeaInput, DateIdeaType, LocationInput } from "@/lib/types";
+import { MapPin, Plus, X } from "lucide-react";
+import type { DateIdeaInput, LocationInput } from "@/lib/types";
 import { parseCoordinates, parseMapsLink, formatCoordinates } from "@/lib/coords";
-import { input, label as labelClass, buttonPrimary, buttonSecondary, buttonGhost, iconButton, pillToggle, pillToggleActive, pillToggleInactive } from "@/lib/ui";
+import { input, label as labelClass, buttonPrimary, buttonSecondary, buttonGhost, iconButton } from "@/lib/ui";
 
 const LocationPicker = dynamic(() => import("@/components/LocationPicker"), { ssr: false });
 
@@ -31,7 +31,6 @@ export default function DateIdeaForm({
   onSubmit: (input: DateIdeaInput) => Promise<void>;
   onCancel: () => void;
 }) {
-  const [type, setType] = useState<DateIdeaType>(initial?.type ?? "DATE");
   const [title, setTitle] = useState(initial?.title ?? "");
   const [description, setDescription] = useState(initial?.description ?? "");
   const [swipeDescription, setSwipeDescription] = useState(initial?.swipeDescription ?? "");
@@ -105,7 +104,6 @@ export default function DateIdeaForm({
     setSaving(true);
     try {
       await onSubmit({
-        type,
         title,
         description,
         swipeDescription,
@@ -126,30 +124,11 @@ export default function DateIdeaForm({
       className="panel-appear flex flex-col gap-3 rounded-[22px] border border-[var(--app-outline)]/10 bg-[var(--app-mint)] p-4 shadow-[0_2px_0_rgba(28,26,23,0.08)]"
     >
       <div>
-        <h2 className="text-[20px] font-semibold leading-none">{type === "FOOD" ? "Venue details" : "Date details"}</h2>
-      </div>
-      <div className="flex flex-col gap-1.5">
-        <span className={labelClass}>Type</span>
-        <div className="inline-flex w-fit gap-1 rounded-full bg-[var(--app-overlay)] p-1 ring-1 ring-[var(--app-outline)]/10">
-          {([
-            ["DATE", "Date", Heart],
-            ["FOOD", "Food", Utensils],
-          ] as const).map(([value, text, Icon]) => (
-            <button
-              key={value}
-              type="button"
-              onClick={() => setType(value)}
-              className={`${pillToggle} inline-flex items-center gap-1 border-0 ${type === value ? pillToggleActive : pillToggleInactive}`}
-            >
-              <Icon size={15} />
-              {text}
-            </button>
-          ))}
-        </div>
+        <h2 className="text-[20px] font-semibold leading-none">Place details</h2>
       </div>
       <div className="flex flex-col gap-1">
         <span className={labelClass}>Title</span>
-        <input required placeholder={type === "FOOD" ? "Cozy café nearby" : "Picnic in the park"} value={title} onChange={(e) => setTitle(e.target.value)} className={input} />
+        <input required placeholder="Picnic in the park, cozy café nearby…" value={title} onChange={(e) => setTitle(e.target.value)} className={input} />
       </div>
 
       <div className="flex flex-col gap-3">
@@ -226,7 +205,8 @@ export default function DateIdeaForm({
 
       <div className="flex flex-col gap-1">
         <span className={labelClass}>Tags</span>
-        <input placeholder="romance, art" value={tags} onChange={(e) => setTags(e.target.value)} className={input} />
+        <input placeholder="date, romance, art…" value={tags} onChange={(e) => setTags(e.target.value)} className={input} />
+        <span className="text-[12px] leading-snug text-[var(--app-muted)]">Tag it “date” to mark a date idea — leave it off for a plain venue</span>
       </div>
 
       <div className="flex flex-col gap-1">

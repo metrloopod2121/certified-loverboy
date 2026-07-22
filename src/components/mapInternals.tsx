@@ -5,7 +5,14 @@ import { useMap } from "react-leaflet";
 import L from "leaflet";
 
 export const dateMarkerIcon = L.divIcon({
-  className: "date-marker",
+  className: "date-marker date-marker--date",
+  iconSize: [16, 16],
+  iconAnchor: [8, 8],
+  popupAnchor: [0, -10],
+});
+
+export const venueMarkerIcon = L.divIcon({
+  className: "date-marker date-marker--venue",
   iconSize: [16, 16],
   iconAnchor: [8, 8],
   popupAnchor: [0, -10],

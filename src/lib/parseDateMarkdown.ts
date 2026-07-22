@@ -4,11 +4,11 @@ import type { DateIdeaInput } from "@/lib/types";
 
 export type ParsedDateIdea = Pick<
   DateIdeaInput,
-  "type" | "title" | "tags" | "priceNote" | "description" | "swipeDescription" | "locations"
+  "title" | "tags" | "priceNote" | "description" | "swipeDescription" | "locations"
 >;
 
 type LocationKey = "address" | "metro" | "url";
-type OtherKey = "priceNote" | "swipeDescription" | "type";
+type OtherKey = "priceNote" | "swipeDescription";
 
 type ParsedLocation = DateIdeaInput["locations"][number];
 
@@ -24,7 +24,6 @@ const OTHER_KEYS: Record<string, OtherKey> = {
   "свайп": "swipeDescription",
   "свайп описание": "swipeDescription",
   "свайп-описание": "swipeDescription",
-  "тип": "type",
 };
 
 const LOCATION_MARKER_KEYS = new Set(["место", "локация", "точка"]);
@@ -73,7 +72,6 @@ function hasFieldValue(location: ParsedLocation, field: LocationKey | "coordinat
 export function parseDateMarkdown(raw: string): ParsedDateIdea {
   const lines = raw.replace(/\r\n/g, "\n").split("\n");
   const result: ParsedDateIdea = {
-    type: "DATE",
     title: "",
     tags: [],
     priceNote: "",
@@ -140,11 +138,7 @@ export function parseDateMarkdown(raw: string): ParsedDateIdea {
       }
       if (key in OTHER_KEYS) {
         const field = OTHER_KEYS[key];
-        if (field === "type") {
-          result.type = /^(food|еда|заведение)$/iu.test(value) ? "FOOD" : "DATE";
-        } else {
-          result[field] = value;
-        }
+        result[field] = value;
         continue;
       }
     }

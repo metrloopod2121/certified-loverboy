@@ -33,3 +33,11 @@
   border: 2px solid var(--app-ink);
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
 }
+
+.date-marker--date {
+  background: var(--app-coral);
+}
+
+.date-marker--venue {
+  background: var(--app-blue);
+}

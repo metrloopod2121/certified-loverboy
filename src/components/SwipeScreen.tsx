@@ -5,8 +5,6 @@ import { X, Heart, Inbox } from "lucide-react";
 import { apiFetch } from "@/lib/apiClient";
 import type { DateIdea } from "@/lib/types";
 import { mutedText, pastelTone, pill } from "@/lib/ui";
-import IdeaTypeFilter from "@/components/IdeaTypeFilter";
-import { useIdeaTypeFilter } from "@/components/IdeaTypeFilterProvider";
 
 function normalizeText(value: string) {
   return value.replace(/\s+/g, " ").trim();
@@ -21,18 +19,12 @@ function compactAddress(address: string | null) {
 
 export default function SwipeScreen() {
   const [stack, setStack] = useState<DateIdea[] | null>(null);
-  const [deckFilter, setDeckFilter] = useState<string | null>(null);
   const [swiping, setSwiping] = useState(false);
   const [exiting, setExiting] = useState<"LIKE" | "PASS" | null>(null);
-  const { filter: typeFilter } = useIdeaTypeFilter();
 
   useEffect(() => {
-    const path = typeFilter === "ALL" ? "/api/deck" : `/api/deck?type=${typeFilter}`;
-    apiFetch(path).then((ideas) => {
-      setStack(ideas);
-      setDeckFilter(typeFilter);
-    });
-  }, [typeFilter]);
+    apiFetch("/api/deck").then(setStack);
+  }, []);
 
   async function swipe(direction: "LIKE" | "PASS") {
     if (!stack || stack.length === 0 || swiping) return;
@@ -53,13 +45,12 @@ export default function SwipeScreen() {
     }
   }
 
-  if (!stack || deckFilter !== typeFilter) return <div className={`p-8 text-center ${mutedText}`}>Loading…</div>;
+  if (!stack) return <div className={`p-8 text-center ${mutedText}`}>Loading…</div>;
 
   if (stack.length === 0) {
     return (
       <div className="flex min-h-[calc(100dvh-82px)] flex-col gap-4 p-4 pt-6">
         <h1 className="text-[22px] font-semibold leading-none">Swipe</h1>
-        <IdeaTypeFilter fullWidth />
         <div className="flex flex-1 flex-col items-center justify-center gap-2 text-center">
           <Inbox className="text-[var(--tg-hint)]" size={36} strokeWidth={1.5} />
           <p className={mutedText}>Nothing left to swipe.</p>
@@ -86,7 +77,6 @@ export default function SwipeScreen() {
         </div>
         <span className="rounded-full bg-[var(--app-ink)] px-3 py-1.5 text-[12px] font-semibold text-[var(--app-canvas)]">{stack.length}</span>
       </div>
-      <IdeaTypeFilter fullWidth />
       <div
         className={`w-full rounded-[28px] border border-[var(--app-outline)]/10 ${pastelTone(idea.id)} p-6 shadow-[0_4px_0_rgba(28,26,23,0.12)] min-h-[330px] flex flex-col gap-4 transition-all duration-200 ease-out ${
           exiting === "LIKE"

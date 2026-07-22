@@ -3,11 +3,7 @@ import { prisma } from "@/lib/db";
 import { requireAuth, isAuthUser } from "@/lib/apiAuth";
 import { resolveTagIds } from "@/lib/tags";
 import { withoutMetroTags } from "@/lib/metro";
-import type { DateIdeaType, LocationInput } from "@/lib/types";
-
-function parseIdeaType(value: unknown): DateIdeaType {
-  return value === "FOOD" ? "FOOD" : "DATE";
-}
+import type { LocationInput } from "@/lib/types";
 
 export async function PATCH(
   request: Request,
@@ -20,7 +16,6 @@ export async function PATCH(
   const body = await request.json();
 
   const data: Record<string, unknown> = {};
-  if ("type" in body) data.type = parseIdeaType(body.type);
   for (const key of ["title", "description", "swipeDescription", "priceNote"]) {
     if (key in body) data[key] = body[key];
   }

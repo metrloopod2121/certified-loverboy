@@ -3,7 +3,6 @@ import { Geist, Geist_Mono } from "next/font/google";
 import Script from "next/script";
 import TelegramInit from "@/components/TelegramInit";
 import NavBar from "@/components/NavBar";
-import IdeaTypeFilterProvider from "@/components/IdeaTypeFilterProvider";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -40,18 +39,16 @@ export default function RootLayout({
       <body className="min-h-full flex flex-col">
         <Script src="https://telegram.org/js/telegram-web-app.js" strategy="beforeInteractive" />
         <TelegramInit />
-        <IdeaTypeFilterProvider>
-          <main
-            className="flex-1 overflow-y-auto"
-            style={{
-              paddingTop: "calc(var(--safe-top) + var(--content-top-gap))",
-              paddingBottom: "calc(var(--safe-bottom) + 82px)",
-            }}
-          >
-            {children}
-          </main>
-          <NavBar />
-        </IdeaTypeFilterProvider>
+        <main
+          className="flex-1 overflow-y-auto"
+          style={{
+            paddingTop: "calc(var(--safe-top) + var(--content-top-gap))",
+            paddingBottom: "calc(var(--safe-bottom) + 82px)",
+          }}
+        >
+          {children}
+        </main>
+        <NavBar />
       </body>
     </html>
   );

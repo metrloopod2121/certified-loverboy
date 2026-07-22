@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { requireAuth, isAuthUser } from "@/lib/apiAuth";
-import type { DateIdeaType } from "@/lib/types";
 
 function shuffle<T>(items: T[]): T[] {
   const shuffled = [...items];
@@ -21,13 +20,9 @@ export async function GET(request: Request) {
     select: { dateIdeaId: true },
   });
   const swipedIds = already.map((s) => s.dateIdeaId);
-  const requestedType = new URL(request.url).searchParams.get("type");
-  const type: DateIdeaType | undefined = requestedType === "DATE" || requestedType === "FOOD"
-    ? requestedType
-    : undefined;
 
   const ideas = await prisma.dateIdea.findMany({
-    where: { id: { notIn: swipedIds }, ...(type ? { type } : {}) },
+    where: { id: { notIn: swipedIds } },
     include: { tags: { include: { tag: true } }, locations: true },
     orderBy: { createdAt: "asc" },
   });

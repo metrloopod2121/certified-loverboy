@@ -4,10 +4,8 @@ import { useEffect, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import { apiFetch } from "@/lib/apiClient";
 import type { DateIdea } from "@/lib/types";
-import { pageHeading, mutedText } from "@/lib/ui";
+import { mutedText } from "@/lib/ui";
 import MultiSelectFilter from "@/components/MultiSelectFilter";
-import IdeaTypeFilter from "@/components/IdeaTypeFilter";
-import { useIdeaTypeFilter } from "@/components/IdeaTypeFilterProvider";
 import { metroStations } from "@/lib/metro";
 import type { MapMarker } from "@/components/LeafletMap";
 
@@ -19,7 +17,6 @@ export default function MapScreen() {
   const [tagFilters, setTagFilters] = useState<string[]>([]);
   const [metroFilters, setMetroFilters] = useState<string[]>([]);
   const [openFilter, setOpenFilter] = useState<"tags" | "metro" | null>(null);
-  const { filter: typeFilter } = useIdeaTypeFilter();
 
   useEffect(() => {
     apiFetch("/api/date-ideas")
@@ -28,9 +25,7 @@ export default function MapScreen() {
   }, []);
 
   const allMarkers = useMemo<MapMarker[]>(() => {
-    return (ideas ?? [])
-      .filter((idea) => typeFilter === "ALL" || idea.type === typeFilter)
-      .flatMap((idea) =>
+    return (ideas ?? []).flatMap((idea) =>
       idea.locations
         .filter((loc) => loc.lat != null && loc.lng != null)
         .map((loc) => ({
@@ -44,8 +39,8 @@ export default function MapScreen() {
           priceNote: idea.priceNote,
           tags: idea.tags.map((t) => t.tag.name),
         }))
-      );
-  }, [ideas, typeFilter]);
+    );
+  }, [ideas]);
 
   const allTags = useMemo(() => {
     const set = new Set<string>();
@@ -83,13 +78,7 @@ export default function MapScreen() {
         className="relative z-10 flex flex-col gap-2 p-4"
         style={{ paddingTop: "calc(var(--safe-top) + var(--content-top-gap))" }}
       >
-        <div className="flex items-center justify-between rounded-[18px] border border-[var(--app-outline)]/10 bg-[var(--app-surface)]/70 px-3 py-3 shadow-[0_4px_16px_rgba(28,26,23,0.12)] backdrop-blur-xl">
-          <h1 className={pageHeading}>Map</h1>
-          {ideas && <span className="rounded-full bg-[var(--app-ink)] px-3 py-1.5 text-[12px] font-semibold text-[var(--app-canvas)]">{filtered.length}</span>}
-        </div>
-
         <div className="relative z-20 flex flex-col gap-2">
-          <IdeaTypeFilter fullWidth />
           <div className="grid grid-cols-2 gap-2">
             <MultiSelectFilter label="Tags" options={allTags} selected={tagFilters} onChange={setTagFilters} open={openFilter === "tags"} onOpenChange={(v) => setOpenFilter(v ? "tags" : null)} fullWidth />
             <MultiSelectFilter label="Metro" options={allMetro} selected={metroFilters} onChange={setMetroFilters} open={openFilter === "metro"} onOpenChange={(v) => setOpenFilter(v ? "metro" : null)} fullWidth />

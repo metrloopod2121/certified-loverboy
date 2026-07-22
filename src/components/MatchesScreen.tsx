@@ -5,13 +5,10 @@ import { Heart, PartyPopper, MessageCircleHeart } from "lucide-react";
 import { apiFetch } from "@/lib/apiClient";
 import type { MatchWithIdea } from "@/lib/types";
 import { card, pill, pageHeading, mutedText, pastelTone } from "@/lib/ui";
-import IdeaTypeFilter from "@/components/IdeaTypeFilter";
-import { useIdeaTypeFilter } from "@/components/IdeaTypeFilterProvider";
 
 export default function MatchesScreen() {
   const [matches, setMatches] = useState<MatchWithIdea[] | null>(null);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
-  const { filter: typeFilter } = useIdeaTypeFilter();
 
   useEffect(() => {
     apiFetch("/api/matches").then(setMatches);
@@ -38,13 +35,10 @@ export default function MatchesScreen() {
 
   if (!matches) return <div className="p-8 text-center text-sm opacity-60">Loading…</div>;
 
-  const filteredMatches = typeFilter === "ALL" ? matches : matches.filter((match) => match.dateIdea.type === typeFilter);
-
-  if (filteredMatches.length === 0) {
+  if (matches.length === 0) {
     return (
       <div className="flex min-h-[calc(100dvh-82px)] flex-col gap-4 p-4 pt-6">
         <h1 className={pageHeading}>Matches</h1>
-        <IdeaTypeFilter fullWidth />
         <div className="flex flex-1 flex-col items-center justify-center gap-2 text-center">
           <MessageCircleHeart className="text-[var(--tg-hint)]" size={36} strokeWidth={1.5} />
           <p className={mutedText}>No matches yet.</p>
@@ -58,8 +52,7 @@ export default function MatchesScreen() {
       <div>
         <h1 className={pageHeading}>Matches</h1>
       </div>
-      <IdeaTypeFilter fullWidth />
-      {filteredMatches.map((m) => (
+      {matches.map((m) => (
         <div key={m.id} className={`${card} ${pastelTone(m.dateIdea.id)} flex flex-col gap-2`}>
           <div className="flex items-start justify-between gap-3">
             <h2 className="flex items-start gap-2 text-[19px] font-semibold leading-[1.05]">

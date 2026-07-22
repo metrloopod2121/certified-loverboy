@@ -3,11 +3,7 @@ import { prisma } from "@/lib/db";
 import { requireAuth, isAuthUser } from "@/lib/apiAuth";
 import { resolveTagIds } from "@/lib/tags";
 import { withoutMetroTags } from "@/lib/metro";
-import type { DateIdeaType, LocationInput } from "@/lib/types";
-
-function parseIdeaType(value: unknown): DateIdeaType {
-  return value === "FOOD" ? "FOOD" : "DATE";
-}
+import type { LocationInput } from "@/lib/types";
 
 export async function GET(request: Request) {
   const auth = requireAuth(request, ["OWNER", "PARTNER"]);
@@ -36,7 +32,6 @@ export async function POST(request: Request) {
 
   const idea = await prisma.dateIdea.create({
     data: {
-      type: parseIdeaType(body.type),
       title: body.title,
       description: body.description || null,
       swipeDescription: body.swipeDescription || null,

@@ -1,16 +1,15 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ChevronDown, Pencil, Trash2, Plus, X, Link as LinkIcon, Utensils, Upload, PencilLine, FileUp, Navigation, MapPin } from "lucide-react";
+import { ChevronDown, Pencil, Trash2, Plus, X, Link as LinkIcon, Upload, PencilLine, FileUp, Navigation, MapPin } from "lucide-react";
 import { apiFetch } from "@/lib/apiClient";
 import { dateIdeaToInput, type DateIdea, type DateIdeaInput } from "@/lib/types";
 import DateIdeaForm from "@/components/DateIdeaForm";
 import MultiSelectFilter from "@/components/MultiSelectFilter";
-import IdeaTypeFilter from "@/components/IdeaTypeFilter";
-import { useIdeaTypeFilter } from "@/components/IdeaTypeFilterProvider";
 import { parseDateMarkdown, type ParsedDateIdea } from "@/lib/parseDateMarkdown";
 import { parseCoordinates, parseMapsLink } from "@/lib/coords";
 import { distanceKm, formatDistanceKm, type LatLng } from "@/lib/geo";
+import { priceTier } from "@/lib/priceTier";
 import {
   card,
   input,
@@ -70,7 +69,6 @@ export default function StorageScreen({ readOnly = false }: { readOnly?: boolean
   const [editing, setEditing] = useState<DateIdea | null>(null);
   const [openFilter, setOpenFilter] = useState<"tags" | "metro" | "sort" | null>(null);
   const sortRef = useRef<HTMLDivElement>(null);
-  const { filter: typeFilter } = useIdeaTypeFilter();
   const sortLabel = sortOptions.find((option) => option.value === sort)?.label ?? "Sort";
   const [userLocation, setUserLocation] = useState<LatLng | null>(() => loadSavedLocation());
   const [locatingMe, setLocatingMe] = useState(false);
@@ -130,7 +128,7 @@ export default function StorageScreen({ readOnly = false }: { readOnly?: boolean
 
   const filtered = useMemo(() => {
     if (!ideas) return [];
-    let result = typeFilter === "ALL" ? ideas : ideas.filter((idea) => idea.type === typeFilter);
+    let result = ideas;
     if (tagFilters.length > 0) {
       result = result.filter((i) => i.tags.some((t) => tagFilters.includes(t.tag.name)));
     }
@@ -143,7 +141,7 @@ export default function StorageScreen({ readOnly = false }: { readOnly?: boolean
       return b.createdAt.localeCompare(a.createdAt);
     });
     return result;
-  }, [ideas, tagFilters, metroFilters, sort, typeFilter, distanceById]);
+  }, [ideas, tagFilters, metroFilters, sort, distanceById]);
 
   function saveLocation(loc: LatLng) {
     setUserLocation(loc);
@@ -252,8 +250,7 @@ export default function StorageScreen({ readOnly = false }: { readOnly?: boolean
       </div>
 
       <div className="relative z-10 flex flex-col gap-2">
-        <IdeaTypeFilter fullWidth />
-        <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1.35fr)] gap-2">
+        <div className="grid grid-cols-3 gap-2">
           <MultiSelectFilter
             label="Tags"
             options={allTags}
@@ -423,7 +420,6 @@ export default function StorageScreen({ readOnly = false }: { readOnly?: boolean
             <div key={idea.id} className={`${card} ${metroPastelTone(idea.locations[0]?.metro) ?? pastelTone(idea.id)} flex flex-col gap-2.5 transition`}>
               <div className="flex justify-between items-start gap-2">
                 <h2 className="flex items-start gap-1.5 text-[19px] font-semibold leading-[1.05]">
-                  {idea.type === "FOOD" && <Utensils className="mt-0.5 shrink-0" size={18} aria-label="Food" />}
                   <span>{idea.title}</span>
                 </h2>
                 {!readOnly && (
@@ -467,7 +463,7 @@ export default function StorageScreen({ readOnly = false }: { readOnly?: boolean
                   {distanceById.has(idea.id) ? `${formatDistanceKm(distanceById.get(idea.id)!)} away` : "No coordinates"}
                 </p>
               )}
-              {idea.priceNote && <p className="text-[14px] font-semibold">{idea.priceNote}</p>}
+              {idea.priceNote && <p className="text-[14px] font-semibold">{priceTier(idea.priceNote) ?? idea.priceNote}</p>}
               {idea.swipeDescription && (
                 <p className="text-[14px] leading-snug">{idea.swipeDescription}</p>
               )}

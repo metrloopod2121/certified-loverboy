@@ -15,11 +15,8 @@ export type LocationInput = {
   url: string;
 };
 
-export type DateIdeaType = "DATE" | "FOOD";
-
 export type DateIdea = {
   id: string;
-  type: DateIdeaType;
   title: string;
   description: string | null;
   swipeDescription: string | null;
@@ -31,7 +28,6 @@ export type DateIdea = {
 };
 
 export type DateIdeaInput = {
-  type: DateIdeaType;
   title: string;
   description: string;
   swipeDescription: string;
@@ -60,7 +56,6 @@ export function locationToInput(location: Location): LocationInput {
 
 export function dateIdeaToInput(idea: DateIdea): DateIdeaInput {
   return {
-    type: idea.type,
     title: idea.title,
     description: idea.description ?? "",
     swipeDescription: idea.swipeDescription ?? "",

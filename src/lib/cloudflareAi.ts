@@ -61,8 +61,15 @@ export async function extractIdeaFromText(pageText: string): Promise<ExtractedId
     }),
   });
 
-  if (!res.ok) return null;
+  if (!res.ok) {
+    console.log(`[usage] cloudflare-ai request failed status=${res.status}`);
+    return null;
+  }
   const data = await res.json();
+
+  const neurons = data?.result?.usage?.neurons;
+  const tokens = data?.result?.usage?.total_tokens;
+  console.log(`[usage] cloudflare-ai neurons=${neurons ?? "?"} tokens=${tokens ?? "?"} model=${model}`);
 
   const direct = data?.result?.response;
   const parsed = direct && typeof direct === "object" ? direct : extractJsonBlock(data?.result?.choices?.[0]?.message?.content ?? "");

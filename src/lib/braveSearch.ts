@@ -10,6 +10,11 @@ export async function braveSearchSnippets(query: string, count = 3): Promise<str
   const res = await fetch(url, {
     headers: { Accept: "application/json", "X-Subscription-Token": apiKey },
   });
+
+  const remaining = res.headers.get("x-ratelimit-remaining");
+  const limit = res.headers.get("x-ratelimit-limit");
+  console.log(`[usage] brave-search status=${res.status} remaining=${remaining ?? "?"} limit=${limit ?? "?"}`);
+
   if (!res.ok) return [];
 
   const data = await res.json();

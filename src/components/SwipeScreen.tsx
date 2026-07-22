@@ -5,6 +5,7 @@ import { X, Heart, Inbox } from "lucide-react";
 import { apiFetch } from "@/lib/apiClient";
 import type { DateIdea } from "@/lib/types";
 import { mutedText, pastelTone, pill } from "@/lib/ui";
+import { priceTier } from "@/lib/priceTier";
 
 function normalizeText(value: string) {
   return value.replace(/\s+/g, " ").trim();
@@ -98,7 +99,7 @@ export default function SwipeScreen() {
 
         {idea.priceNote && (
           <p className="text-[14px] font-semibold">
-            {idea.priceNote}
+            {priceTier(idea.priceNote) ?? idea.priceNote}
           </p>
         )}
 

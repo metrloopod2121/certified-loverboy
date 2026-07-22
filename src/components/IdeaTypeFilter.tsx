@@ -5,9 +5,9 @@ import { useIdeaTypeFilter, type IdeaTypeFilter as IdeaTypeFilterValue } from "@
 import { pillToggle, pillToggleActive, pillToggleInactive } from "@/lib/ui";
 
 const options: { value: IdeaTypeFilterValue; label: string; Icon: typeof Layers3 }[] = [
-  { value: "ALL", label: "Все", Icon: Layers3 },
-  { value: "DATE", label: "Свидания", Icon: Heart },
-  { value: "FOOD", label: "Еда", Icon: Utensils },
+  { value: "ALL", label: "All", Icon: Layers3 },
+  { value: "DATE", label: "Date", Icon: Heart },
+  { value: "FOOD", label: "Food", Icon: Utensils },
 ];
 
 export default function IdeaTypeFilter({ fullWidth = false }: { fullWidth?: boolean }) {

@@ -89,7 +89,7 @@ export default function DateIdeaForm({
         ? parseCoordinates(loc.coords) ?? parseMapsLink(loc.coords)
         : null;
       if (loc.coords.trim() && !parsedCoords) {
-        setError("Укажи координаты 55.75, 37.61 или ссылку на Яндекс/Google Карты");
+        setError("Enter coordinates like 55.75, 37.61 or a Yandex/Google Maps link");
         return;
       }
 
@@ -114,7 +114,7 @@ export default function DateIdeaForm({
         locations: resolvedLocations,
       });
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Не удалось сохранить");
+      setError(err instanceof Error ? err.message : "Couldn't save");
     } finally {
       setSaving(false);
     }
@@ -126,14 +126,14 @@ export default function DateIdeaForm({
       className="panel-appear flex flex-col gap-3 rounded-[22px] border border-[var(--app-outline)]/10 bg-[var(--app-mint)] p-4 shadow-[0_2px_0_rgba(28,26,23,0.08)]"
     >
       <div>
-        <h2 className="text-[20px] font-semibold leading-none">{type === "FOOD" ? "Детали заведения" : "Детали свидания"}</h2>
+        <h2 className="text-[20px] font-semibold leading-none">{type === "FOOD" ? "Venue details" : "Date details"}</h2>
       </div>
       <div className="flex flex-col gap-1.5">
-        <span className={labelClass}>Тип</span>
+        <span className={labelClass}>Type</span>
         <div className="inline-flex w-fit gap-1 rounded-full bg-[var(--app-overlay)] p-1 ring-1 ring-[var(--app-outline)]/10">
           {([
-            ["DATE", "Свиданка", Heart],
-            ["FOOD", "Еда", Utensils],
+            ["DATE", "Date", Heart],
+            ["FOOD", "Food", Utensils],
           ] as const).map(([value, text, Icon]) => (
             <button
               key={value}
@@ -148,21 +148,21 @@ export default function DateIdeaForm({
         </div>
       </div>
       <div className="flex flex-col gap-1">
-        <span className={labelClass}>Название</span>
-        <input required placeholder={type === "FOOD" ? "Кофейня на районе" : "Пикник в парке"} value={title} onChange={(e) => setTitle(e.target.value)} className={input} />
+        <span className={labelClass}>Title</span>
+        <input required placeholder={type === "FOOD" ? "Cozy café nearby" : "Picnic in the park"} value={title} onChange={(e) => setTitle(e.target.value)} className={input} />
       </div>
 
       <div className="flex flex-col gap-3">
-        <span className={labelClass}>Места ({locations.length})</span>
+        <span className={labelClass}>Locations ({locations.length})</span>
         {locations.map((loc, index) => (
           <div key={index} className="flex flex-col gap-2 rounded-2xl bg-[var(--app-subtle-overlay)] p-3">
             <div className="flex items-center justify-between">
-              <span className="text-[12px] font-semibold text-[var(--app-muted)]">Место {index + 1}</span>
+              <span className="text-[12px] font-semibold text-[var(--app-muted)]">Location {index + 1}</span>
               {locations.length > 0 && (
                 <button
                   type="button"
                   onClick={() => removeLocation(index)}
-                  aria-label="Убрать место"
+                  aria-label="Remove location"
                   className={`${iconButton} size-7 bg-black/5 text-[var(--app-ink)]`}
                 >
                   <X size={14} />
@@ -172,13 +172,13 @@ export default function DateIdeaForm({
 
             <div className="grid grid-cols-2 gap-2">
               <input
-                placeholder="Улица, дом"
+                placeholder="Street, building"
                 value={loc.address}
                 onChange={(e) => updateLocation(index, { address: e.target.value })}
                 className={input}
               />
               <input
-                placeholder="Метро"
+                placeholder="Metro"
                 value={loc.metro}
                 onChange={(e) => updateLocation(index, { metro: e.target.value })}
                 className={input}
@@ -187,7 +187,7 @@ export default function DateIdeaForm({
 
             <div className="flex gap-2">
               <input
-                placeholder="55.75, 37.61 или ссылка на карты"
+                placeholder="55.75, 37.61 or a maps link"
                 value={loc.coords}
                 onChange={(e) => handleCoordsChange(index, e.target.value)}
                 className={input}
@@ -198,7 +198,7 @@ export default function DateIdeaForm({
                 className={buttonGhost}
               >
                 <MapPin size={16} />
-                Карта
+                Map
               </button>
             </div>
 
@@ -211,7 +211,7 @@ export default function DateIdeaForm({
             )}
 
             <input
-              placeholder="Ссылка (бронирование, инста и т.п.)"
+              placeholder="Link (booking, instagram, etc.)"
               value={loc.url}
               onChange={(e) => updateLocation(index, { url: e.target.value })}
               className={input}
@@ -220,24 +220,24 @@ export default function DateIdeaForm({
         ))}
         <button type="button" onClick={addLocation} className={`${buttonSecondary} self-start`}>
           <Plus size={16} />
-          Добавить место
+          Add location
         </button>
       </div>
 
       <div className="flex flex-col gap-1">
-        <span className={labelClass}>Теги</span>
-        <input placeholder="романтика, искусство" value={tags} onChange={(e) => setTags(e.target.value)} className={input} />
+        <span className={labelClass}>Tags</span>
+        <input placeholder="romance, art" value={tags} onChange={(e) => setTags(e.target.value)} className={input} />
       </div>
 
       <div className="flex flex-col gap-1">
-        <span className={labelClass}>Цена</span>
+        <span className={labelClass}>Price</span>
         <input placeholder="1500–3000 ₽" value={priceNote} onChange={(e) => setPriceNote(e.target.value)} className={input} />
       </div>
 
       <div className="flex flex-col gap-1">
-        <span className={labelClass}>Описание для свайпа</span>
+        <span className={labelClass}>Swipe description</span>
         <textarea
-          placeholder="Коротко: суть, плюсы и почему стоит лайкнуть"
+          placeholder="Short: what it is, and why it's worth a like"
           value={swipeDescription}
           onChange={(e) => setSwipeDescription(e.target.value)}
           className={input}
@@ -246,9 +246,9 @@ export default function DateIdeaForm({
       </div>
 
       <div className="flex flex-col gap-1">
-        <span className={labelClass}>Описание</span>
+        <span className={labelClass}>Description</span>
         <textarea
-          placeholder="Свободный текст"
+          placeholder="Free-form notes"
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           className={input}
@@ -260,10 +260,10 @@ export default function DateIdeaForm({
 
       <div className="flex gap-2 pt-1">
         <button type="submit" disabled={saving} className={buttonPrimary}>
-          {saving ? "Сохраняю…" : "Сохранить"}
+          {saving ? "Saving…" : "Save"}
         </button>
         <button type="button" onClick={onCancel} className={buttonSecondary}>
-          Отмена
+          Cancel
         </button>
       </div>
     </form>

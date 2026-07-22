@@ -93,7 +93,7 @@ export default function MultiSelectFilter({
               onClick={() => onChange([])}
               className="mb-1 w-full rounded-lg px-2 py-1 text-left text-[12px] font-semibold text-[var(--app-ink)] active:bg-black/5"
             >
-              Сбросить
+              Clear
             </button>
           )}
           {options.map((option) => (

@@ -28,8 +28,8 @@ import { metroPastelTone, metroStations } from "@/lib/metro";
 type Sort = "newest" | "title";
 
 const sortOptions: { value: Sort; label: string }[] = [
-  { value: "newest", label: "Сначала новые" },
-  { value: "title", label: "По названию" },
+  { value: "newest", label: "Newest" },
+  { value: "title", label: "Title" },
 ];
 
 type PendingImport = {
@@ -52,7 +52,7 @@ export default function StorageScreen({ readOnly = false }: { readOnly?: boolean
   const [openFilter, setOpenFilter] = useState<"tags" | "metro" | "sort" | null>(null);
   const sortRef = useRef<HTMLDivElement>(null);
   const { filter: typeFilter } = useIdeaTypeFilter();
-  const sortLabel = sortOptions.find((option) => option.value === sort)?.label ?? "Сортировка";
+  const sortLabel = sortOptions.find((option) => option.value === sort)?.label ?? "Sort";
 
   async function reload() {
     const data = await apiFetch("/api/date-ideas");
@@ -162,13 +162,13 @@ export default function StorageScreen({ readOnly = false }: { readOnly?: boolean
     <div className="flex flex-col gap-5 max-w-2xl mx-auto p-4 pt-6 pb-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className={`${pageHeading} whitespace-nowrap`}>База идей</h1>
+          <h1 className={`${pageHeading} whitespace-nowrap`}>Ideas</h1>
         </div>
         {!readOnly && (
           <button
             onClick={toggleAddPanel}
-            aria-label={addMode === "none" ? "Добавить запись" : "Закрыть форму"}
-            title={addMode === "none" ? "Добавить запись" : "Закрыть форму"}
+            aria-label={addMode === "none" ? "Add idea" : "Close form"}
+            title={addMode === "none" ? "Add idea" : "Close form"}
             className="inline-flex size-12 items-center justify-center rounded-full bg-[var(--app-ink)] text-[var(--app-canvas)] shadow-[0_3px_0_rgba(28,26,23,0.18)] active:scale-90 transition"
           >
             {addMode === "none" ? <Plus size={18} /> : <X size={18} />}
@@ -180,7 +180,7 @@ export default function StorageScreen({ readOnly = false }: { readOnly?: boolean
         <IdeaTypeFilter fullWidth />
         <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1.35fr)] gap-2">
           <MultiSelectFilter
-            label="Теги"
+            label="Tags"
             options={allTags}
             selected={tagFilters}
             onChange={setTagFilters}
@@ -189,7 +189,7 @@ export default function StorageScreen({ readOnly = false }: { readOnly?: boolean
             fullWidth
           />
           <MultiSelectFilter
-            label="Метро"
+            label="Metro"
             options={allMetro}
             selected={metroFilters}
             onChange={setMetroFilters}
@@ -238,7 +238,7 @@ export default function StorageScreen({ readOnly = false }: { readOnly?: boolean
               className={`${pillToggle} inline-flex items-center gap-1 border-0 ${addMode === "manual" ? pillToggleActive : pillToggleInactive}`}
             >
               <PencilLine size={14} />
-              Вручную
+              Manual
             </button>
             <button
               type="button"
@@ -246,7 +246,7 @@ export default function StorageScreen({ readOnly = false }: { readOnly?: boolean
               className={`${pillToggle} inline-flex items-center gap-1 border-0 ${addMode === "import" ? pillToggleActive : pillToggleInactive}`}
             >
               <FileUp size={14} />
-              Импорт файла
+              Import file
             </button>
           </div>
 
@@ -255,7 +255,7 @@ export default function StorageScreen({ readOnly = false }: { readOnly?: boolean
           {addMode === "import" && (
             <div className="flex flex-col gap-4">
               <div className="flex flex-col gap-2 rounded-[22px] border border-[var(--app-outline)]/10 bg-[var(--app-yellow)] p-4 shadow-[0_2px_0_rgba(28,26,23,0.08)]">
-                <span className={mutedText}>Файлы (.md / .txt) — можно выбрать сразу несколько</span>
+                <span className={mutedText}>Files (.md / .txt) — pick several at once if you like</span>
                 <input
                   ref={fileInputRef}
                   type="file"
@@ -270,13 +270,13 @@ export default function StorageScreen({ readOnly = false }: { readOnly?: boolean
                   className={`${buttonSecondary} w-full bg-[var(--app-overlay)]`}
                 >
                   <Upload size={18} />
-                  Выбрать файлы
+                  Choose files
                 </button>
               </div>
 
               {importItems.length > 0 && (
                 <p className={mutedText}>
-                  Разобрано {importItems.length} {importItems.length === 1 ? "файл" : "файла(ов)"} — проверь и сохрани каждую:
+                  Parsed {importItems.length} {importItems.length === 1 ? "file" : "files"} — review and save each:
                 </p>
               )}
 
@@ -284,7 +284,7 @@ export default function StorageScreen({ readOnly = false }: { readOnly?: boolean
                 <div key={item.id} className="panel-appear flex flex-col gap-2">
                   <div className="flex items-center justify-between">
                     <span className={mutedText}>{item.source}</span>
-                    <button onClick={() => dismissImportItem(item.id)} className={buttonGhost}>Пропустить</button>
+                    <button onClick={() => dismissImportItem(item.id)} className={buttonGhost}>Skip</button>
                   </div>
                   <DateIdeaForm
                     initial={item.parsed}
@@ -298,7 +298,7 @@ export default function StorageScreen({ readOnly = false }: { readOnly?: boolean
         </div>
       )}
 
-      {!ideas && <p className={mutedText}>Загрузка…</p>}
+      {!ideas && <p className={mutedText}>Loading…</p>}
 
       <div className="flex flex-col gap-3">
         {filtered.map((idea) =>
@@ -313,21 +313,21 @@ export default function StorageScreen({ readOnly = false }: { readOnly?: boolean
             <div key={idea.id} className={`${card} ${metroPastelTone(idea.locations[0]?.metro) ?? pastelTone(idea.id)} flex flex-col gap-2.5 transition`}>
               <div className="flex justify-between items-start gap-2">
                 <h2 className="flex items-start gap-1.5 text-[19px] font-semibold leading-[1.05]">
-                  {idea.type === "FOOD" && <Utensils className="mt-0.5 shrink-0" size={18} aria-label="Еда" />}
+                  {idea.type === "FOOD" && <Utensils className="mt-0.5 shrink-0" size={18} aria-label="Food" />}
                   <span>{idea.title}</span>
                 </h2>
                 {!readOnly && (
                   <div className="flex gap-1 shrink-0">
                     <button
                       onClick={() => setEditing(idea)}
-                      aria-label="Править"
+                      aria-label="Edit"
                       className={`${iconButton} bg-[var(--app-overlay)] text-[var(--app-ink)] ring-1 ring-[var(--app-outline)]/10`}
                     >
                       <Pencil size={16} />
                     </button>
                     <button
                       onClick={() => remove(idea.id)}
-                      aria-label="Удалить"
+                      aria-label="Delete"
                       className={`${iconButton} bg-[var(--app-overlay)] text-red-500 ring-1 ring-[var(--app-outline)]/10`}
                     >
                       <Trash2 size={16} />
@@ -340,7 +340,7 @@ export default function StorageScreen({ readOnly = false }: { readOnly?: boolean
                   {idea.locations.map((loc) => (
                     <div key={loc.id} className="flex items-center gap-1.5">
                       <p className={mutedText}>
-                        {[loc.address, loc.metro && `м. ${loc.metro}`].filter(Boolean).join(" · ") || "Без адреса"}
+                        {[loc.address, loc.metro && `M ${loc.metro}`].filter(Boolean).join(" · ") || "No address"}
                       </p>
                       {loc.url && (
                         <a href={loc.url} target="_blank" rel="noreferrer" className="text-[var(--app-ink)]">
@@ -366,7 +366,7 @@ export default function StorageScreen({ readOnly = false }: { readOnly?: boolean
           )
         )}
         {ideas && filtered.length === 0 && (
-          <p className={`${card} ${mutedText}`}>Пока пусто — добавь первую запись.</p>
+          <p className={`${card} ${mutedText}`}>Nothing here yet — add your first idea.</p>
         )}
       </div>
     </div>

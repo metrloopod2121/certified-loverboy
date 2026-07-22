@@ -24,7 +24,7 @@ export default function MapScreen() {
   useEffect(() => {
     apiFetch("/api/date-ideas")
       .then(setIdeas)
-      .catch((err) => setError(err instanceof Error ? err.message : "Не удалось загрузить"));
+      .catch((err) => setError(err instanceof Error ? err.message : "Couldn't load"));
   }, []);
 
   const allMarkers = useMemo<MapMarker[]>(() => {
@@ -91,8 +91,8 @@ export default function MapScreen() {
         <div className="relative z-20 flex flex-col gap-2">
           <IdeaTypeFilter fullWidth />
           <div className="grid grid-cols-2 gap-2">
-            <MultiSelectFilter label="Теги" options={allTags} selected={tagFilters} onChange={setTagFilters} open={openFilter === "tags"} onOpenChange={(v) => setOpenFilter(v ? "tags" : null)} fullWidth />
-            <MultiSelectFilter label="Метро" options={allMetro} selected={metroFilters} onChange={setMetroFilters} open={openFilter === "metro"} onOpenChange={(v) => setOpenFilter(v ? "metro" : null)} fullWidth />
+            <MultiSelectFilter label="Tags" options={allTags} selected={tagFilters} onChange={setTagFilters} open={openFilter === "tags"} onOpenChange={(v) => setOpenFilter(v ? "tags" : null)} fullWidth />
+            <MultiSelectFilter label="Metro" options={allMetro} selected={metroFilters} onChange={setMetroFilters} open={openFilter === "metro"} onOpenChange={(v) => setOpenFilter(v ? "metro" : null)} fullWidth />
           </div>
         </div>
 
@@ -100,7 +100,7 @@ export default function MapScreen() {
 
         {ideas && allMarkers.length === 0 && (
           <p className={`rounded-[18px] border border-[var(--app-outline)]/10 bg-[var(--app-lilac)]/90 p-3 shadow-[0_4px_16px_rgba(28,26,23,0.12)] backdrop-blur-xl ${mutedText}`}>
-            Ни у одной записи нет координат — открой её в «Хранилище» → «Правка» и впиши координаты, тогда она появится тут.
+            None of the ideas have coordinates yet — open one on the Ideas screen, tap Edit, and add coordinates so it shows up here.
           </p>
         )}
       </div>

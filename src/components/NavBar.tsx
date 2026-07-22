@@ -6,17 +6,17 @@ import { FolderHeart, Map, Heart, PartyPopper, type LucideIcon } from "lucide-re
 import { useAuth } from "@/hooks/useAuth";
 
 const OWNER_LINKS: { href: string; label: string; icon: LucideIcon }[] = [
-  { href: "/", label: "Идеи", icon: FolderHeart },
-  { href: "/map", label: "Карта", icon: Map },
-  { href: "/swipe", label: "Свайп", icon: Heart },
-  { href: "/matches", label: "Мэтчи", icon: PartyPopper },
+  { href: "/", label: "Ideas", icon: FolderHeart },
+  { href: "/map", label: "Map", icon: Map },
+  { href: "/swipe", label: "Swipe", icon: Heart },
+  { href: "/matches", label: "Matches", icon: PartyPopper },
 ];
 
 const PARTNER_LINKS: { href: string; label: string; icon: LucideIcon }[] = [
-  { href: "/", label: "Идеи", icon: FolderHeart },
-  { href: "/map", label: "Карта", icon: Map },
-  { href: "/swipe", label: "Свайп", icon: Heart },
-  { href: "/matches", label: "Мэтчи", icon: PartyPopper },
+  { href: "/", label: "Ideas", icon: FolderHeart },
+  { href: "/map", label: "Map", icon: Map },
+  { href: "/swipe", label: "Swipe", icon: Heart },
+  { href: "/matches", label: "Matches", icon: PartyPopper },
 ];
 
 export default function NavBar() {

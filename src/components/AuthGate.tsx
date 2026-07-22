@@ -22,7 +22,7 @@ export default function AuthGate({
     return (
       <div className="flex flex-col items-center justify-center gap-2 p-10 text-center">
         <Lock className="text-[var(--tg-hint)]" size={36} strokeWidth={1.5} />
-        <p className={mutedText}>Открой это приложение через Telegram-бота.</p>
+        <p className={mutedText}>Open this app through the Telegram bot.</p>
       </div>
     );
   }

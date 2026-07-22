@@ -55,8 +55,8 @@ async function checkForMatch(dateIdeaId: string) {
   });
 
   await Promise.all([
-    sendTelegramMessage(ownerId, `🎉 Мэтч: ${idea.title}`),
-    sendTelegramMessage(partnerId, `🎉 Мэтч: ${idea.title}`),
+    sendTelegramMessage(ownerId, `🎉 Match: ${idea.title}`),
+    sendTelegramMessage(partnerId, `🎉 Match: ${idea.title}`),
   ]);
 
   await prisma.match.update({ where: { dateIdeaId }, data: { notified: true } });

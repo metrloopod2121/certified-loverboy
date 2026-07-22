@@ -29,12 +29,12 @@ export default function LeafletMap({ markers }: { markers: MapMarker[] }) {
           <Popup>
             <strong>{marker.title}</strong>
             {marker.address && <div>{marker.address}</div>}
-            {marker.metro && <div>м. {marker.metro}</div>}
+            {marker.metro && <div>M {marker.metro}</div>}
             {marker.priceNote && <div>{marker.priceNote}</div>}
             {marker.url && (
               <div>
                 <a href={marker.url} target="_blank" rel="noreferrer">
-                  Ссылка
+                  Link
                 </a>
               </div>
             )}

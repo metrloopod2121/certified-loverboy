@@ -18,7 +18,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "certified loverboy",
-  description: "Идеи свиданий на двоих",
+  description: "Date ideas for two",
 };
 
 export const viewport: Viewport = {

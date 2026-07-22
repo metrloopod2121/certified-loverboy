@@ -36,7 +36,7 @@ export default function MatchesScreen() {
     }
   }
 
-  if (!matches) return <div className="p-8 text-center text-sm opacity-60">Загрузка…</div>;
+  if (!matches) return <div className="p-8 text-center text-sm opacity-60">Loading…</div>;
 
   const filteredMatches = typeFilter === "ALL" ? matches : matches.filter((match) => match.dateIdea.type === typeFilter);
 
@@ -47,7 +47,7 @@ export default function MatchesScreen() {
         <IdeaTypeFilter fullWidth />
         <div className="flex flex-1 flex-col items-center justify-center gap-2 text-center">
           <MessageCircleHeart className="text-[var(--tg-hint)]" size={36} strokeWidth={1.5} />
-          <p className={mutedText}>Мэтчей пока нет.</p>
+          <p className={mutedText}>No matches yet.</p>
         </div>
       </div>
     );
@@ -70,8 +70,8 @@ export default function MatchesScreen() {
               type="button"
               onClick={() => toggleFavorite(m)}
               disabled={updatingId === m.id}
-              aria-label={m.isFavorite ? "Убрать из избранного" : "Добавить в избранное"}
-              title={m.isFavorite ? "Убрать из избранного" : "Добавить в избранное"}
+              aria-label={m.isFavorite ? "Remove from favorites" : "Add to favorites"}
+              title={m.isFavorite ? "Remove from favorites" : "Add to favorites"}
               className="inline-flex size-9 shrink-0 items-center justify-center rounded-full bg-[var(--app-overlay)] text-[var(--app-ink)] ring-1 ring-[var(--app-outline)]/10 transition active:scale-90 disabled:opacity-50"
             >
               <Heart size={18} fill={m.isFavorite ? "currentColor" : "none"} className={m.isFavorite ? "text-[var(--app-coral)]" : ""} />
@@ -79,7 +79,7 @@ export default function MatchesScreen() {
           </div>
           {m.dateIdea.locations.map((loc) => (
             <p key={loc.id} className={mutedText}>
-              {[loc.address, loc.metro && `м. ${loc.metro}`].filter(Boolean).join(" · ")}
+              {[loc.address, loc.metro && `M ${loc.metro}`].filter(Boolean).join(" · ")}
             </p>
           ))}
           {m.dateIdea.tags.length > 0 && (

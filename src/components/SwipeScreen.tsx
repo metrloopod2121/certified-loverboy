@@ -53,7 +53,7 @@ export default function SwipeScreen() {
     }
   }
 
-  if (!stack || deckFilter !== typeFilter) return <div className={`p-8 text-center ${mutedText}`}>Загрузка…</div>;
+  if (!stack || deckFilter !== typeFilter) return <div className={`p-8 text-center ${mutedText}`}>Loading…</div>;
 
   if (stack.length === 0) {
     return (
@@ -62,7 +62,7 @@ export default function SwipeScreen() {
         <IdeaTypeFilter fullWidth />
         <div className="flex flex-1 flex-col items-center justify-center gap-2 text-center">
           <Inbox className="text-[var(--tg-hint)]" size={36} strokeWidth={1.5} />
-          <p className={mutedText}>Пока больше нечего смотреть.</p>
+          <p className={mutedText}>Nothing left to swipe.</p>
         </div>
       </div>
     );
@@ -71,7 +71,7 @@ export default function SwipeScreen() {
   const idea = stack[0];
   const firstLocation = idea.locations[0];
   const location = firstLocation
-    ? [firstLocation.metro && `м. ${firstLocation.metro}`, compactAddress(firstLocation.address)]
+    ? [firstLocation.metro && `M ${firstLocation.metro}`, compactAddress(firstLocation.address)]
         .filter(Boolean)
         .join(" · ")
     : "";
@@ -101,7 +101,7 @@ export default function SwipeScreen() {
           {location && (
             <p className={mutedText}>
               {location}
-              {extraLocations > 0 && ` · ещё ${extraLocations} мест`}
+              {extraLocations > 0 && ` · +${extraLocations} more`}
             </p>
           )}
         </div>
@@ -133,7 +133,7 @@ export default function SwipeScreen() {
         <button
           onClick={() => swipe("PASS")}
           disabled={swiping}
-          aria-label="Не то"
+          aria-label="Pass"
           className="flex size-16 items-center justify-center rounded-full border border-[var(--app-outline)]/15 bg-[var(--app-surface)] text-[var(--app-ink)] shadow-[0_2px_0_rgba(28,26,23,0.1)] active:scale-90 transition disabled:opacity-50"
         >
           <X size={28} />
@@ -141,14 +141,14 @@ export default function SwipeScreen() {
         <button
           onClick={() => swipe("LIKE")}
           disabled={swiping}
-          aria-label="Нравится"
+          aria-label="Like"
           className="flex size-16 items-center justify-center rounded-full bg-[var(--app-ink)] text-[var(--app-yellow)] shadow-[0_3px_0_rgba(28,26,23,0.2)] active:scale-90 transition disabled:opacity-50"
         >
           <Heart size={28} fill="currentColor" />
         </button>
       </div>
 
-      <p className={mutedText}>В колоде ещё {stack.length}</p>
+      <p className={mutedText}>{stack.length} left in the deck</p>
     </div>
   );
 }

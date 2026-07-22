@@ -74,3 +74,13 @@ model Match {
   isFavorite Boolean  @default(false)
   dateIdea   DateIdea @relation(fields: [dateIdeaId], references: [id], onDelete: Cascade)
 }
+
+/// Holds an idea parsed from a shared link while it waits for owner approval
+/// in the Telegram chat (not the Mini App).
+model PendingImport {
+  id        String   @id @default(cuid())
+  chatId    String
+  sourceUrl String
+  payload   String
+  createdAt DateTime @default(now())
+}

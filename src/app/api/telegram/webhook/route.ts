@@ -9,14 +9,44 @@ import {
   editTelegramMessageText,
   answerCallbackQuery,
 } from "@/lib/telegram";
-import { findYandexMapsLink, parseYandexMapsLink, formatIdeaPreview, type ParsedFromLink } from "@/lib/socialImport";
+import {
+  findYandexMapsLink,
+  parseYandexMapsLink,
+  parsePostText,
+  formatIdeaPreview,
+  type ParsedFromLink,
+} from "@/lib/socialImport";
+
+type TelegramForwardChat = { type: string; username?: string };
 
 type TelegramMessage = {
   message_id: number;
   chat: { id: number };
   from?: { id: number };
   text?: string;
+  caption?: string;
+  // Bot API 7.0+ shape. Older field (forward_from_chat) kept alongside for servers still on
+  // an earlier Bot API version — both are checked.
+  forward_origin?: { type: string; chat?: TelegramForwardChat; message_id?: number };
+  forward_from_chat?: TelegramForwardChat;
 };
+
+/** Minimum length before a plain (non-forwarded) owner text message is treated as a pasted
+ *  post — guards against accidental LLM calls on short one-off chat messages. */
+const PASTED_POST_MIN_LENGTH = 40;
+
+/** Only channel posts count as "posts" for this flow — forwarded messages from a group or a
+ *  person are left alone. */
+function forwardedChannelSourceUrl(message: TelegramMessage): string {
+  const chat = message.forward_origin?.chat ?? message.forward_from_chat;
+  if (chat?.type !== "channel") return "";
+  const messageId = message.forward_origin?.message_id ?? message.message_id;
+  return chat.username ? `https://t.me/${chat.username}/${messageId}` : "";
+}
+
+function isChannelForward(message: TelegramMessage): boolean {
+  return (message.forward_origin?.chat ?? message.forward_from_chat)?.type === "channel";
+}
 
 type TelegramCallbackQuery = {
   id: string;
@@ -48,6 +78,63 @@ async function handleOwnerLink(message: TelegramMessage) {
   });
 
   await sendTelegramMessageWithButtons(chatId, formatIdeaPreview(parsed), [
+    { text: "✅ Да", callback_data: `pi:approve:${pending.id}` },
+    { text: "❌ Нет", callback_data: `pi:reject:${pending.id}` },
+  ]);
+}
+
+/** Owner forwards a channel post straight into the chat — post text already has address/
+ *  price/description, so it's parsed directly, no page fetch involved. */
+async function handleChannelForwardPost(message: TelegramMessage) {
+  const chatId = String(message.chat.id);
+  const text = (message.text ?? message.caption ?? "").trim();
+  if (!text) {
+    await sendTelegramMessage(chatId, "В пересланном посте нет текста — не смог разобрать. Добавь вручную в приложении.");
+    return;
+  }
+
+  await sendTelegramMessage(chatId, "Смотрю пересланный пост, секунду…");
+
+  const parsed = await parsePostText(text);
+  if (!parsed) {
+    console.log(`[import] channel forward parse failed chatId=${chatId}`);
+    await sendTelegramMessage(chatId, "Не смог разобрать пост. Попробуй прислать текст сообщением или добавь вручную в приложении.");
+    return;
+  }
+
+  const pending = await prisma.pendingImport.create({
+    data: { chatId, sourceUrl: forwardedChannelSourceUrl(message), payload: JSON.stringify(parsed) },
+  });
+
+  await sendTelegramMessageWithButtons(chatId, formatIdeaPreview(parsed, "📩 Пост из канала:"), [
+    { text: "✅ Да", callback_data: `pi:approve:${pending.id}` },
+    { text: "❌ Нет", callback_data: `pi:reject:${pending.id}` },
+  ]);
+}
+
+/** Fallback for when forwarding doesn't work (protected content, etc.) — owner pastes the post
+ *  text as a plain message instead. Logged every time, since it only happens when the forward
+ *  flow above wasn't usable. */
+async function handlePastedPostText(message: TelegramMessage) {
+  const chatId = String(message.chat.id);
+  const text = (message.text ?? "").trim();
+
+  console.log(`[import] owner pasted post text instead of forwarding chatId=${chatId} length=${text.length}`);
+
+  await sendTelegramMessage(chatId, "Смотрю текст, секунду…");
+
+  const parsed = await parsePostText(text);
+  if (!parsed) {
+    console.log(`[import] pasted text parse failed chatId=${chatId}`);
+    await sendTelegramMessage(chatId, "Не смог разобрать текст. Добавь вручную в приложении.");
+    return;
+  }
+
+  const pending = await prisma.pendingImport.create({
+    data: { chatId, sourceUrl: "", payload: JSON.stringify(parsed) },
+  });
+
+  await sendTelegramMessageWithButtons(chatId, formatIdeaPreview(parsed, "📋 Вставленный текст:"), [
     { text: "✅ Да", callback_data: `pi:approve:${pending.id}` },
     { text: "❌ Нет", callback_data: `pi:reject:${pending.id}` },
   ]);
@@ -134,7 +221,17 @@ export async function POST(request: Request) {
   }
 
   if (String(message.from?.id) === ownerId) {
-    await handleOwnerLink(message);
+    if (isChannelForward(message)) {
+      await handleChannelForwardPost(message);
+      return NextResponse.json({ ok: true });
+    }
+
+    const text = message.text ?? "";
+    if (findYandexMapsLink(text)) {
+      await handleOwnerLink(message);
+    } else if (text.trim().length >= PASTED_POST_MIN_LENGTH) {
+      await handlePastedPostText(message);
+    }
     return NextResponse.json({ ok: true });
   }
 

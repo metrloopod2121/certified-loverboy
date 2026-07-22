@@ -72,8 +72,19 @@ export async function parseYandexMapsLink(url: string): Promise<ParsedFromLink |
   return { ...idea, lat: coords?.lat ?? null, lng: coords?.lng ?? null };
 }
 
-export function formatIdeaPreview(idea: ParsedFromLink): string {
-  const lines = [`📍 Новое место с Яндекс.Карт:`, "", idea.title];
+/** Structures a Telegram post's own text (channel forward caption, or pasted post text) directly
+ *  via the LLM — such posts already contain address/price/description, so no page fetch or
+ *  search-fallback enrichment is needed. Coordinates are pulled from any maps link in the text. */
+export async function parsePostText(text: string): Promise<ParsedFromLink | null> {
+  const idea = await extractIdeaFromText(text);
+  if (!idea) return null;
+
+  const coords = parseMapsLink(text);
+  return { ...idea, lat: coords?.lat ?? null, lng: coords?.lng ?? null };
+}
+
+export function formatIdeaPreview(idea: ParsedFromLink, header = "📍 Новое место с Яндекс.Карт:"): string {
+  const lines = [header, "", idea.title];
   if (idea.address) lines.push(`Адрес: ${idea.address}`);
   if (idea.metro) lines.push(`Метро: ${idea.metro}`);
   if (idea.priceNote) lines.push(`Цена: ${idea.priceNote}`);

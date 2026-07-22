@@ -25,7 +25,7 @@ import {
   pillToggleActive,
   pillToggleInactive,
 } from "@/lib/ui";
-import { metroPastelTone, metroStations } from "@/lib/metro";
+import { metroPastelTone, metroStations, metroLineTone } from "@/lib/metro";
 
 type Sort = "newest" | "title" | "nearby";
 
@@ -267,6 +267,7 @@ export default function StorageScreen({ readOnly = false }: { readOnly?: boolean
             onChange={setMetroFilters}
             open={openFilter === "metro"}
             onOpenChange={(v) => setOpenFilter(v ? "metro" : null)}
+            dotColor={metroLineTone}
             fullWidth
           />
           <div className="relative isolate min-w-0" ref={sortRef}>

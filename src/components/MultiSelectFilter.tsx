@@ -15,6 +15,7 @@ export default function MultiSelectFilter({
   open,
   onOpenChange,
   fullWidth = false,
+  dotColor,
 }: {
   label: string;
   options: string[];
@@ -23,6 +24,7 @@ export default function MultiSelectFilter({
   open: boolean;
   onOpenChange: (open: boolean) => void;
   fullWidth?: boolean;
+  dotColor?: (option: string) => string | null;
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const [dropdownStyle, setDropdownStyle] = useState<CSSProperties>({ width: dropdownWidth });
@@ -110,6 +112,7 @@ export default function MultiSelectFilter({
               <span className="flex size-4 shrink-0 items-center justify-center rounded-[5px] border-2 border-[var(--app-pink)] bg-[var(--app-surface)] text-[#1c1a17] transition peer-checked:border-[var(--app-pink)] peer-checked:bg-[var(--app-pink)]">
                 <Check size={12} strokeWidth={3} className={`${selected.includes(option) ? "opacity-100" : "opacity-0"} transition`} />
               </span>
+              {dotColor?.(option) && <span className={`size-2 shrink-0 rounded-full ${dotColor(option)}`} />}
               <span className="min-w-0 break-words">{option}</span>
             </label>
           ))}

@@ -6,7 +6,7 @@ import { apiFetch } from "@/lib/apiClient";
 import type { DateIdea } from "@/lib/types";
 import { mutedText } from "@/lib/ui";
 import MultiSelectFilter from "@/components/MultiSelectFilter";
-import { metroStations } from "@/lib/metro";
+import { metroStations, metroLineTone } from "@/lib/metro";
 import type { MapMarker } from "@/components/LeafletMap";
 
 const LeafletMap = dynamic(() => import("@/components/LeafletMap"), { ssr: false });
@@ -81,7 +81,7 @@ export default function MapScreen() {
         <div className="relative z-20 flex flex-col gap-2">
           <div className="grid grid-cols-2 gap-2">
             <MultiSelectFilter label="Tags" options={allTags} selected={tagFilters} onChange={setTagFilters} open={openFilter === "tags"} onOpenChange={(v) => setOpenFilter(v ? "tags" : null)} fullWidth />
-            <MultiSelectFilter label="Metro" options={allMetro} selected={metroFilters} onChange={setMetroFilters} open={openFilter === "metro"} onOpenChange={(v) => setOpenFilter(v ? "metro" : null)} fullWidth />
+            <MultiSelectFilter label="Metro" options={allMetro} selected={metroFilters} onChange={setMetroFilters} open={openFilter === "metro"} onOpenChange={(v) => setOpenFilter(v ? "metro" : null)} dotColor={metroLineTone} fullWidth />
           </div>
         </div>
 

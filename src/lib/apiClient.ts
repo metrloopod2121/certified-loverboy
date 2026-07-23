@@ -21,24 +21,18 @@ export async function apiFetch(path: string, options: RequestInit = {}) {
   return res.json();
 }
 
-/** Fetches a file with the Telegram auth header and saves it via the browser's
- *  normal download flow (a plain `<a href>` navigation can't carry that header). */
-export async function downloadFile(path: string, fallbackFilename: string) {
-  const res = await fetch(path, { headers: { "x-telegram-init-data": getInitData() } });
-  if (!res.ok) {
-    const body = await res.json().catch(() => ({}));
-    throw new Error(body.error ?? `Request failed: ${res.status}`);
-  }
-  const disposition = res.headers.get("Content-Disposition") ?? "";
-  const filename = disposition.match(/filename="([^"]+)"/)?.[1] ?? fallbackFilename;
+/** Downloads a file that needs auth, via a short-lived signed token instead of the usual
+ *  header — a blob: URL from fetch() doesn't reliably save on WebKit (Safari/Telegram iOS
+ *  and macOS both silently navigate to the raw bytes instead of prompting to save), so this
+ *  hands Telegram's native downloadFile (or, failing that, a plain navigation) a real URL. */
+export async function downloadWithToken(mintPath: string, exportPath: string, filename: string) {
+  const { token } = await apiFetch(mintPath, { method: "POST" });
+  const url = `${window.location.origin}${exportPath}?token=${encodeURIComponent(token)}`;
 
-  const blob = await res.blob();
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = filename;
-  document.body.appendChild(link);
-  link.click();
-  link.remove();
-  URL.revokeObjectURL(url);
+  const webApp = window.Telegram?.WebApp;
+  if (webApp?.downloadFile) {
+    webApp.downloadFile({ url, file_name: filename });
+  } else {
+    window.location.href = url;
+  }
 }

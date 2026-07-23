@@ -3,10 +3,16 @@ import { prisma } from "@/lib/db";
 import { requireAuth, isAuthUser } from "@/lib/apiAuth";
 import { serializeDateIdeaMarkdown, exportFilenames } from "@/lib/dateIdeaMarkdown";
 import { createZip } from "@/lib/zip";
+import { verifyExportToken } from "@/lib/exportToken";
 
 export async function GET(request: Request) {
-  const auth = requireAuth(request, ["OWNER"]);
-  if (!isAuthUser(auth)) return auth;
+  // Plain navigation and Telegram.WebApp.downloadFile can't send the usual
+  // x-telegram-init-data header, so a short-lived signed token is accepted too.
+  const token = new URL(request.url).searchParams.get("token");
+  if (!verifyExportToken(token)) {
+    const auth = requireAuth(request, ["OWNER"]);
+    if (!isAuthUser(auth)) return auth;
+  }
 
   const ideas = await prisma.dateIdea.findMany({
     include: { tags: { include: { tag: true } }, locations: true },

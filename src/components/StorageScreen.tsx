@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ChevronDown, Pencil, Trash2, Plus, X, Link as LinkIcon, Upload, Download, PencilLine, FileUp, Navigation, MapPin } from "lucide-react";
-import { apiFetch, downloadFile } from "@/lib/apiClient";
+import { apiFetch, downloadWithToken } from "@/lib/apiClient";
 import { dateIdeaToInput, type DateIdea, type DateIdeaInput } from "@/lib/types";
 import DateIdeaForm from "@/components/DateIdeaForm";
 import MultiSelectFilter from "@/components/MultiSelectFilter";
@@ -188,7 +188,8 @@ export default function StorageScreen({ readOnly = false }: { readOnly?: boolean
   async function exportAll() {
     setExporting(true);
     try {
-      await downloadFile("/api/export", "certified-loverboy-export.zip");
+      const filename = `certified-loverboy-export-${new Date().toISOString().slice(0, 10)}.zip`;
+      await downloadWithToken("/api/export/token", "/api/export", filename);
     } finally {
       setExporting(false);
     }

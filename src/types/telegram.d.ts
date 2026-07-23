@@ -32,6 +32,7 @@ declare global {
         ready: () => void;
         expand: () => void;
         requestFullscreen?: () => void;
+        downloadFile?: (params: { url: string; file_name: string }, callback?: (accepted: boolean) => void) => void;
         setHeaderColor?: (color: string) => void;
         setBackgroundColor?: (color: string) => void;
         onEvent: (event: WebAppEvent, callback: () => void) => void;

@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ChevronDown, Pencil, Trash2, Plus, X, Link as LinkIcon, Upload, PencilLine, FileUp, Navigation, MapPin } from "lucide-react";
-import { apiFetch } from "@/lib/apiClient";
+import { ChevronDown, Pencil, Trash2, Plus, X, Link as LinkIcon, Upload, Download, PencilLine, FileUp, Navigation, MapPin } from "lucide-react";
+import { apiFetch, downloadFile } from "@/lib/apiClient";
 import { dateIdeaToInput, type DateIdea, type DateIdeaInput } from "@/lib/types";
 import DateIdeaForm from "@/components/DateIdeaForm";
 import MultiSelectFilter from "@/components/MultiSelectFilter";
@@ -74,6 +74,7 @@ export default function StorageScreen({ readOnly = false }: { readOnly?: boolean
   const [locatingMe, setLocatingMe] = useState(false);
   const [locationError, setLocationError] = useState<string | null>(null);
   const [manualLocationInput, setManualLocationInput] = useState("");
+  const [exporting, setExporting] = useState(false);
 
   async function reload() {
     const data = await apiFetch("/api/date-ideas");
@@ -184,6 +185,15 @@ export default function StorageScreen({ readOnly = false }: { readOnly?: boolean
     setManualLocationInput("");
   }
 
+  async function exportAll() {
+    setExporting(true);
+    try {
+      await downloadFile("/api/export", "certified-loverboy-export.zip");
+    } finally {
+      setExporting(false);
+    }
+  }
+
   function toggleAddPanel() {
     setAddMode((m) => (m === "none" ? "manual" : "none"));
     setImportItems([]);
@@ -238,14 +248,25 @@ export default function StorageScreen({ readOnly = false }: { readOnly?: boolean
           <h1 className={`${pageHeading} whitespace-nowrap`}>Ideas</h1>
         </div>
         {!readOnly && (
-          <button
-            onClick={toggleAddPanel}
-            aria-label={addMode === "none" ? "Add idea" : "Close form"}
-            title={addMode === "none" ? "Add idea" : "Close form"}
-            className="inline-flex size-12 items-center justify-center rounded-full bg-[var(--app-ink)] text-[var(--app-canvas)] shadow-[0_3px_0_rgba(28,26,23,0.18)] active:scale-90 transition"
-          >
-            {addMode === "none" ? <Plus size={18} /> : <X size={18} />}
-          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={exportAll}
+              disabled={exporting}
+              aria-label="Export all as files"
+              title="Export all as files"
+              className={`${iconButton} size-12 bg-[var(--app-overlay)] text-[var(--app-ink)] ring-1 ring-[var(--app-outline)]/10 disabled:opacity-50`}
+            >
+              <Download size={18} />
+            </button>
+            <button
+              onClick={toggleAddPanel}
+              aria-label={addMode === "none" ? "Add idea" : "Close form"}
+              title={addMode === "none" ? "Add idea" : "Close form"}
+              className="inline-flex size-12 items-center justify-center rounded-full bg-[var(--app-ink)] text-[var(--app-canvas)] shadow-[0_3px_0_rgba(28,26,23,0.18)] active:scale-90 transition"
+            >
+              {addMode === "none" ? <Plus size={18} /> : <X size={18} />}
+            </button>
+          </div>
         )}
       </div>
 

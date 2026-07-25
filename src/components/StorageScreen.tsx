@@ -25,6 +25,7 @@ import {
   pillToggle,
   pillToggleActive,
   pillToggleInactive,
+  hashtag,
 } from "@/lib/ui";
 import { metroPastelTone, metroStations, metroLineTone, sortStationsByLine } from "@/lib/metro";
 
@@ -280,6 +281,7 @@ export default function StorageScreen() {
             onChange={setTagFilters}
             open={openFilter === "tags"}
             onOpenChange={(v) => setOpenFilter(v ? "tags" : null)}
+            variant="pills"
             fullWidth
           />
           <MultiSelectFilter
@@ -512,7 +514,7 @@ export default function StorageScreen() {
               {idea.tags.length > 0 && (
                 <div className="flex flex-wrap gap-1.5">
                   {idea.tags.map((t) => (
-                    <span key={t.tag.id} className={pill}>{t.tag.name}</span>
+                    <span key={t.tag.id} className={pill}>{hashtag(t.tag.name)}</span>
                   ))}
                 </div>
               )}

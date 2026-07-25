@@ -6,7 +6,7 @@ import { ArrowLeft, MapPin, Link as LinkIcon } from "lucide-react";
 import { apiFetch } from "@/lib/apiClient";
 import type { DateIdea } from "@/lib/types";
 import { priceTier } from "@/lib/priceTier";
-import { pill, mutedText } from "@/lib/ui";
+import { pill, mutedText, hashtag } from "@/lib/ui";
 
 type LoadState = "loading" | "error";
 
@@ -57,7 +57,7 @@ export default function PlaceDetailScreen({ id }: { id: string }) {
               <div className="flex flex-wrap gap-1.5">
                 {idea.tags.map((t) => (
                   <span key={t.tag.id} className={pill}>
-                    {t.tag.name}
+                    {hashtag(t.tag.name)}
                   </span>
                 ))}
               </div>

@@ -2,9 +2,9 @@
 
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from "react";
 import { Check, ChevronDown } from "lucide-react";
-import { select } from "@/lib/ui";
+import { select, hashtag } from "@/lib/ui";
 
-const dropdownWidth = 224;
+const dropdownWidths = { list: 224, pills: 288 } as const;
 const viewportPadding = 16;
 
 export default function MultiSelectFilter({
@@ -16,6 +16,7 @@ export default function MultiSelectFilter({
   onOpenChange,
   fullWidth = false,
   dotColor,
+  variant = "list",
 }: {
   label: string;
   options: string[];
@@ -25,8 +26,12 @@ export default function MultiSelectFilter({
   onOpenChange: (open: boolean) => void;
   fullWidth?: boolean;
   dotColor?: (option: string) => string | null;
+  /** "list" is a checkbox list (for long/dotted options like metro stations). "pills" is a
+   *  flowing row of tap-to-toggle chips sized to their own text, no checkbox — for tags. */
+  variant?: "list" | "pills";
 }) {
   const ref = useRef<HTMLDivElement>(null);
+  const dropdownWidth = dropdownWidths[variant];
   const [dropdownStyle, setDropdownStyle] = useState<CSSProperties>({ width: dropdownWidth });
 
   useEffect(() => {
@@ -66,7 +71,7 @@ export default function MultiSelectFilter({
       window.removeEventListener("resize", updateDropdownPosition);
       window.removeEventListener("scroll", updateDropdownPosition, true);
     };
-  }, [open]);
+  }, [open, dropdownWidth]);
 
   function toggle(option: string) {
     onChange(selected.includes(option) ? selected.filter((o) => o !== option) : [...selected, option]);
@@ -98,24 +103,46 @@ export default function MultiSelectFilter({
               Clear
             </button>
           )}
-          {options.map((option) => (
-            <label
-              key={option}
-              className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-[14px] active:bg-black/5"
-            >
-              <input
-                type="checkbox"
-                checked={selected.includes(option)}
-                onChange={() => toggle(option)}
-                className="peer sr-only"
-              />
-              <span className="flex size-4 shrink-0 items-center justify-center rounded-[5px] border-2 border-[var(--app-pink)] bg-[var(--app-surface)] text-[#1c1a17] transition peer-checked:border-[var(--app-pink)] peer-checked:bg-[var(--app-pink)]">
-                <Check size={12} strokeWidth={3} className={`${selected.includes(option) ? "opacity-100" : "opacity-0"} transition`} />
-              </span>
-              {dotColor?.(option) && <span className={`size-2 shrink-0 rounded-full ${dotColor(option)}`} />}
-              <span className="min-w-0 break-words">{option}</span>
-            </label>
-          ))}
+          {variant === "pills" ? (
+            <div className="flex flex-wrap gap-1.5 p-0.5">
+              {options.map((option) => {
+                const isSelected = selected.includes(option);
+                return (
+                  <button
+                    key={option}
+                    type="button"
+                    onClick={() => toggle(option)}
+                    className={`inline-flex items-center rounded-full px-3 py-1.5 text-[13px] font-bold transition active:scale-95 ${
+                      isSelected
+                        ? "bg-[var(--app-ink)] text-[var(--app-canvas)]"
+                        : "bg-[var(--app-pink)]/25 text-[var(--app-ink)]"
+                    }`}
+                  >
+                    {hashtag(option)}
+                  </button>
+                );
+              })}
+            </div>
+          ) : (
+            options.map((option) => (
+              <label
+                key={option}
+                className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-[14px] active:bg-black/5"
+              >
+                <input
+                  type="checkbox"
+                  checked={selected.includes(option)}
+                  onChange={() => toggle(option)}
+                  className="peer sr-only"
+                />
+                <span className="flex size-4 shrink-0 items-center justify-center rounded-[5px] border-2 border-[var(--app-pink)] bg-[var(--app-surface)] text-[#1c1a17] transition peer-checked:border-[var(--app-pink)] peer-checked:bg-[var(--app-pink)]">
+                  <Check size={12} strokeWidth={3} className={`${selected.includes(option) ? "opacity-100" : "opacity-0"} transition`} />
+                </span>
+                {dotColor?.(option) && <span className={`size-2 shrink-0 rounded-full ${dotColor(option)}`} />}
+                <span className="min-w-0 break-words">{option}</span>
+              </label>
+            ))
+          )}
         </div>
       )}
     </div>

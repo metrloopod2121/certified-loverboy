@@ -24,6 +24,8 @@ export default function NavBar() {
   const pathname = usePathname();
 
   if (auth.status !== "authorized") return null;
+  // The place detail screen is a full-screen overlay (back button only, no tabbar).
+  if (pathname.startsWith("/place/")) return null;
 
   const links = auth.role === "OWNER" ? OWNER_LINKS : PARTNER_LINKS;
 

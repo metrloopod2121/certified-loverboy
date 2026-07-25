@@ -26,7 +26,7 @@ import {
   pillToggleActive,
   pillToggleInactive,
 } from "@/lib/ui";
-import { metroPastelTone, metroStations, metroLineTone } from "@/lib/metro";
+import { metroPastelTone, metroStations, metroLineTone, sortStationsByLine } from "@/lib/metro";
 
 type Sort = "newest" | "title" | "nearby";
 
@@ -115,7 +115,7 @@ export default function StorageScreen() {
   const allMetro = useMemo(() => {
     const set = new Set<string>();
     ideas?.forEach((idea) => idea.locations.forEach((loc) => metroStations(loc.metro).forEach((station) => set.add(station))));
-    return [...set].sort();
+    return sortStationsByLine([...set]);
   }, [ideas]);
 
   const distanceById = useMemo(() => {

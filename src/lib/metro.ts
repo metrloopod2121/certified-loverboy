@@ -109,7 +109,7 @@ for (const [line, stations] of Object.entries(LINE_STATIONS)) {
 function normalizeStation(value: string) {
   return value
     .toLocaleLowerCase("ru-RU")
-    .replace(/^м\.?\s*/u, "")
+    .replace(/^м(?:\.\s*|\s+)/u, "")
     .trim();
 }
 
@@ -117,8 +117,24 @@ export function metroStations(value: string | null | undefined) {
   if (!value) return [];
   return value
     .split(/[;,]/u)
-    .map((station) => station.replace(/^м\.?\s*/u, "").trim())
+    .map((station) => station.replace(/^м(?:\.\s*|\s+)/u, "").trim())
     .filter(Boolean);
+}
+
+// Declaration order above matches official Moscow line numbering — reused here so grouped
+// station lists come out in a sensible line order, not just alphabetically by line key.
+const LINE_ORDER = Object.keys(LINE_STATIONS);
+
+/** Sorts station names so every station on the same line sits together (in official line
+ *  order), alphabetically within a line; stations with no known line trail at the end. */
+export function sortStationsByLine(stations: string[]): string[] {
+  function lineRank(station: string): number {
+    const line = stationLines[normalizeStation(station)];
+    const index = line ? LINE_ORDER.indexOf(line) : -1;
+    return index === -1 ? LINE_ORDER.length : index;
+  }
+
+  return [...stations].sort((a, b) => lineRank(a) - lineRank(b) || a.localeCompare(b, "ru"));
 }
 
 export function withoutMetroTags(tags: unknown[], metroValues: Array<string | null | undefined>) {

@@ -6,7 +6,7 @@ import { apiFetch } from "@/lib/apiClient";
 import type { DateIdea } from "@/lib/types";
 import { mutedText } from "@/lib/ui";
 import MultiSelectFilter from "@/components/MultiSelectFilter";
-import { metroStations, metroLineTone } from "@/lib/metro";
+import { metroStations, metroLineTone, sortStationsByLine } from "@/lib/metro";
 import type { MapMarker } from "@/components/LeafletMap";
 
 const LeafletMap = dynamic(() => import("@/components/LeafletMap"), { ssr: false });
@@ -51,7 +51,7 @@ export default function MapScreen() {
   const allMetro = useMemo(() => {
     const set = new Set<string>();
     allMarkers.forEach((marker) => metroStations(marker.metro).forEach((station) => set.add(station)));
-    return [...set].sort();
+    return sortStationsByLine([...set]);
   }, [allMarkers]);
 
   const filtered = useMemo(() => {

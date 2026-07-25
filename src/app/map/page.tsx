@@ -3,7 +3,7 @@ import MapScreen from "@/components/MapScreen";
 
 export default function MapPage() {
   return (
-    <AuthGate allow={["OWNER", "PARTNER"]}>
+    <AuthGate>
       <MapScreen />
     </AuthGate>
   );

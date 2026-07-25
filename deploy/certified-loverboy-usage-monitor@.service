@@ -1,0 +1,11 @@
+[Unit]
+Description=certified-loverboy usage monitor (%i)
+After=network-online.target certified-loverboy.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=root
+WorkingDirectory=/srv/web/app/certified-loverboy/app
+EnvironmentFile=-/etc/certified-loverboy-usage-monitor.env
+ExecStart=/usr/bin/node /srv/web/app/certified-loverboy/app/scripts/usageReport.mjs --mode=%i

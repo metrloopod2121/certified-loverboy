@@ -2,21 +2,12 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { FolderHeart, Map, Heart, PartyPopper, type LucideIcon } from "lucide-react";
+import { FolderHeart, Map, type LucideIcon } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 
-const OWNER_LINKS: { href: string; label: string; icon: LucideIcon }[] = [
+const LINKS: { href: string; label: string; icon: LucideIcon }[] = [
   { href: "/", label: "Ideas", icon: FolderHeart },
   { href: "/map", label: "Map", icon: Map },
-  { href: "/swipe", label: "Swipe", icon: Heart },
-  { href: "/matches", label: "Matches", icon: PartyPopper },
-];
-
-const PARTNER_LINKS: { href: string; label: string; icon: LucideIcon }[] = [
-  { href: "/", label: "Ideas", icon: FolderHeart },
-  { href: "/map", label: "Map", icon: Map },
-  { href: "/swipe", label: "Swipe", icon: Heart },
-  { href: "/matches", label: "Matches", icon: PartyPopper },
 ];
 
 export default function NavBar() {
@@ -27,14 +18,12 @@ export default function NavBar() {
   // The place detail screen is a full-screen overlay (back button only, no tabbar).
   if (pathname.startsWith("/place/")) return null;
 
-  const links = auth.role === "OWNER" ? OWNER_LINKS : PARTNER_LINKS;
-
   return (
     <nav
       className="fixed inset-x-0 bottom-0 z-20 mx-3 flex justify-center gap-0.5 rounded-full border border-[var(--app-outline)]/10 bg-[#f8d9e8]/70 px-1 py-1 shadow-[0_8px_22px_rgba(28,26,23,0.12)] backdrop-blur-xl"
       style={{ marginBottom: "calc(var(--safe-bottom) + 12px)" }}
     >
-      {links.map((link) => {
+      {LINKS.map((link) => {
         const active = pathname === link.href;
         const Icon = link.icon;
         return (

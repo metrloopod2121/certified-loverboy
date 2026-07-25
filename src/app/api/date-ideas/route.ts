@@ -6,24 +6,20 @@ import { withoutMetroTags } from "@/lib/metro";
 import type { LocationInput } from "@/lib/types";
 
 export async function GET(request: Request) {
-  const auth = requireAuth(request, ["OWNER", "PARTNER"]);
+  const auth = requireAuth(request);
   if (!isAuthUser(auth)) return auth;
 
   const ideas = await prisma.dateIdea.findMany({
+    where: { telegramUserId: auth.telegramId },
     include: { tags: { include: { tag: true } }, locations: true },
     orderBy: { createdAt: "desc" },
   });
 
-  const shaped = ideas.map((idea) =>
-    auth.role === "PARTNER"
-      ? { ...idea, priceNote: null }
-      : idea
-  );
-  return NextResponse.json(shaped);
+  return NextResponse.json(ideas);
 }
 
 export async function POST(request: Request) {
-  const auth = requireAuth(request, ["OWNER"]);
+  const auth = requireAuth(request);
   if (!isAuthUser(auth)) return auth;
 
   const body = await request.json();
@@ -32,6 +28,7 @@ export async function POST(request: Request) {
 
   const idea = await prisma.dateIdea.create({
     data: {
+      telegramUserId: auth.telegramId,
       title: body.title,
       description: body.description || null,
       swipeDescription: body.swipeDescription || null,

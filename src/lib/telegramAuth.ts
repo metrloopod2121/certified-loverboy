@@ -8,7 +8,6 @@ export type TelegramUser = {
 
 export type AuthUser = {
   telegramId: string;
-  role: "OWNER" | "PARTNER";
   user: TelegramUser;
 };
 
@@ -37,13 +36,9 @@ function validateInitData(initData: string, botToken: string): URLSearchParams |
   return params;
 }
 
-function roleForTelegramId(telegramId: string): "OWNER" | "PARTNER" | null {
-  if (telegramId === process.env.OWNER_TG_ID) return "OWNER";
-  if (telegramId === process.env.PARTNER_TG_ID) return "PARTNER";
-  return null;
-}
-
-/** Reads the raw initData string sent by the client (see src/lib/telegramWebApp.ts) and returns the authenticated user, or null. */
+/** Reads the raw initData string sent by the client (see src/lib/apiClient.ts) and returns the
+ *  authenticated user, or null. Any validly-signed Telegram user is authorized as themselves --
+ *  there's no allowlist, everyone gets their own isolated data. */
 export function authenticate(initDataRaw: string | null): AuthUser | null {
   const botToken = process.env.TELEGRAM_BOT_TOKEN;
   if (!initDataRaw || !botToken) return null;
@@ -55,17 +50,7 @@ export function authenticate(initDataRaw: string | null): AuthUser | null {
   if (!userJson) return null;
 
   const user = JSON.parse(userJson) as TelegramUser;
-  const telegramId = String(user.id);
-  const role = roleForTelegramId(telegramId);
-  if (!role) {
-    // Validly signed by our bot, but this telegram id isn't OWNER_TG_ID/PARTNER_TG_ID yet.
-    // Logged so whoever's setting up the app can grab the id from `journalctl` instead of
-    // relying on a third-party "what's my id" bot.
-    console.log(`[auth] unrecognized telegram id=${telegramId} name=${user.first_name ?? ""} username=${user.username ?? ""}`);
-    return null;
-  }
-
-  return { telegramId, role, user };
+  return { telegramId: String(user.id), user };
 }
 
 export function authenticateRequest(request: Request): AuthUser | null {

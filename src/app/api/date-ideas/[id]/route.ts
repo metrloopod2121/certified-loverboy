@@ -5,6 +5,25 @@ import { resolveTagIds } from "@/lib/tags";
 import { withoutMetroTags } from "@/lib/metro";
 import type { LocationInput } from "@/lib/types";
 
+export async function GET(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const auth = requireAuth(request, ["OWNER", "PARTNER"]);
+  if (!isAuthUser(auth)) return auth;
+
+  const { id } = await params;
+  const idea = await prisma.dateIdea.findUnique({
+    where: { id },
+    include: { tags: { include: { tag: true } }, locations: true },
+  });
+  if (!idea) {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+
+  return NextResponse.json(auth.role === "PARTNER" ? { ...idea, priceNote: null } : idea);
+}
+
 export async function PATCH(
   request: Request,
   { params }: { params: Promise<{ id: string }> }

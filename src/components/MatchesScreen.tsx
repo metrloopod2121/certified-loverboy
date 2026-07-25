@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Heart, PartyPopper, MessageCircleHeart } from "lucide-react";
+import { Heart, PartyPopper, MessageCircleHeart, Undo2 } from "lucide-react";
 import { apiFetch } from "@/lib/apiClient";
 import type { MatchWithIdea } from "@/lib/types";
 import { card, pill, pageHeading, mutedText, pastelTone } from "@/lib/ui";
@@ -9,6 +9,7 @@ import { card, pill, pageHeading, mutedText, pastelTone } from "@/lib/ui";
 export default function MatchesScreen() {
   const [matches, setMatches] = useState<MatchWithIdea[] | null>(null);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
+  const [removingId, setRemovingId] = useState<string | null>(null);
 
   useEffect(() => {
     apiFetch("/api/matches").then(setMatches);
@@ -30,6 +31,17 @@ export default function MatchesScreen() {
       setMatches((current) => current?.map((item) => item.id === match.id ? { ...item, isFavorite: !isFavorite } : item) ?? null);
     } finally {
       setUpdatingId(null);
+    }
+  }
+
+  async function unmatch(match: MatchWithIdea) {
+    if (removingId) return;
+    setRemovingId(match.id);
+    try {
+      await apiFetch(`/api/matches/${match.id}`, { method: "DELETE" });
+      setMatches((current) => current?.filter((item) => item.id !== match.id) ?? null);
+    } finally {
+      setRemovingId(null);
     }
   }
 
@@ -59,16 +71,28 @@ export default function MatchesScreen() {
               <PartyPopper className="mt-0.5 shrink-0" size={19} />
               {m.dateIdea.title}
             </h2>
-            <button
-              type="button"
-              onClick={() => toggleFavorite(m)}
-              disabled={updatingId === m.id}
-              aria-label={m.isFavorite ? "Remove from favorites" : "Add to favorites"}
-              title={m.isFavorite ? "Remove from favorites" : "Add to favorites"}
-              className="inline-flex size-9 shrink-0 items-center justify-center rounded-full bg-[var(--app-overlay)] text-[var(--app-ink)] ring-1 ring-[var(--app-outline)]/10 transition active:scale-90 disabled:opacity-50"
-            >
-              <Heart size={18} fill={m.isFavorite ? "currentColor" : "none"} className={m.isFavorite ? "text-[var(--app-coral)]" : ""} />
-            </button>
+            <div className="flex shrink-0 gap-1.5">
+              <button
+                type="button"
+                onClick={() => toggleFavorite(m)}
+                disabled={updatingId === m.id}
+                aria-label={m.isFavorite ? "Remove from favorites" : "Add to favorites"}
+                title={m.isFavorite ? "Remove from favorites" : "Add to favorites"}
+                className="inline-flex size-9 items-center justify-center rounded-full bg-[var(--app-overlay)] text-[var(--app-ink)] ring-1 ring-[var(--app-outline)]/10 transition active:scale-90 disabled:opacity-50"
+              >
+                <Heart size={18} fill={m.isFavorite ? "currentColor" : "none"} className={m.isFavorite ? "text-[var(--app-coral)]" : ""} />
+              </button>
+              <button
+                type="button"
+                onClick={() => unmatch(m)}
+                disabled={removingId === m.id}
+                aria-label="Unmatch (back to swipe deck)"
+                title="Unmatch (back to swipe deck)"
+                className="inline-flex size-9 items-center justify-center rounded-full bg-[var(--app-overlay)] text-[var(--app-ink)] ring-1 ring-[var(--app-outline)]/10 transition active:scale-90 disabled:opacity-50"
+              >
+                <Undo2 size={18} />
+              </button>
+            </div>
           </div>
           {m.dateIdea.locations.map((loc) => (
             <p key={loc.id} className={mutedText}>

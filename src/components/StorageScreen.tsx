@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { ChevronDown, Pencil, Trash2, Plus, X, Link as LinkIcon, Upload, Download, PencilLine, FileUp, Navigation, MapPin } from "lucide-react";
 import { apiFetch, downloadWithToken } from "@/lib/apiClient";
 import { dateIdeaToInput, type DateIdea, type DateIdeaInput } from "@/lib/types";
@@ -59,6 +60,7 @@ type PendingImport = {
 let nextImportId = 0;
 
 export default function StorageScreen({ readOnly = false }: { readOnly?: boolean }) {
+  const router = useRouter();
   const [ideas, setIdeas] = useState<DateIdea[] | null>(null);
   const [tagFilters, setTagFilters] = useState<string[]>([]);
   const [metroFilters, setMetroFilters] = useState<string[]>([]);
@@ -246,7 +248,7 @@ export default function StorageScreen({ readOnly = false }: { readOnly?: boolean
     <div className="flex flex-col gap-5 max-w-2xl mx-auto p-4 pt-6 pb-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className={`${pageHeading} whitespace-nowrap`}>Ideas</h1>
+          <h1 className={`${pageHeading} whitespace-nowrap`}>Ideas Storage</h1>
         </div>
         {!readOnly && (
           <div className="flex gap-2">
@@ -440,7 +442,16 @@ export default function StorageScreen({ readOnly = false }: { readOnly?: boolean
               onCancel={() => setEditing(null)}
             />
           ) : (
-            <div key={idea.id} className={`${card} ${metroPastelTone(idea.locations[0]?.metro) ?? pastelTone(idea.id)} flex flex-col gap-2.5 transition`}>
+            <div
+              key={idea.id}
+              role="button"
+              tabIndex={0}
+              onClick={() => router.push(`/place/${idea.id}`)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") router.push(`/place/${idea.id}`);
+              }}
+              className={`${card} ${metroPastelTone(idea.locations[0]?.metro) ?? pastelTone(idea.id)} flex cursor-pointer flex-col gap-2.5 transition active:scale-[0.99]`}
+            >
               <div className="flex justify-between items-start gap-2">
                 <h2 className="flex items-start gap-1.5 text-[19px] font-semibold leading-[1.05]">
                   <span>{idea.title}</span>
@@ -448,14 +459,20 @@ export default function StorageScreen({ readOnly = false }: { readOnly?: boolean
                 {!readOnly && (
                   <div className="flex gap-1 shrink-0">
                     <button
-                      onClick={() => setEditing(idea)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setEditing(idea);
+                      }}
                       aria-label="Edit"
                       className={`${iconButton} bg-[var(--app-overlay)] text-[var(--app-ink)] ring-1 ring-[var(--app-outline)]/10`}
                     >
                       <Pencil size={16} />
                     </button>
                     <button
-                      onClick={() => remove(idea.id)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        remove(idea.id);
+                      }}
                       aria-label="Delete"
                       className={`${iconButton} bg-[var(--app-overlay)] text-red-500 ring-1 ring-[var(--app-outline)]/10`}
                     >
@@ -472,7 +489,13 @@ export default function StorageScreen({ readOnly = false }: { readOnly?: boolean
                         {[loc.address, loc.metro && `M ${loc.metro}`].filter(Boolean).join(" · ") || "No address"}
                       </p>
                       {loc.url && (
-                        <a href={loc.url} target="_blank" rel="noreferrer" className="text-[var(--app-ink)]">
+                        <a
+                          href={loc.url}
+                          target="_blank"
+                          rel="noreferrer"
+                          onClick={(e) => e.stopPropagation()}
+                          className="text-[var(--app-ink)]"
+                        >
                           <LinkIcon size={12} />
                         </a>
                       )}

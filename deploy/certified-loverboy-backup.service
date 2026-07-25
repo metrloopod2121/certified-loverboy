@@ -1,0 +1,10 @@
+[Unit]
+Description=certified-loverboy DB backup
+After=network.target
+
+[Service]
+Type=oneshot
+User=loverboy
+Group=loverboy
+WorkingDirectory=/srv/web/app/certified-loverboy/app
+ExecStart=/usr/bin/node scripts/backupDb.mjs

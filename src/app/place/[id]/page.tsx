@@ -5,7 +5,7 @@ export default async function PlacePage({ params }: { params: Promise<{ id: stri
   const { id } = await params;
 
   return (
-    <AuthGate allow={["OWNER", "PARTNER"]}>
+    <AuthGate>
       <PlaceDetailScreen id={id} />
     </AuthGate>
   );

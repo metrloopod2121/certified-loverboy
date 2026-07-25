@@ -59,7 +59,7 @@ type PendingImport = {
 
 let nextImportId = 0;
 
-export default function StorageScreen({ readOnly = false }: { readOnly?: boolean }) {
+export default function StorageScreen() {
   const router = useRouter();
   const [ideas, setIdeas] = useState<DateIdea[] | null>(null);
   const [tagFilters, setTagFilters] = useState<string[]>([]);
@@ -250,27 +250,25 @@ export default function StorageScreen({ readOnly = false }: { readOnly?: boolean
         <div>
           <h1 className={`${pageHeading} whitespace-nowrap`}>Ideas Storage</h1>
         </div>
-        {!readOnly && (
-          <div className="flex gap-2">
-            <button
-              onClick={exportAll}
-              disabled={exporting}
-              aria-label="Export all as files"
-              title="Export all as files"
-              className={`${iconButton} size-12 bg-[var(--app-overlay)] text-[var(--app-ink)] ring-1 ring-[var(--app-outline)]/10 disabled:opacity-50`}
-            >
-              <Download size={18} />
-            </button>
-            <button
-              onClick={toggleAddPanel}
-              aria-label={addMode === "none" ? "Add idea" : "Close form"}
-              title={addMode === "none" ? "Add idea" : "Close form"}
-              className="inline-flex size-12 items-center justify-center rounded-full bg-[var(--app-ink)] text-[var(--app-canvas)] shadow-[0_3px_0_rgba(28,26,23,0.18)] active:scale-90 transition"
-            >
-              {addMode === "none" ? <Plus size={18} /> : <X size={18} />}
-            </button>
-          </div>
-        )}
+        <div className="flex gap-2">
+          <button
+            onClick={exportAll}
+            disabled={exporting}
+            aria-label="Export all as files"
+            title="Export all as files"
+            className={`${iconButton} size-12 bg-[var(--app-overlay)] text-[var(--app-ink)] ring-1 ring-[var(--app-outline)]/10 disabled:opacity-50`}
+          >
+            <Download size={18} />
+          </button>
+          <button
+            onClick={toggleAddPanel}
+            aria-label={addMode === "none" ? "Add idea" : "Close form"}
+            title={addMode === "none" ? "Add idea" : "Close form"}
+            className="inline-flex size-12 items-center justify-center rounded-full bg-[var(--app-ink)] text-[var(--app-canvas)] shadow-[0_3px_0_rgba(28,26,23,0.18)] active:scale-90 transition"
+          >
+            {addMode === "none" ? <Plus size={18} /> : <X size={18} />}
+          </button>
+        </div>
       </div>
 
       <div className="relative z-10 flex flex-col gap-2">
@@ -361,7 +359,7 @@ export default function StorageScreen({ readOnly = false }: { readOnly?: boolean
         </div>
       )}
 
-      {!readOnly && addMode !== "none" && (
+      {addMode !== "none" && (
         <div className="panel-appear flex flex-col gap-3">
           <div className="inline-flex w-fit gap-1 self-start rounded-full bg-[var(--app-overlay)] p-1 ring-1 ring-[var(--app-outline)]/10">
             <button
@@ -434,7 +432,7 @@ export default function StorageScreen({ readOnly = false }: { readOnly?: boolean
 
       <div className="flex flex-col gap-3">
         {filtered.map((idea) =>
-          !readOnly && editing?.id === idea.id ? (
+          editing?.id === idea.id ? (
             <DateIdeaForm
               key={idea.id}
               initial={dateIdeaToInput(idea)}
@@ -456,30 +454,28 @@ export default function StorageScreen({ readOnly = false }: { readOnly?: boolean
                 <h2 className="flex items-start gap-1.5 text-[19px] font-semibold leading-[1.05]">
                   <span>{idea.title}</span>
                 </h2>
-                {!readOnly && (
-                  <div className="flex gap-1 shrink-0">
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setEditing(idea);
-                      }}
-                      aria-label="Edit"
-                      className={`${iconButton} bg-[var(--app-overlay)] text-[var(--app-ink)] ring-1 ring-[var(--app-outline)]/10`}
-                    >
-                      <Pencil size={16} />
-                    </button>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        remove(idea.id);
-                      }}
-                      aria-label="Delete"
-                      className={`${iconButton} bg-[var(--app-overlay)] text-red-500 ring-1 ring-[var(--app-outline)]/10`}
-                    >
-                      <Trash2 size={16} />
-                    </button>
-                  </div>
-                )}
+                <div className="flex gap-1 shrink-0">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setEditing(idea);
+                    }}
+                    aria-label="Edit"
+                    className={`${iconButton} bg-[var(--app-overlay)] text-[var(--app-ink)] ring-1 ring-[var(--app-outline)]/10`}
+                  >
+                    <Pencil size={16} />
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      remove(idea.id);
+                    }}
+                    aria-label="Delete"
+                    className={`${iconButton} bg-[var(--app-overlay)] text-red-500 ring-1 ring-[var(--app-outline)]/10`}
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                </div>
               </div>
               {idea.locations.length > 0 && (
                 <div className="flex flex-col gap-1">

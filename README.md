@@ -1,9 +1,13 @@
 # certified-loverboy
 
-Telegram Mini App для сбора идей свиданий (Москва) и совместного выбора через свайп — на двоих: владелец и партнёрша.
+Telegram Mini App для личной базы мест (свиданки, кафе, активности и т.д.) — своя база
+на каждый Telegram-аккаунт. Место добавляется вручную, файлом-импортом или через бота:
+кинь ссылку на Яндекс.Карты / пост из канала / текст поста — бот распознает место через
+LLM и предложит добавить.
 
 - Стек: Next.js (App Router) + Prisma/SQLite + Leaflet (OpenStreetMap)
-- Auth: без пароля, через Telegram `initData`, роль по telegram user id (`OWNER_TG_ID` / `PARTNER_TG_ID` в `.env`)
+- Auth: без пароля, через Telegram `initData` — любой Telegram-пользователь получает свой
+  изолированный аккаунт (данные скоупятся по telegram id, ничего не расшарено между людьми)
 - Бот: @certified7overBot
 
 ## Разработка
@@ -14,9 +18,30 @@ npx prisma migrate dev   # или migrate deploy, если только прим
 npm run dev
 ```
 
-Требует `.env` (см. `.env.example`): `DATABASE_URL`, `TELEGRAM_BOT_TOKEN`, `OWNER_TG_ID`, `PARTNER_TG_ID`.
+Требует `.env` (см. `.env.example`): `DATABASE_URL`, `TELEGRAM_BOT_TOKEN`,
+`TELEGRAM_WEBHOOK_SECRET`, `ADMIN_TG_ID`.
 
 Локальный дебаг вне Telegram: `?debug_init=<валидный initData>` в URL (см. `src/lib/apiClient.ts`).
+
+## Импорт через бота
+
+Бесплатно — 5 запросов на AI-парсинг ссылки/поста на Telegram-пользователя
+(`src/lib/importQuota.ts`); дальше просит добавить вручную, пока нет платных тарифов.
+Бот понимает: прямую ссылку на Яндекс.Карты, форвард поста из канала, голую ссылку на
+telegram-пост, или просто вставленный текст поста. `/support <текст>` — сообщение уходит
+и в БД (`SupportMessage`), и админу в личку (`ADMIN_TG_ID`), чтобы ничего не потерялось.
+
+## Публичный бот в BotFather
+
+Чтобы бот был приятно находим и понятен новому человеку:
+
+```
+/setdescription   — короткое описание (что делает бот)
+/setabouttext     — текст в профиле бота
+/setuserpic       — аватарка
+/setcommands      — start - Что я умею
+                    support - Написать в поддержку
+```
 
 ## Деплой
 
@@ -30,9 +55,16 @@ sudo bash /srv/web/app/certified-loverboy/app/scripts/deploy.sh
 
 Скрипт сам решает, что нужно: `npm ci` — только если менялся `package.json`/lock, `prisma migrate deploy` — только если появилась новая миграция, `prisma generate` — только если менялась `schema.prisma`. Сборка и рестарт сервиса — всегда, если вообще было что пуллить.
 
+**После деплоя миграции `20260725120000_multi_tenant_drop_swipes`** — разово прогнать бэкфилл, иначе все существующие места станут никому не видны:
+
+```bash
+sudo -u loverboy bash -c 'cd /srv/web/app/certified-loverboy/app && node scripts/backfillOwnerTelegramId.mjs <твой_telegram_id>'
+```
+
 Что важно про сервер:
 - Порт **443 — не трогать**, там VPN (Amnezia Xray, docker). Наше HTTPS — на **8443**.
 - Владелец файлов приложения — пользователь `loverboy`, не root.
-- SQLite-база: `data/app.db` — перед структурными миграциями стоит бэкапить (`cp data/app.db data/app.db.bak-$(date +%Y%m%d%H%M%S)`).
+- SQLite-база: `data/app.db`. Автобэкап — раз в сутки, см. `docs/RESTORE.md` (там же — разовая установка systemd-таймера).
+- Мониторинг расхода Cloudflare/Brave квоты + здоровья сервиса — `scripts/usageReport.mjs`, таймеры `deploy/certified-loverboy-usage-monitor-*.timer` (тоже разовая установка, см. `docs/RESTORE.md`-соседние юниты в `deploy/`).
 
 Подробности изменений — `docs/CHANGELOG.md`.

@@ -9,12 +9,17 @@ export async function GET(request: Request) {
   // Plain navigation and Telegram.WebApp.downloadFile can't send the usual
   // x-telegram-init-data header, so a short-lived signed token is accepted too.
   const token = new URL(request.url).searchParams.get("token");
-  if (!verifyExportToken(token)) {
-    const auth = requireAuth(request, ["OWNER"]);
+  const tokenTelegramId = verifyExportToken(token);
+
+  let telegramId = tokenTelegramId;
+  if (!telegramId) {
+    const auth = requireAuth(request);
     if (!isAuthUser(auth)) return auth;
+    telegramId = auth.telegramId;
   }
 
   const ideas = await prisma.dateIdea.findMany({
+    where: { telegramUserId: telegramId },
     include: { tags: { include: { tag: true } }, locations: true },
     orderBy: { createdAt: "asc" },
   });

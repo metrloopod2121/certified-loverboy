@@ -12,16 +12,17 @@ datasource db {
 
 model DateIdea {
   id               String            @id @default(cuid())
+  telegramUserId   String
   title            String
   description      String?
   swipeDescription String?
   priceNote        String?
   tags             TagsOnDateIdeas[]
   locations        Location[]
-  swipes           Swipe[]
-  match            Match?
   createdAt        DateTime          @default(now())
   updatedAt        DateTime          @updatedAt
+
+  @@index([telegramUserId])
 }
 
 model Location {
@@ -50,37 +51,31 @@ model TagsOnDateIdeas {
   @@id([dateIdeaId, tagId])
 }
 
-enum Direction {
-  LIKE
-  PASS
-}
-
-model Swipe {
-  id             String    @id @default(cuid())
-  telegramUserId String
-  dateIdeaId     String
-  direction      Direction
-  createdAt      DateTime  @default(now())
-  dateIdea       DateIdea  @relation(fields: [dateIdeaId], references: [id], onDelete: Cascade)
-
-  @@unique([telegramUserId, dateIdeaId])
-}
-
-model Match {
-  id         String   @id @default(cuid())
-  dateIdeaId String   @unique
-  matchedAt  DateTime @default(now())
-  notified   Boolean  @default(false)
-  isFavorite Boolean  @default(false)
-  dateIdea   DateIdea @relation(fields: [dateIdeaId], references: [id], onDelete: Cascade)
-}
-
-/// Holds an idea parsed from a shared link while it waits for owner approval
-/// in the Telegram chat (not the Mini App).
+/// Holds an idea parsed from a shared link while it waits for approval in the
+/// Telegram chat (not the Mini App). chatId doubles as the owning user's
+/// telegramUserId for private 1:1 bot chats.
 model PendingImport {
   id        String   @id @default(cuid())
   chatId    String
   sourceUrl String
   payload   String
   createdAt DateTime @default(now())
+}
+
+/// Meters AI-powered link/post imports per Telegram user (a handful free before
+/// a paid plan is needed).
+model ImportQuota {
+  telegramUserId String   @id
+  usedCount      Int      @default(0)
+  updatedAt      DateTime @updatedAt
+}
+
+/// /support messages from the bot -- kept here as a durable copy in case the
+/// Telegram DM to the admin gets missed.
+model SupportMessage {
+  id             String   @id @default(cuid())
+  telegramUserId String
+  username       String?
+  text           String
+  createdAt      DateTime @default(now())
 }

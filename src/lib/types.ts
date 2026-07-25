@@ -36,14 +36,6 @@ export type DateIdeaInput = {
   locations: LocationInput[];
 };
 
-export type MatchWithIdea = {
-  id: string;
-  dateIdeaId: string;
-  matchedAt: string;
-  isFavorite: boolean;
-  dateIdea: DateIdea;
-};
-
 export function locationToInput(location: Location): LocationInput {
   return {
     address: location.address ?? "",

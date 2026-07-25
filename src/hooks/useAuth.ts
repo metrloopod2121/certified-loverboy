@@ -6,7 +6,7 @@ import { apiFetch } from "@/lib/apiClient";
 type AuthState =
   | { status: "loading" }
   | { status: "unauthorized" }
-  | { status: "authorized"; telegramId: string; role: "OWNER" | "PARTNER" };
+  | { status: "authorized"; telegramId: string };
 
 export function useAuth(): AuthState {
   const [state, setState] = useState<AuthState>({ status: "loading" });

@@ -1,0 +1,10 @@
+[Unit]
+Description=Run certified-loverboy health and quota checks every hour
+
+[Timer]
+OnCalendar=hourly
+Persistent=true
+Unit=certified-loverboy-usage-monitor@hourly.service
+
+[Install]
+WantedBy=timers.target

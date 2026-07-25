@@ -2,8 +2,8 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { resolveTagIds } from "@/lib/tags";
 import { withoutMetroTags } from "@/lib/metro";
+import { tryConsumeImportQuota, quotaExhaustedMessage } from "@/lib/importQuota";
 import {
-  forwardTelegramMessage,
   sendTelegramMessage,
   sendTelegramMessageWithButtons,
   editTelegramMessageText,
@@ -26,7 +26,7 @@ type TelegramMessageEntity = { type: string; offset: number; length: number; url
 type TelegramMessage = {
   message_id: number;
   chat: { id: number };
-  from?: { id: number };
+  from?: { id: number; username?: string };
   text?: string;
   caption?: string;
   // Formatting entities for text/caption respectively. Post links are almost always styled as
@@ -60,8 +60,8 @@ function textWithHiddenLinks(text: string, links: string[]): string {
   return links.length > 0 ? `${text}\n\n${links.join("\n")}` : text;
 }
 
-/** Minimum length before a plain (non-forwarded) owner text message is treated as a pasted
- *  post — guards against accidental LLM calls on short one-off chat messages. */
+/** Minimum length before a plain (non-forwarded) text message is treated as a pasted post --
+ *  guards against accidental LLM calls on short one-off chat messages. */
 const PASTED_POST_MIN_LENGTH = 40;
 
 /** Only channel posts count as "posts" for this flow — forwarded messages from a group or a
@@ -109,11 +109,17 @@ async function sendDraftsForApproval(
   }
 }
 
-async function handleOwnerLink(message: TelegramMessage) {
+async function handleYandexLink(message: TelegramMessage) {
   const url = findYandexMapsLink(message.text ?? "");
   if (!url) return;
 
   const chatId = String(message.chat.id);
+  const quota = await tryConsumeImportQuota(chatId);
+  if (!quota.ok) {
+    await sendTelegramMessage(chatId, quotaExhaustedMessage());
+    return;
+  }
+
   await sendTelegramMessage(chatId, "Смотрю ссылку, секунду…");
 
   const parsed = await parseYandexMapsLink(url);
@@ -129,6 +135,12 @@ async function handleOwnerLink(message: TelegramMessage) {
  *  embed page and parses it the same way a forwarded post would be. */
 async function handleTelegramPostLink(message: TelegramMessage, url: string) {
   const chatId = String(message.chat.id);
+  const quota = await tryConsumeImportQuota(chatId);
+  if (!quota.ok) {
+    await sendTelegramMessage(chatId, quotaExhaustedMessage());
+    return;
+  }
+
   await sendTelegramMessage(chatId, "Смотрю пост по ссылке, секунду…");
 
   const postText = await fetchTelegramPostText(url);
@@ -148,8 +160,8 @@ async function handleTelegramPostLink(message: TelegramMessage, url: string) {
   await sendDraftsForApproval(chatId, drafts, "📩 Пост по ссылке:", (idea) => idea.mapUrl ?? url);
 }
 
-/** Owner forwards a channel post straight into the chat — post text already has address/
- *  price/description, so it's parsed directly, no page fetch involved. A post can list several
+/** A channel post forwarded straight into the chat — post text already has address/price/
+ *  description, so it's parsed directly, no page fetch involved. A post can list several
  *  places; each becomes its own draft with its own approve/reject buttons. */
 async function handleChannelForwardPost(message: TelegramMessage) {
   const chatId = String(message.chat.id);
@@ -163,6 +175,12 @@ async function handleChannelForwardPost(message: TelegramMessage) {
       return;
     }
     await sendTelegramMessage(chatId, "В пересланном посте нет текста — не смог разобрать. Добавь вручную в приложении.");
+    return;
+  }
+
+  const quota = await tryConsumeImportQuota(chatId);
+  if (!quota.ok) {
+    await sendTelegramMessage(chatId, quotaExhaustedMessage());
     return;
   }
 
@@ -180,14 +198,20 @@ async function handleChannelForwardPost(message: TelegramMessage) {
   await sendDraftsForApproval(chatId, drafts, "📩 Пост из канала:", (idea) => idea.mapUrl ?? fallbackUrl);
 }
 
-/** Fallback for when forwarding doesn't work (protected content, etc.) — owner pastes the post
- *  text as a plain message instead. Logged every time, since it only happens when the forward
- *  flow above wasn't usable. */
+/** Fallback for when forwarding doesn't work (protected content, etc.) — pastes the post text
+ *  as a plain message instead. Logged every time, since it only happens when the forward flow
+ *  above wasn't usable. */
 async function handlePastedPostText(message: TelegramMessage) {
   const chatId = String(message.chat.id);
   const text = (message.text ?? "").trim();
 
-  console.log(`[import] owner pasted post text instead of forwarding chatId=${chatId} length=${text.length}`);
+  console.log(`[import] pasted post text instead of forwarding chatId=${chatId} length=${text.length}`);
+
+  const quota = await tryConsumeImportQuota(chatId);
+  if (!quota.ok) {
+    await sendTelegramMessage(chatId, quotaExhaustedMessage());
+    return;
+  }
 
   await sendTelegramMessage(chatId, "Смотрю текст, секунду…");
 
@@ -203,17 +227,58 @@ async function handlePastedPostText(message: TelegramMessage) {
   await sendDraftsForApproval(chatId, drafts, "📋 Вставленный текст:", (idea) => idea.mapUrl ?? fallbackUrl);
 }
 
-async function handleCallbackQuery(callbackQuery: TelegramCallbackQuery, ownerId: string) {
+async function handleStartCommand(message: TelegramMessage) {
+  const chatId = String(message.chat.id);
+  await sendTelegramMessage(
+    chatId,
+    [
+      "Привет! Я собираю базу мест для свиданий и просто интересных точек.",
+      "",
+      "Кинь мне ссылку на Яндекс.Карты, перешли пост из телеграм-канала, вставь ссылку на пост или просто текст — я распознаю место и предложу добавить его в базу.",
+      "",
+      "Открой приложение через кнопку меню — там список, карта и фильтры по своей базе.",
+      "",
+      "Есть проблема? Напиши /support и опиши её.",
+    ].join("\n")
+  );
+}
+
+/** Logs the message to SupportMessage (durable copy) and forwards it to ADMIN_TG_ID, so
+ *  nothing gets lost even if the Telegram DM notification is missed. */
+async function handleSupportCommand(message: TelegramMessage) {
+  const chatId = String(message.chat.id);
+  const text = (message.text ?? "").replace(/^\/support(@\w+)?\s*/i, "").trim();
+
+  if (!text) {
+    await sendTelegramMessage(
+      chatId,
+      "Опиши проблему одним сообщением, начиная с /support — например:\n/support не открывается карта"
+    );
+    return;
+  }
+
+  const username = message.from?.username ? `@${message.from.username}` : null;
+  await prisma.supportMessage.create({ data: { telegramUserId: chatId, username, text } });
+
+  const adminId = process.env.ADMIN_TG_ID;
+  if (adminId) {
+    await sendTelegramMessage(adminId, `🆘 Support от ${username ?? `id ${chatId}`}:\n${text}`);
+  }
+
+  await sendTelegramMessage(chatId, "Спасибо! Передал в поддержку, скоро ответим.");
+}
+
+async function handleCallbackQuery(callbackQuery: TelegramCallbackQuery) {
   const data = callbackQuery.data ?? "";
   const match = data.match(/^pi:(approve|reject):(.+)$/);
-  if (!match || String(callbackQuery.from.id) !== ownerId) {
+  if (!match) {
     await answerCallbackQuery(callbackQuery.id);
     return;
   }
 
   const [, action, pendingId] = match;
   const pending = await prisma.pendingImport.findUnique({ where: { id: pendingId } });
-  if (!pending) {
+  if (!pending || pending.chatId !== String(callbackQuery.from.id)) {
     await answerCallbackQuery(callbackQuery.id, "Уже обработано или устарело");
     return;
   }
@@ -233,6 +298,7 @@ async function handleCallbackQuery(callbackQuery: TelegramCallbackQuery, ownerId
 
   await prisma.dateIdea.create({
     data: {
+      telegramUserId: pending.chatId,
       title: idea.title,
       description: idea.description,
       priceNote: idea.priceNote,
@@ -256,9 +322,9 @@ async function handleCallbackQuery(callbackQuery: TelegramCallbackQuery, ownerId
   if (chatId && messageId) await editTelegramMessageText(String(chatId), messageId, `✅ Добавлено: ${idea.title}`);
 }
 
-/** Receives Telegram updates: forwards partner messages to the owner, and lets the owner
- *  drop a Yandex Maps link, a Telegram post link, or a forwarded/pasted post straight in chat
- *  to parse + approve into the database. */
+/** Receives Telegram updates. Any user can message the bot: a Yandex Maps link, a Telegram
+ *  post link, a forwarded/pasted post, or /support — each gets parsed/handled for that user's
+ *  own data, gated by their own import quota. */
 export async function POST(request: Request) {
   const secret = process.env.TELEGRAM_WEBHOOK_SECRET;
   if (!secret || request.headers.get("x-telegram-bot-api-secret-token") !== secret) {
@@ -266,47 +332,46 @@ export async function POST(request: Request) {
   }
 
   const update = (await request.json()) as TelegramUpdate;
-  const ownerId = process.env.OWNER_TG_ID;
-  const partnerId = process.env.PARTNER_TG_ID;
-
-  if (!ownerId || !partnerId) return NextResponse.json({ ok: true });
 
   if (update.callback_query) {
-    await handleCallbackQuery(update.callback_query, ownerId);
+    await handleCallbackQuery(update.callback_query);
     return NextResponse.json({ ok: true });
   }
 
   const message = update.message;
-  if (!message) return NextResponse.json({ ok: true });
+  if (!message || !message.from) return NextResponse.json({ ok: true });
 
-  if (String(message.from?.id) === partnerId) {
-    await forwardTelegramMessage(ownerId, String(message.chat.id), message.message_id);
+  const text = message.text ?? "";
+
+  if (/^\/start(\s|$)/i.test(text)) {
+    await handleStartCommand(message);
     return NextResponse.json({ ok: true });
   }
 
-  if (String(message.from?.id) === ownerId) {
-    if (isChannelForward(message)) {
-      await handleChannelForwardPost(message);
-      return NextResponse.json({ ok: true });
-    }
-
-    const text = message.text ?? "";
-    const trimmed = text.trim();
-    const yandexLink = findYandexMapsLink(text);
-    const telegramLink = findTelegramPostLink(text);
-    // Only treat it as "just a link" when the whole message IS the link — a link mentioned
-    // somewhere inside a full pasted post (e.g. a channel self-promo footer) should still go
-    // through the pasted-post-text path below, not be re-fetched as if it were the post itself.
-    const isBareTelegramLink = telegramLink !== null && trimmed === telegramLink;
-
-    if (yandexLink) {
-      await handleOwnerLink(message);
-    } else if (isBareTelegramLink) {
-      await handleTelegramPostLink(message, telegramLink);
-    } else if (trimmed.length >= PASTED_POST_MIN_LENGTH) {
-      await handlePastedPostText(message);
-    }
+  if (/^\/support(@\w+)?(\s|$)/i.test(text)) {
+    await handleSupportCommand(message);
     return NextResponse.json({ ok: true });
+  }
+
+  if (isChannelForward(message)) {
+    await handleChannelForwardPost(message);
+    return NextResponse.json({ ok: true });
+  }
+
+  const trimmed = text.trim();
+  const yandexLink = findYandexMapsLink(text);
+  const telegramLink = findTelegramPostLink(text);
+  // Only treat it as "just a link" when the whole message IS the link — a link mentioned
+  // somewhere inside a full pasted post (e.g. a channel self-promo footer) should still go
+  // through the pasted-post-text path below, not be re-fetched as if it were the post itself.
+  const isBareTelegramLink = telegramLink !== null && trimmed === telegramLink;
+
+  if (yandexLink) {
+    await handleYandexLink(message);
+  } else if (isBareTelegramLink) {
+    await handleTelegramPostLink(message, telegramLink);
+  } else if (trimmed.length >= PASTED_POST_MIN_LENGTH) {
+    await handlePastedPostText(message);
   }
 
   return NextResponse.json({ ok: true });

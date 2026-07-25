@@ -6,5 +6,5 @@ export async function GET(request: Request) {
   if (!auth) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
-  return NextResponse.json({ telegramId: auth.telegramId, role: auth.role });
+  return NextResponse.json({ telegramId: auth.telegramId });
 }

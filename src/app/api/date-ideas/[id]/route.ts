@@ -9,7 +9,7 @@ export async function GET(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const auth = requireAuth(request, ["OWNER", "PARTNER"]);
+  const auth = requireAuth(request);
   if (!isAuthUser(auth)) return auth;
 
   const { id } = await params;
@@ -17,21 +17,29 @@ export async function GET(
     where: { id },
     include: { tags: { include: { tag: true } }, locations: true },
   });
-  if (!idea) {
+  if (!idea || idea.telegramUserId !== auth.telegramId) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
-  return NextResponse.json(auth.role === "PARTNER" ? { ...idea, priceNote: null } : idea);
+  return NextResponse.json(idea);
 }
 
 export async function PATCH(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const auth = requireAuth(request, ["OWNER"]);
+  const auth = requireAuth(request);
   if (!isAuthUser(auth)) return auth;
 
   const { id } = await params;
+  const existing = await prisma.dateIdea.findUnique({
+    where: { id },
+    select: { telegramUserId: true, locations: true },
+  });
+  if (!existing || existing.telegramUserId !== auth.telegramId) {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+
   const body = await request.json();
 
   const data: Record<string, unknown> = {};
@@ -42,10 +50,8 @@ export async function PATCH(
   const locations: LocationInput[] | null = Array.isArray(body.locations) ? body.locations : null;
 
   if (Array.isArray(body.tags)) {
-    const existingLocations = locations
-      ? locations
-      : (await prisma.dateIdea.findUnique({ where: { id }, select: { locations: true } }))?.locations ?? [];
-    const tagIds = await resolveTagIds(withoutMetroTags(body.tags, existingLocations.map((location) => location.metro)));
+    const metroSource = locations ?? existing.locations;
+    const tagIds = await resolveTagIds(withoutMetroTags(body.tags, metroSource.map((location) => location.metro)));
     data.tags = {
       deleteMany: {},
       create: tagIds.map((tagId) => ({ tagId })),
@@ -77,10 +83,15 @@ export async function DELETE(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const auth = requireAuth(request, ["OWNER"]);
+  const auth = requireAuth(request);
   if (!isAuthUser(auth)) return auth;
 
   const { id } = await params;
+  const existing = await prisma.dateIdea.findUnique({ where: { id }, select: { telegramUserId: true } });
+  if (!existing || existing.telegramUserId !== auth.telegramId) {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+
   await prisma.dateIdea.delete({ where: { id } });
   return NextResponse.json({ ok: true });
 }

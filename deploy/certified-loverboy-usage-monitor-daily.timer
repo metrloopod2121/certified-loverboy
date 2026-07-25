@@ -1,0 +1,10 @@
+[Unit]
+Description=Send certified-loverboy daily usage report to Telegram
+
+[Timer]
+OnCalendar=*-*-* 10:00:00 Europe/Moscow
+Persistent=true
+Unit=certified-loverboy-usage-monitor@daily.service
+
+[Install]
+WantedBy=timers.target

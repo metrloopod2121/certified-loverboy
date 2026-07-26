@@ -9,6 +9,7 @@ import { readFile, mkdir, rename, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { promisify } from "node:util";
 import dotenv from "dotenv";
+import Database from "better-sqlite3";
 
 const execFile = promisify(execFileCallback);
 const mode = process.argv.find((argument) => argument.startsWith("--mode="))?.split("=")[1] ?? "hourly";
@@ -199,6 +200,42 @@ async function collectHealth() {
   };
 }
 
+function resolveDatabasePath() {
+  const raw = process.env.DATABASE_URL ?? "file:./data/app.db";
+  const relative = raw.replace(/^file:/, "");
+  return path.isAbsolute(relative) ? relative : path.join(appDirectory, relative);
+}
+
+// Product analytics (AnalyticsEvent rows written by src/lib/analytics.ts) -- read straight
+// off the app's own SQLite file rather than through the app process, same as backupDb.mjs.
+function collectAnalytics() {
+  const empty = { placesBySource: [], botStarts: 0 };
+  try {
+    const db = new Database(resolveDatabasePath(), { readonly: true, fileMustExist: true });
+    const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+
+    const placesBySource = db
+      .prepare(
+        `SELECT COALESCE(json_extract(properties, '$.source'), 'unknown') AS source, COUNT(*) AS count
+         FROM AnalyticsEvent
+         WHERE name = 'place_created' AND createdAt >= ?
+         GROUP BY source
+         ORDER BY count DESC`,
+      )
+      .all(since);
+
+    const botStarts = db
+      .prepare(`SELECT COUNT(*) AS count FROM AnalyticsEvent WHERE name = 'bot_start' AND createdAt >= ?`)
+      .get(since).count;
+
+    db.close();
+    return { placesBySource, botStarts };
+  } catch (error) {
+    console.error(`[usage-monitor] analytics query failed: ${error.message}`);
+    return empty;
+  }
+}
+
 async function readState() {
   try {
     return JSON.parse(await readFile(statePath, "utf8"));
@@ -274,7 +311,21 @@ function collectAlerts(state, usage, health, cloudflareDailyLimit) {
   return alerts;
 }
 
-function buildDailyReport(usage, health, cloudflareDailyLimit) {
+function buildAnalyticsSection(analytics) {
+  const totalPlaces = analytics.placesBySource.reduce((sum, row) => sum + row.count, 0);
+  const bySourceText = analytics.placesBySource.length > 0
+    ? analytics.placesBySource.map((row) => `${escapeHtml(row.source)}: ${formatNumber(row.count)}`).join(", ")
+    : "нет данных";
+
+  return [
+    "",
+    "<b>Продукт (последние 24ч)</b>",
+    `Стартов бота: <code>${formatNumber(analytics.botStarts)}</code>`,
+    `Мест создано: <code>${formatNumber(totalPlaces)}</code> (${bySourceText})`,
+  ];
+}
+
+function buildDailyReport(usage, health, cloudflareDailyLimit, analytics) {
   const now = new Date();
   const cloudflarePercent = cloudflareDailyLimit > 0 ? (usage.cloudflareAi.neurons / cloudflareDailyLimit) * 100 : null;
   const cloudflareRemaining = cloudflareDailyLimit > 0
@@ -304,6 +355,7 @@ function buildDailyReport(usage, health, cloudflareDailyLimit) {
     `API: <b>${escapeHtml(serviceStatus)}</b> / ${formatNumber(health.restartCount)} перезапусков`,
     `Память: <code>${formatBytes(health.memoryCurrent)} / ${formatBytes(health.memoryMax)}</code>`,
     `Диск: <code>${health.usedPercent === null ? "нет данных" : formatPercent(health.usedPercent)}</code> занято / ${formatBytes(health.freeBytes)} свободно`,
+    ...buildAnalyticsSection(analytics),
   ];
 
   return lines.join("\n");
@@ -347,7 +399,8 @@ const usage = parseUsage(journal);
 const cloudflareDailyLimit = asNumber(process.env.CLOUDFLARE_AI_DAILY_FREE_NEURONS) ?? 10_000;
 
 if (mode === "daily") {
-  await sendTelegramMessage(buildDailyReport(usage, health, cloudflareDailyLimit));
+  const analytics = collectAnalytics();
+  await sendTelegramMessage(buildDailyReport(usage, health, cloudflareDailyLimit, analytics));
 } else {
   const alerts = collectAlerts(state, usage, health, cloudflareDailyLimit);
   if (alerts.length > 0) await sendTelegramMessage(buildAlertMessage(alerts));

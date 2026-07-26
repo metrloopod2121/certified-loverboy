@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db";
 import { resolveTagIds } from "@/lib/tags";
 import { withoutMetroTags } from "@/lib/metro";
 import { tryConsumeImportQuota, quotaExhaustedMessage } from "@/lib/importQuota";
+import { trackEvent } from "@/lib/analytics";
 import {
   sendTelegramMessage,
   sendTelegramMessageWithButtons,
@@ -95,11 +96,12 @@ async function sendDraftsForApproval(
   chatId: string,
   ideas: ParsedFromLink[],
   header: string,
-  sourceUrlFor: (idea: ParsedFromLink) => string
+  sourceUrlFor: (idea: ParsedFromLink) => string,
+  source: string
 ) {
   for (const idea of ideas) {
     const pending = await prisma.pendingImport.create({
-      data: { chatId, sourceUrl: sourceUrlFor(idea), payload: JSON.stringify(idea) },
+      data: { chatId, sourceUrl: sourceUrlFor(idea), payload: JSON.stringify(idea), source },
     });
 
     await sendTelegramMessageWithButtons(chatId, formatIdeaPreview(idea, header), [
@@ -128,7 +130,7 @@ async function handleYandexLink(message: TelegramMessage) {
     return;
   }
 
-  await sendDraftsForApproval(chatId, [parsed], "📍 Новое место с Яндекс.Карт:", () => url);
+  await sendDraftsForApproval(chatId, [parsed], "📍 Новое место с Яндекс.Карт:", () => url, "bot_yandex_link");
 }
 
 /** Owner shares a bare link to a Telegram post (not a forward) — fetches the post's public
@@ -157,7 +159,7 @@ async function handleTelegramPostLink(message: TelegramMessage, url: string) {
     return;
   }
 
-  await sendDraftsForApproval(chatId, drafts, "📩 Пост по ссылке:", (idea) => idea.mapUrl ?? url);
+  await sendDraftsForApproval(chatId, drafts, "📩 Пост по ссылке:", (idea) => idea.mapUrl ?? url, "bot_telegram_post_link");
 }
 
 /** A channel post forwarded straight into the chat — post text already has address/price/
@@ -195,7 +197,7 @@ async function handleChannelForwardPost(message: TelegramMessage) {
   }
 
   const fallbackUrl = hiddenLinks[0] ?? forwardedChannelSourceUrl(message);
-  await sendDraftsForApproval(chatId, drafts, "📩 Пост из канала:", (idea) => idea.mapUrl ?? fallbackUrl);
+  await sendDraftsForApproval(chatId, drafts, "📩 Пост из канала:", (idea) => idea.mapUrl ?? fallbackUrl, "bot_channel_forward");
 }
 
 /** Fallback for when forwarding doesn't work (protected content, etc.) — pastes the post text
@@ -224,11 +226,12 @@ async function handlePastedPostText(message: TelegramMessage) {
   }
 
   const fallbackUrl = hiddenLinks[0] ?? "";
-  await sendDraftsForApproval(chatId, drafts, "📋 Вставленный текст:", (idea) => idea.mapUrl ?? fallbackUrl);
+  await sendDraftsForApproval(chatId, drafts, "📋 Вставленный текст:", (idea) => idea.mapUrl ?? fallbackUrl, "bot_pasted_text");
 }
 
 async function handleStartCommand(message: TelegramMessage) {
   const chatId = String(message.chat.id);
+  await trackEvent("bot_start", chatId);
   await sendTelegramMessage(
     chatId,
     [
@@ -318,6 +321,7 @@ async function handleCallbackQuery(callbackQuery: TelegramCallbackQuery) {
   });
 
   await prisma.pendingImport.delete({ where: { id: pendingId } });
+  await trackEvent("place_created", pending.chatId, { source: pending.source });
   await answerCallbackQuery(callbackQuery.id, "Добавлено");
   if (chatId && messageId) await editTelegramMessageText(String(chatId), messageId, `✅ Добавлено: ${idea.title}`);
 }

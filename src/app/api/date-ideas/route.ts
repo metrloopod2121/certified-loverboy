@@ -4,7 +4,10 @@ import { requireAuth, isAuthUser } from "@/lib/apiAuth";
 import { resolveTagIds } from "@/lib/tags";
 import { withoutMetroTags } from "@/lib/metro";
 import { seedDemoPlacesIfEmpty } from "@/lib/demoPlaces";
+import { trackEvent } from "@/lib/analytics";
 import type { LocationInput } from "@/lib/types";
+
+const KNOWN_CREATE_SOURCES = new Set(["manual", "file_import", "link_in_app"]);
 
 export async function GET(request: Request) {
   const auth = requireAuth(request);
@@ -49,5 +52,9 @@ export async function POST(request: Request) {
     },
     include: { tags: { include: { tag: true } }, locations: true },
   });
+
+  const source = typeof body.source === "string" && KNOWN_CREATE_SOURCES.has(body.source) ? body.source : "manual";
+  await trackEvent("place_created", auth.telegramId, { source });
+
   return NextResponse.json(idea, { status: 201 });
 }

@@ -59,6 +59,10 @@ model PendingImport {
   chatId    String
   sourceUrl String
   payload   String
+  /// Which bot flow produced this draft (bot_yandex_link / bot_channel_forward /
+  /// bot_telegram_post_link / bot_pasted_text) -- carried through to the place_created
+  /// analytics event on approval.
+  source    String   @default("unknown")
   createdAt DateTime @default(now())
 }
 
@@ -78,4 +82,18 @@ model SupportMessage {
   username       String?
   text           String
   createdAt      DateTime @default(now())
+}
+
+/// Minimal self-hosted product analytics -- one row per tracked event. `properties` is a
+/// JSON-encoded string (e.g. {"source":"manual"}), queried ad hoc / summarized in the daily
+/// usage report rather than through a dedicated dashboard for now.
+model AnalyticsEvent {
+  id             String   @id @default(cuid())
+  name           String
+  telegramUserId String?
+  properties     String?
+  createdAt      DateTime @default(now())
+
+  @@index([name])
+  @@index([telegramUserId])
 }

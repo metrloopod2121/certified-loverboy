@@ -67,5 +67,6 @@ sudo -u loverboy bash -c 'cd /srv/web/app/certified-loverboy/app && node scripts
 - Владелец файлов приложения — пользователь `loverboy`, не root.
 - SQLite-база: `data/app.db`. Автобэкап — раз в сутки, см. `docs/RESTORE.md` (там же — разовая установка systemd-таймера).
 - Мониторинг расхода Cloudflare/Brave квоты + здоровья сервиса — `scripts/usageReport.mjs`, таймеры `deploy/certified-loverboy-usage-monitor-*.timer` (тоже разовая установка, см. `docs/RESTORE.md`-соседние юниты в `deploy/`).
+- `/usage` в боте доступен только `ADMIN_TG_ID` и отправляет последний cached usage-отчёт из `data/usage-report-latest.html` (файл обновляется hourly/daily monitor'ом).
 
 Подробности изменений — `docs/CHANGELOG.md`.

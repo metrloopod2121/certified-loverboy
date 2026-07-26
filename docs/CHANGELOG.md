@@ -5,7 +5,8 @@
 ## 2026-07-27
 
 **Вернули `/usage` для админа**
-- Бот снова понимает `/usage` только от `ADMIN_TG_ID`: команда запускает существующий `scripts/usageReport.mjs --mode=daily` в dry-run и отправляет HTML-отчёт в тот же чат.
+- Бот снова понимает `/usage` только от `ADMIN_TG_ID`: команда отправляет последний HTML-отчёт из `data/usage-report-latest.html`.
+- `scripts/usageReport.mjs` теперь обновляет этот cached report на каждом hourly/daily monitor run, а сам monitor по-прежнему читает journal от root/systemd, поэтому токены/нейроны не обнуляются из-за прав веб-процесса.
 - `sendTelegramMessage()` получил опции `parseMode` / `disableWebPagePreview`, чтобы отчёт форматировался так же, как daily systemd monitor.
 
 **Счётчик импортов по ссылке в Profile, лимит выключен**

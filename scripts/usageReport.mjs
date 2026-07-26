@@ -21,6 +21,7 @@ if (!["hourly", "daily"].includes(mode)) {
 const appDirectory = process.env.CLB_APP_DIRECTORY ?? process.cwd();
 const envPath = process.env.CLB_ENV_FILE ?? path.join(appDirectory, ".env");
 const statePath = process.env.CLB_USAGE_MONITOR_STATE ?? "/var/lib/certified-loverboy-usage-monitor/state.json";
+const reportCachePath = process.env.CLB_USAGE_REPORT_CACHE ?? path.join(appDirectory, "data/usage-report-latest.html");
 const journalFixturePath = process.env.CLB_USAGE_MONITOR_JOURNAL_FILE;
 const dryRun = process.env.CLB_USAGE_MONITOR_DRY_RUN === "1";
 
@@ -252,6 +253,13 @@ async function saveState(state) {
   await rename(temporaryPath, statePath);
 }
 
+async function saveReportCache(report) {
+  await mkdir(path.dirname(reportCachePath), { recursive: true });
+  const temporaryPath = `${reportCachePath}.tmp`;
+  await writeFile(temporaryPath, `${report}\n`, { mode: 0o644 });
+  await rename(temporaryPath, reportCachePath);
+}
+
 function alertKey(name) {
   return `${name}:${moscowDateFormatter.format(new Date())}`;
 }
@@ -397,10 +405,13 @@ async function sendTelegramMessage(text) {
 const [journal, health, state] = await Promise.all([loadJournal(), collectHealth(), readState()]);
 const usage = parseUsage(journal);
 const cloudflareDailyLimit = asNumber(process.env.CLOUDFLARE_AI_DAILY_FREE_NEURONS) ?? 10_000;
+const analytics = collectAnalytics();
+const dailyReport = buildDailyReport(usage, health, cloudflareDailyLimit, analytics);
+
+await saveReportCache(dailyReport);
 
 if (mode === "daily") {
-  const analytics = collectAnalytics();
-  await sendTelegramMessage(buildDailyReport(usage, health, cloudflareDailyLimit, analytics));
+  await sendTelegramMessage(dailyReport);
 } else {
   const alerts = collectAlerts(state, usage, health, cloudflareDailyLimit);
   if (alerts.length > 0) await sendTelegramMessage(buildAlertMessage(alerts));

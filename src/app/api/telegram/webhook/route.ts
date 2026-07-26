@@ -1,5 +1,5 @@
-import { execFile } from "node:child_process";
-import { promisify } from "node:util";
+import { readFile } from "node:fs/promises";
+import path from "node:path";
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { resolveTagIds } from "@/lib/tags";
@@ -28,7 +28,7 @@ import {
 
 export const runtime = "nodejs";
 
-const execFileAsync = promisify(execFile);
+const USAGE_REPORT_CACHE = path.join(process.cwd(), "data/usage-report-latest.html");
 
 type TelegramForwardChat = { type: string; username?: string };
 
@@ -297,24 +297,14 @@ async function handleUsageCommand(message: TelegramMessage) {
   await sendTelegramMessage(chatId, "Собираю usage-отчёт, секунду...");
 
   try {
-    const { stdout } = await execFileAsync("node", ["scripts/usageReport.mjs", "--mode=daily"], {
-      cwd: process.cwd(),
-      env: {
-        ...process.env,
-        CLB_USAGE_MONITOR_DRY_RUN: "1",
-        CLB_USAGE_MONITOR_STATE: "/tmp/certified-loverboy-usage-command-state.json",
-      },
-      maxBuffer: 1024 * 1024,
-      timeout: 45_000,
-    });
-    const report = stdout.trim();
+    const report = (await readFile(USAGE_REPORT_CACHE, "utf8")).trim();
     if (!report) throw new Error("usage report produced no output");
 
     await sendTelegramMessage(chatId, report, { parseMode: "HTML", disableWebPagePreview: true });
   } catch (err) {
     const detail = err instanceof Error ? err.message : String(err);
     console.log(`[usage] /usage command failed: ${detail}`);
-    await sendTelegramMessage(chatId, `Не смог собрать usage-отчёт: ${detail}`);
+    await sendTelegramMessage(chatId, `Usage-отчёт ещё не готов. Подожди ближайший monitor run или запусти daily monitor на сервере.`);
   }
 }
 

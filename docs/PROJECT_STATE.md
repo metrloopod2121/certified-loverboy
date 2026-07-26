@@ -19,7 +19,7 @@
 - HTTPS: `https://vacanator.xyz:8443/`
 - порт `443` не трогать, там VPN-стек сервера
 - bot: `@certified7overBot`
-- latest deployed commit: `a513825 Expand user analytics coverage`
+- latest deployed commit: `4e7afcd Notify admin on bot starts`
 
 Локально рабочее дерево после последнего деплоя чистое, кроме untracked
 `pre fill data .zip`; этот zip не относится к текущим изменениям и не трогался.

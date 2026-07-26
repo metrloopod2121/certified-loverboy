@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { Download, LifeBuoy, Info, Languages } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Download, LifeBuoy, Info, Languages, Link as LinkIcon } from "lucide-react";
 import { apiFetch, downloadWithToken } from "@/lib/apiClient";
 import {
   card,
@@ -25,11 +25,29 @@ const LANGUAGES: { value: Lang; label: string }[] = [
 export default function ProfileScreen() {
   const { lang, setLang } = useLang();
   const t = useT();
+  const [linkImportsRemaining, setLinkImportsRemaining] = useState<number | null | "loading">("loading");
   const [exporting, setExporting] = useState(false);
   const [supportText, setSupportText] = useState("");
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    apiFetch("/api/profile/import-quota")
+      .then((data) => {
+        if (!cancelled) setLinkImportsRemaining(typeof data.remaining === "number" ? data.remaining : null);
+      })
+      .catch(() => {
+        if (!cancelled) setLinkImportsRemaining(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const remainingText =
+    linkImportsRemaining === "loading" ? "..." : linkImportsRemaining === null ? "∞" : String(linkImportsRemaining);
 
   async function exportAll() {
     setExporting(true);
@@ -89,6 +107,17 @@ export default function ProfileScreen() {
           {t("aboutBotHeading")}
         </span>
         <p className={mutedText}>{t("aboutBotText")}</p>
+      </div>
+
+      <div className={`${card} flex items-center justify-between gap-4`}>
+        <div className="flex flex-col gap-1">
+          <span className="inline-flex items-center gap-1.5 text-[15px] font-semibold">
+            <LinkIcon size={16} />
+            {t("linkImportsHeading")}
+          </span>
+          <p className={mutedText}>{t("linkImportsRemaining")}</p>
+        </div>
+        <span className="shrink-0 text-[34px] font-semibold leading-none text-[var(--app-ink)]">{remainingText}</span>
       </div>
 
       <form onSubmit={sendSupport} className={`${card} flex flex-col gap-2`}>

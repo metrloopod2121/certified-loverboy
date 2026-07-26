@@ -74,8 +74,8 @@ const strings = {
   cancelledEdit: { ru: "❌ Отменено.", en: "❌ Cancelled." },
   callbackAdded: { ru: "Добавлено", en: "Added" },
   quotaExhausted: {
-    ru: "Бесплатный лимит на импорт по ссылке исчерпан (5 из 5). Платные подписки скоро появятся — а добавить место вручную в приложении можно в любой момент.",
-    en: "You've used your free link imports (5 of 5). Paid plans are coming soon — you can still add a place manually in the app anytime.",
+    ru: "Лимит на импорт по ссылке исчерпан. Добавить место вручную в приложении можно в любой момент.",
+    en: "You've used your link imports. You can still add a place manually in the app anytime.",
   },
   previewAddress: { ru: "Адрес", en: "Address" },
   previewMetro: { ru: "Метро", en: "Metro" },
@@ -202,9 +202,11 @@ const strings = {
   },
   aboutBotHeading: { ru: "О боте", en: "About the bot" },
   aboutBotText: {
-    ru: "Этот бот ведёт твою личную базу мест и идей для свиданий. Скинь ему ссылку на Яндекс.Карты, перешли пост из канала или вставь ссылку на пост — он найдёт место и предложит добавить его в базу. Бесплатных импортов: 5, дальше можно добавлять места вручную или вставлять ссылку на Яндекс.Карты прямо здесь, в приложении.",
-    en: "This bot keeps your own personal base of places and date ideas. Send it a Yandex Maps link, forward a channel post, or paste a link to a post — it picks out the place and offers to add it to your base. Free imports: 5, then add places manually or paste a Yandex Maps link right here in the app.",
+    ru: "Этот бот ведёт твою личную базу мест и идей для свиданий. Скинь ему ссылку на Яндекс.Карты, перешли пост из канала или вставь ссылку на пост — он найдёт место и предложит добавить его в базу.",
+    en: "This bot keeps your own personal base of places and date ideas. Send it a Yandex Maps link, forward a channel post, or paste a link to a post — it picks out the place and offers to add it to your base.",
   },
+  linkImportsHeading: { ru: "Импорты по ссылке", en: "Link imports" },
+  linkImportsRemaining: { ru: "Осталось", en: "Remaining" },
   supportHeading: { ru: "Поддержка", en: "Support" },
   supportDescription: {
     ru: "Нашёл баг или что-то непонятно? Опиши ниже.",

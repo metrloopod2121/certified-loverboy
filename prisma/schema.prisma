@@ -15,7 +15,6 @@ model DateIdea {
   telegramUserId   String
   title            String
   description      String?
-  swipeDescription String?
   priceNote        String?
   tags             TagsOnDateIdeas[]
   locations        Location[]
@@ -86,6 +85,15 @@ model PendingImport {
 model ImportQuota {
   telegramUserId String   @id
   usedCount      Int      @default(0)
+  updatedAt      DateTime @updatedAt
+}
+
+/// One row per Telegram user for cross-surface (bot + Mini App) preferences.
+/// Currently just the bot/UI language; grows here rather than on ImportQuota
+/// or another single-purpose table so it isn't tied to import-specific meaning.
+model UserSettings {
+  telegramUserId String   @id
+  language       String   @default("ru")
   updatedAt      DateTime @updatedAt
 }
 

@@ -43,7 +43,7 @@ export async function PATCH(
   const body = await request.json();
 
   const data: Record<string, unknown> = {};
-  for (const key of ["title", "description", "swipeDescription", "priceNote"]) {
+  for (const key of ["title", "description", "priceNote"]) {
     if (key in body) data[key] = body[key];
   }
 

@@ -1,6 +1,7 @@
 import { extractIdeaFromText, extractIdeasFromText, type ExtractedIdea } from "@/lib/cloudflareAi";
 import { braveSearchSnippets } from "@/lib/braveSearch";
 import { parseMapsLink, findYandexMapsLink, stripTrailingPunctuation } from "@/lib/coords";
+import { DEFAULT_LANG, t, type Lang } from "@/lib/i18n";
 
 export type ParsedFromLink = Omit<ExtractedIdea, "otherLinks"> & {
   lat: number | null;
@@ -231,14 +232,18 @@ export async function fetchTelegramPostText(url: string): Promise<string | null>
   }
 }
 
-export function formatIdeaPreview(idea: ParsedFromLink, header = "📍 Новое место с Яндекс.Карт:"): string {
+export function formatIdeaPreview(
+  idea: ParsedFromLink,
+  header: string = t(DEFAULT_LANG, "headerYandexLink"),
+  lang: Lang = DEFAULT_LANG
+): string {
   const lines = [header, "", idea.title];
-  if (idea.address) lines.push(`Адрес: ${idea.address}`);
-  if (idea.metro) lines.push(`Метро: ${idea.metro}`);
-  if (idea.priceNote) lines.push(`Цена: ${idea.priceNote}`);
-  if (idea.tags.length > 0) lines.push(`Теги: ${idea.tags.join(", ")}`);
-  if (idea.links.length > 0) lines.push(`Ссылки: ${idea.links.map((l) => l.url).join(", ")}`);
+  if (idea.address) lines.push(`${t(lang, "previewAddress")}: ${idea.address}`);
+  if (idea.metro) lines.push(`${t(lang, "previewMetro")}: ${idea.metro}`);
+  if (idea.priceNote) lines.push(`${t(lang, "previewPrice")}: ${idea.priceNote}`);
+  if (idea.tags.length > 0) lines.push(`${t(lang, "previewTags")}: ${idea.tags.join(", ")}`);
+  if (idea.links.length > 0) lines.push(`${t(lang, "previewLinks")}: ${idea.links.map((l) => l.url).join(", ")}`);
   if (idea.description) lines.push("", idea.description);
-  lines.push("", "Добавить в базу?");
+  lines.push("", t(lang, "previewAddToBase"));
   return lines.join("\n");
 }

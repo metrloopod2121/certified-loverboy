@@ -1,9 +1,6 @@
 import type { DateIdea } from "@/lib/types";
 
-type ExportableIdea = Pick<
-  DateIdea,
-  "title" | "description" | "swipeDescription" | "priceNote" | "tags" | "locations"
->;
+type ExportableIdea = Pick<DateIdea, "title" | "description" | "priceNote" | "tags" | "locations">;
 
 /** Inverse of parseDateMarkdown — produces a file that round-trips through
  *  the "Import file" screen (see docs/import-prompt.md for the field vocabulary). */
@@ -12,7 +9,6 @@ export function serializeDateIdeaMarkdown(idea: ExportableIdea): string {
 
   if (idea.tags.length > 0) lines.push(`Теги: ${idea.tags.map((t) => t.tag.name).join(", ")}`);
   if (idea.priceNote) lines.push(`Цена: ${idea.priceNote}`);
-  if (idea.swipeDescription) lines.push(`Описание для свайпа: ${idea.swipeDescription}`);
 
   for (const loc of idea.locations) {
     const hasData = loc.address || loc.metro || loc.url || loc.lat != null || loc.lng != null;

@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/db";
+import { DEFAULT_LANG, t, type Lang } from "@/lib/i18n";
 
 const FREE_IMPORT_LIMIT = 5;
 
@@ -24,6 +25,6 @@ export async function tryConsumeImportQuota(telegramUserId: string): Promise<Quo
   return { ok: true, remaining: FREE_IMPORT_LIMIT - updated.usedCount };
 }
 
-export function quotaExhaustedMessage(): string {
-  return "Бесплатный лимит на импорт по ссылке исчерпан (5 из 5). Платные подписки скоро появятся — а добавить место вручную в приложении можно в любой момент.";
+export function quotaExhaustedMessage(lang: Lang = DEFAULT_LANG): string {
+  return t(lang, "quotaExhausted");
 }

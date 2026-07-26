@@ -4,11 +4,11 @@ import type { DateIdeaInput } from "@/lib/types";
 
 export type ParsedDateIdea = Pick<
   DateIdeaInput,
-  "title" | "tags" | "priceNote" | "description" | "swipeDescription" | "locations" | "links"
+  "title" | "tags" | "priceNote" | "description" | "locations" | "links"
 >;
 
 type LocationKey = "address" | "metro" | "url";
-type OtherKey = "priceNote" | "swipeDescription";
+type OtherKey = "priceNote";
 
 type ParsedLocation = DateIdeaInput["locations"][number];
 
@@ -20,10 +20,6 @@ const LOCATION_KEYS: Record<string, LocationKey> = {
 
 const OTHER_KEYS: Record<string, OtherKey> = {
   "цена": "priceNote",
-  "описание для свайпа": "swipeDescription",
-  "свайп": "swipeDescription",
-  "свайп описание": "swipeDescription",
-  "свайп-описание": "swipeDescription",
 };
 
 const LOCATION_MARKER_KEYS = new Set(["место", "локация", "точка"]);
@@ -76,7 +72,6 @@ export function parseDateMarkdown(raw: string): ParsedDateIdea {
     tags: [],
     priceNote: "",
     description: "",
-    swipeDescription: "",
     locations: [],
     links: [],
   };

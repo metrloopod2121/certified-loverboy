@@ -27,7 +27,6 @@ export async function seedDemoPlacesIfEmpty(telegramUserId: string): Promise<voi
         telegramUserId,
         title: parsed.title,
         description: parsed.description || null,
-        swipeDescription: parsed.swipeDescription || null,
         priceNote: parsed.priceNote || null,
         tags: { create: tagIds.map((tagId) => ({ tagId })) },
         locations: {

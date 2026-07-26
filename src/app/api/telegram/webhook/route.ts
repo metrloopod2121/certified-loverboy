@@ -5,6 +5,8 @@ import { withoutMetroTags } from "@/lib/metro";
 import { tryConsumeImportQuota, quotaExhaustedMessage } from "@/lib/importQuota";
 import { trackEvent } from "@/lib/analytics";
 import { submitSupportMessage } from "@/lib/support";
+import { getUserLanguage } from "@/lib/userSettings";
+import { t, addedEditText, type Lang } from "@/lib/i18n";
 import {
   sendTelegramMessage,
   sendTelegramMessageWithButtons,
@@ -110,7 +112,8 @@ async function sendDraftsForApproval(
   ideas: ParsedFromLink[],
   header: string,
   fallbackUrlFor: (idea: ParsedFromLink) => string,
-  source: string
+  source: string,
+  lang: Lang
 ) {
   for (const idea of ideas) {
     const { locationUrl, extraLink } = resolveLocationUrl(idea, fallbackUrlFor(idea));
@@ -123,9 +126,9 @@ async function sendDraftsForApproval(
       data: { chatId, sourceUrl: locationUrl, payload: JSON.stringify(enrichedIdea), source },
     });
 
-    await sendTelegramMessageWithButtons(chatId, formatIdeaPreview(enrichedIdea, header), [
-      { text: "✅ Да", callback_data: `pi:approve:${pending.id}` },
-      { text: "❌ Нет", callback_data: `pi:reject:${pending.id}` },
+    await sendTelegramMessageWithButtons(chatId, formatIdeaPreview(enrichedIdea, header, lang), [
+      { text: t(lang, "yesButton"), callback_data: `pi:approve:${pending.id}` },
+      { text: t(lang, "noButton"), callback_data: `pi:reject:${pending.id}` },
     ]);
   }
 }
@@ -135,50 +138,52 @@ async function handleYandexLink(message: TelegramMessage) {
   if (!url) return;
 
   const chatId = String(message.chat.id);
+  const lang = await getUserLanguage(chatId);
   const quota = await tryConsumeImportQuota(chatId);
   if (!quota.ok) {
-    await sendTelegramMessage(chatId, quotaExhaustedMessage());
+    await sendTelegramMessage(chatId, quotaExhaustedMessage(lang));
     return;
   }
 
-  await sendTelegramMessage(chatId, "Смотрю ссылку, секунду…");
+  await sendTelegramMessage(chatId, t(lang, "lookingAtLink"));
 
   const parsed = await parseYandexMapsLink(url);
   if (!parsed) {
-    await sendTelegramMessage(chatId, "Не смог разобрать эту ссылку. Попробуй другую или добавь вручную в приложении.");
+    await sendTelegramMessage(chatId, t(lang, "linkParseFailed"));
     return;
   }
 
-  await sendDraftsForApproval(chatId, [parsed], "📍 Новое место с Яндекс.Карт:", () => url, "bot_yandex_link");
+  await sendDraftsForApproval(chatId, [parsed], t(lang, "headerYandexLink"), () => url, "bot_yandex_link", lang);
 }
 
 /** Owner shares a bare link to a Telegram post (not a forward) — fetches the post's public
  *  embed page and parses it the same way a forwarded post would be. */
 async function handleTelegramPostLink(message: TelegramMessage, url: string) {
   const chatId = String(message.chat.id);
+  const lang = await getUserLanguage(chatId);
   const quota = await tryConsumeImportQuota(chatId);
   if (!quota.ok) {
-    await sendTelegramMessage(chatId, quotaExhaustedMessage());
+    await sendTelegramMessage(chatId, quotaExhaustedMessage(lang));
     return;
   }
 
-  await sendTelegramMessage(chatId, "Смотрю пост по ссылке, секунду…");
+  await sendTelegramMessage(chatId, t(lang, "lookingAtPostLink"));
 
   const postText = await fetchTelegramPostText(url);
   if (!postText) {
     console.log(`[import] telegram post link fetch failed chatId=${chatId} url=${url}`);
-    await sendTelegramMessage(chatId, "Не смог открыть пост по ссылке. Перешли его боту сообщением или добавь вручную в приложении.");
+    await sendTelegramMessage(chatId, t(lang, "postLinkOpenFailed"));
     return;
   }
 
   const drafts = await parsePostTextMulti(postText);
   if (drafts.length === 0) {
     console.log(`[import] telegram post link parse failed chatId=${chatId} url=${url}`);
-    await sendTelegramMessage(chatId, "Не смог разобрать пост. Попробуй переслать его сообщением или добавь вручную в приложении.");
+    await sendTelegramMessage(chatId, t(lang, "postLinkParseFailed"));
     return;
   }
 
-  await sendDraftsForApproval(chatId, drafts, "📩 Пост по ссылке:", () => url, "bot_telegram_post_link");
+  await sendDraftsForApproval(chatId, drafts, t(lang, "headerPostLink"), () => url, "bot_telegram_post_link", lang);
 }
 
 /** A channel post forwarded straight into the chat — post text already has address/price/
@@ -186,6 +191,7 @@ async function handleTelegramPostLink(message: TelegramMessage, url: string) {
  *  places; each becomes its own draft with its own approve/reject buttons. */
 async function handleChannelForwardPost(message: TelegramMessage) {
   const chatId = String(message.chat.id);
+  const lang = await getUserLanguage(chatId);
   const text = (message.text ?? message.caption ?? "").trim();
   if (!text) {
     // Multi-photo posts arrive as one message per photo, all sharing a media_group_id, with
@@ -195,28 +201,28 @@ async function handleChannelForwardPost(message: TelegramMessage) {
       console.log(`[import] album photo without caption, skipping chatId=${chatId} group=${message.media_group_id}`);
       return;
     }
-    await sendTelegramMessage(chatId, "В пересланном посте нет текста — не смог разобрать. Добавь вручную в приложении.");
+    await sendTelegramMessage(chatId, t(lang, "forwardedNoText"));
     return;
   }
 
   const quota = await tryConsumeImportQuota(chatId);
   if (!quota.ok) {
-    await sendTelegramMessage(chatId, quotaExhaustedMessage());
+    await sendTelegramMessage(chatId, quotaExhaustedMessage(lang));
     return;
   }
 
-  await sendTelegramMessage(chatId, "Смотрю пересланный пост, секунду…");
+  await sendTelegramMessage(chatId, t(lang, "lookingAtForwardedPost"));
 
   const hiddenLinks = hiddenLinksFromMessage(message);
   const drafts = await parsePostTextMulti(textWithHiddenLinks(text, hiddenLinks));
   if (drafts.length === 0) {
     console.log(`[import] channel forward parse failed chatId=${chatId}`);
-    await sendTelegramMessage(chatId, "Не смог разобрать пост. Попробуй прислать текст сообщением или добавь вручную в приложении.");
+    await sendTelegramMessage(chatId, t(lang, "forwardedParseFailed"));
     return;
   }
 
   const fallbackUrl = hiddenLinks[0] ?? forwardedChannelSourceUrl(message);
-  await sendDraftsForApproval(chatId, drafts, "📩 Пост из канала:", () => fallbackUrl, "bot_channel_forward");
+  await sendDraftsForApproval(chatId, drafts, t(lang, "headerChannelForward"), () => fallbackUrl, "bot_channel_forward", lang);
 }
 
 /** Fallback for when forwarding doesn't work (protected content, etc.) — pastes the post text
@@ -224,65 +230,54 @@ async function handleChannelForwardPost(message: TelegramMessage) {
  *  above wasn't usable. */
 async function handlePastedPostText(message: TelegramMessage) {
   const chatId = String(message.chat.id);
+  const lang = await getUserLanguage(chatId);
   const text = (message.text ?? "").trim();
 
   console.log(`[import] pasted post text instead of forwarding chatId=${chatId} length=${text.length}`);
 
   const quota = await tryConsumeImportQuota(chatId);
   if (!quota.ok) {
-    await sendTelegramMessage(chatId, quotaExhaustedMessage());
+    await sendTelegramMessage(chatId, quotaExhaustedMessage(lang));
     return;
   }
 
-  await sendTelegramMessage(chatId, "Смотрю текст, секунду…");
+  await sendTelegramMessage(chatId, t(lang, "lookingAtPastedText"));
 
   const hiddenLinks = hiddenLinksFromMessage(message);
   const drafts = await parsePostTextMulti(textWithHiddenLinks(text, hiddenLinks));
   if (drafts.length === 0) {
     console.log(`[import] pasted text parse failed chatId=${chatId}`);
-    await sendTelegramMessage(chatId, "Не смог разобрать текст. Добавь вручную в приложении.");
+    await sendTelegramMessage(chatId, t(lang, "pastedParseFailed"));
     return;
   }
 
   const fallbackUrl = hiddenLinks[0] ?? "";
-  await sendDraftsForApproval(chatId, drafts, "📋 Вставленный текст:", () => fallbackUrl, "bot_pasted_text");
+  await sendDraftsForApproval(chatId, drafts, t(lang, "headerPastedText"), () => fallbackUrl, "bot_pasted_text", lang);
 }
 
 async function handleStartCommand(message: TelegramMessage) {
   const chatId = String(message.chat.id);
+  const lang = await getUserLanguage(chatId);
   await trackEvent("bot_start", chatId);
-  await sendTelegramMessage(
-    chatId,
-    [
-      "Привет! Я собираю базу мест для свиданий и просто интересных точек.",
-      "",
-      "Кинь мне ссылку на Яндекс.Карты, перешли пост из телеграм-канала, вставь ссылку на пост или просто текст — я распознаю место и предложу добавить его в базу.",
-      "",
-      "Открой приложение через кнопку меню — там список, карта и фильтры по своей базе.",
-      "",
-      "Есть проблема? Напиши /support и опиши её.",
-    ].join("\n")
-  );
+  await sendTelegramMessage(chatId, t(lang, "start"));
 }
 
 /** Logs the message to SupportMessage (durable copy) and forwards it to ADMIN_TG_ID, so
  *  nothing gets lost even if the Telegram DM notification is missed. */
 async function handleSupportCommand(message: TelegramMessage) {
   const chatId = String(message.chat.id);
+  const lang = await getUserLanguage(chatId);
   const text = (message.text ?? "").replace(/^\/support(@\w+)?\s*/i, "").trim();
 
   if (!text) {
-    await sendTelegramMessage(
-      chatId,
-      "Опиши проблему одним сообщением, начиная с /support — например:\n/support не открывается карта"
-    );
+    await sendTelegramMessage(chatId, t(lang, "supportUsage"));
     return;
   }
 
   const username = message.from?.username ? `@${message.from.username}` : null;
   await submitSupportMessage(chatId, username, text);
 
-  await sendTelegramMessage(chatId, "Спасибо! Передал в поддержку, скоро ответим.");
+  await sendTelegramMessage(chatId, t(lang, "supportThanks"));
 }
 
 async function handleCallbackQuery(callbackQuery: TelegramCallbackQuery) {
@@ -293,10 +288,12 @@ async function handleCallbackQuery(callbackQuery: TelegramCallbackQuery) {
     return;
   }
 
+  const lang = await getUserLanguage(String(callbackQuery.from.id));
+
   const [, action, pendingId] = match;
   const pending = await prisma.pendingImport.findUnique({ where: { id: pendingId } });
   if (!pending || pending.chatId !== String(callbackQuery.from.id)) {
-    await answerCallbackQuery(callbackQuery.id, "Уже обработано или устарело");
+    await answerCallbackQuery(callbackQuery.id, t(lang, "callbackStale"));
     return;
   }
 
@@ -305,8 +302,8 @@ async function handleCallbackQuery(callbackQuery: TelegramCallbackQuery) {
 
   if (action === "reject") {
     await prisma.pendingImport.delete({ where: { id: pendingId } });
-    await answerCallbackQuery(callbackQuery.id, "Отменено");
-    if (chatId && messageId) await editTelegramMessageText(String(chatId), messageId, "❌ Отменено.");
+    await answerCallbackQuery(callbackQuery.id, t(lang, "callbackCancelled"));
+    if (chatId && messageId) await editTelegramMessageText(String(chatId), messageId, t(lang, "cancelledEdit"));
     return;
   }
 
@@ -339,8 +336,8 @@ async function handleCallbackQuery(callbackQuery: TelegramCallbackQuery) {
 
   await prisma.pendingImport.delete({ where: { id: pendingId } });
   await trackEvent("place_created", pending.chatId, { source: pending.source });
-  await answerCallbackQuery(callbackQuery.id, "Добавлено");
-  if (chatId && messageId) await editTelegramMessageText(String(chatId), messageId, `✅ Добавлено: ${idea.title}`);
+  await answerCallbackQuery(callbackQuery.id, t(lang, "callbackAdded"));
+  if (chatId && messageId) await editTelegramMessageText(String(chatId), messageId, addedEditText(lang, idea.title));
 }
 
 /** Receives Telegram updates. Any user can message the bot: a Yandex Maps link, a Telegram

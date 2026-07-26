@@ -38,7 +38,6 @@ export async function POST(request: Request) {
       telegramUserId: auth.telegramId,
       title: body.title,
       description: body.description || null,
-      swipeDescription: body.swipeDescription || null,
       priceNote: body.priceNote || null,
       tags: { create: tagIds.map((tagId) => ({ tagId })) },
       locations: {

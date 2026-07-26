@@ -30,7 +30,6 @@ export type DateIdea = {
   id: string;
   title: string;
   description: string | null;
-  swipeDescription: string | null;
   priceNote: string | null;
   tags: { tag: { id: string; name: string } }[];
   locations: Location[];
@@ -42,7 +41,6 @@ export type DateIdea = {
 export type DateIdeaInput = {
   title: string;
   description: string;
-  swipeDescription: string;
   priceNote: string;
   tags: string[];
   locations: LocationInput[];
@@ -67,7 +65,6 @@ export function dateIdeaToInput(idea: DateIdea): DateIdeaInput {
   return {
     title: idea.title,
     description: idea.description ?? "",
-    swipeDescription: idea.swipeDescription ?? "",
     priceNote: idea.priceNote ?? "",
     tags: idea.tags.map((t) => t.tag.name),
     locations: idea.locations.map(locationToInput),

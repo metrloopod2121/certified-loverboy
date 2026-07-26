@@ -69,9 +69,6 @@ export default function DateIdeaForm({
 }) {
   const [title, setTitle] = useState(initial?.title ?? "");
   const [description, setDescription] = useState(initial?.description ?? "");
-  // No longer editable (the swipe feature is gone) -- kept as-is on save so editing an older
-  // place doesn't silently wipe whatever it already had here.
-  const [swipeDescription] = useState(initial?.swipeDescription ?? "");
   const [priceNote, setPriceNote] = useState(initial?.priceNote ?? "");
   const [tags, setTags] = useState(initial?.tags?.join(", ") ?? "");
   const [locations, setLocations] = useState<LocationForm[]>(
@@ -180,7 +177,6 @@ export default function DateIdeaForm({
       await onSubmit({
         title,
         description,
-        swipeDescription,
         priceNote,
         tags: tags.split(",").map((t) => t.trim()).filter(Boolean),
         locations: resolvedLocations,

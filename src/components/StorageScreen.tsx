@@ -559,9 +559,6 @@ export default function StorageScreen() {
                 </p>
               )}
               {idea.priceNote && <p className="text-[14px] font-semibold">{priceTier(idea.priceNote) ?? idea.priceNote}</p>}
-              {idea.swipeDescription && (
-                <p className="text-[14px] leading-snug">{idea.swipeDescription}</p>
-              )}
               {idea.tags.length > 0 && (
                 <div className="flex flex-wrap gap-1.5">
                   {idea.tags.map((t) => (

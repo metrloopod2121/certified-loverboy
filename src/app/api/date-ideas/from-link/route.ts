@@ -10,7 +10,6 @@ function toDraft(parsed: ParsedFromLink, sourceUrl: string): ParsedDateIdea {
   return {
     title: parsed.title,
     description: parsed.description ?? "",
-    swipeDescription: "",
     priceNote: parsed.priceNote ?? "",
     tags: parsed.tags,
     locations: [

@@ -49,3 +49,44 @@ sudo systemctl enable --now certified-loverboy-usage-monitor-daily.timer
 Мониторингу нужен `ADMIN_TG_ID` в `.env` приложения — туда шлются алерты и суточный отчёт.
 
 Проверить, что таймеры встали: `systemctl list-timers | grep certified-loverboy`.
+
+## Аналитика: файл, личка, пауза
+
+Продуктовая аналитика пишет события в SQLite `AnalyticsEvent`. На проде также можно держать
+JSONL-файл для последующего анализа нейросетью:
+
+```bash
+/srv/web/app/certified-loverboy/app/data/analytics-events.jsonl
+```
+
+Актуальные флаги в `.env`:
+
+```bash
+ANALYTICS_ENABLED="1"             # общий kill-switch
+ANALYTICS_DB_ENABLED="1"          # SQLite AnalyticsEvent
+ANALYTICS_FILE_ENABLED="1"        # JSONL
+ANALYTICS_LOG_PATH="./data/analytics-events.jsonl"
+ANALYTICS_TELEGRAM_ENABLED="1"    # каждое событие в личку ADMIN_TG_ID
+```
+
+Выключить всё без деплоя:
+
+```bash
+cd /srv/web/app/certified-loverboy/app
+sudo sed -i 's/^ANALYTICS_ENABLED=.*/ANALYTICS_ENABLED="0"/' .env
+sudo systemctl restart certified-loverboy.service
+```
+
+Выключить только личку:
+
+```bash
+cd /srv/web/app/certified-loverboy/app
+sudo sed -i 's/^ANALYTICS_TELEGRAM_ENABLED=.*/ANALYTICS_TELEGRAM_ENABLED="0"/' .env
+sudo systemctl restart certified-loverboy.service
+```
+
+Проверить последние события:
+
+```bash
+tail -n 50 /srv/web/app/certified-loverboy/app/data/analytics-events.jsonl
+```

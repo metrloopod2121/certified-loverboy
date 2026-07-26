@@ -4,6 +4,10 @@
 
 ## 2026-07-27
 
+**Зафиксирован актуальный project state**
+- Добавлен `docs/PROJECT_STATE.md`: текущая память проекта по продакшену, UI, импорту, лимитам, аналитике, `/usage`, support/export, деплою, бэкапам, рискам и follow-up'ам.
+- README теперь ссылается на `docs/PROJECT_STATE.md`, а `docs/RESTORE.md` дополнен командами для analytics JSONL / Telegram stream / kill-switch.
+
 **Полное покрытие продуктовой аналитикой + управляемые sink'и**
 - `trackEvent()` теперь пишет не только в SQLite `AnalyticsEvent`, но умеет опционально дублировать события в JSONL-файл (`ANALYTICS_FILE_ENABLED=1`, default path `data/analytics-events.jsonl`) и слать каждое событие админу в Telegram (`ANALYTICS_TELEGRAM_ENABLED=1`). `ANALYTICS_ENABLED=0` полностью ставит аналитику на паузу без деплоя.
 - Добавлен `/api/analytics` для клиентских событий Mini App и `AnalyticsTracker`: логируются `app_opened`, `screen_view`, tab navigation, фильтры/сортировки, открытие/редактирование/удаление карточек, геолокация, support-start, export-click и внешние ссылки.

@@ -3,11 +3,14 @@ import { prisma } from "@/lib/db";
 import { requireAuth, isAuthUser } from "@/lib/apiAuth";
 import { resolveTagIds } from "@/lib/tags";
 import { withoutMetroTags } from "@/lib/metro";
+import { seedDemoPlacesIfEmpty } from "@/lib/demoPlaces";
 import type { LocationInput } from "@/lib/types";
 
 export async function GET(request: Request) {
   const auth = requireAuth(request);
   if (!isAuthUser(auth)) return auth;
+
+  await seedDemoPlacesIfEmpty(auth.telegramId);
 
   const ideas = await prisma.dateIdea.findMany({
     where: { telegramUserId: auth.telegramId },

@@ -55,6 +55,9 @@ function loadSavedLocation(): LatLng | null {
 type PendingImport = {
   id: string;
   source: string;
+  /** Which "add" flow produced this draft — tagged onto the place_created analytics event
+   *  once it's actually saved. */
+  origin: "file_import" | "link_in_app";
   parsed: ParsedDateIdea;
 };
 
@@ -212,7 +215,7 @@ export default function StorageScreen() {
   }
 
   async function createIdea(input: DateIdeaInput) {
-    await apiFetch("/api/date-ideas", { method: "POST", body: JSON.stringify(input) });
+    await apiFetch("/api/date-ideas", { method: "POST", body: JSON.stringify({ ...input, source: "manual" }) });
     setAddMode("none");
     await reload();
   }
@@ -236,6 +239,7 @@ export default function StorageScreen() {
       Array.from(files).map(async (file) => ({
         id: `f${nextImportId++}`,
         source: file.name,
+        origin: "file_import" as const,
         parsed: parseDateMarkdown(await file.text()),
       }))
     );
@@ -258,7 +262,7 @@ export default function StorageScreen() {
         method: "POST",
         body: JSON.stringify({ url }),
       });
-      setImportItems((prev) => [...prev, { id: `l${nextImportId++}`, source: url, parsed }]);
+      setImportItems((prev) => [...prev, { id: `l${nextImportId++}`, source: url, origin: "link_in_app", parsed }]);
       setLinkInput("");
     } catch (err) {
       setLinkError(err instanceof Error ? err.message : "Couldn't parse this link");
@@ -267,8 +271,8 @@ export default function StorageScreen() {
     }
   }
 
-  async function saveImportItem(id: string, input: DateIdeaInput) {
-    await apiFetch("/api/date-ideas", { method: "POST", body: JSON.stringify(input) });
+  async function saveImportItem(id: string, origin: PendingImport["origin"], input: DateIdeaInput) {
+    await apiFetch("/api/date-ideas", { method: "POST", body: JSON.stringify({ ...input, source: origin }) });
     dismissImportItem(id);
     await reload();
   }
@@ -483,7 +487,7 @@ export default function StorageScreen() {
                   </div>
                   <DateIdeaForm
                     initial={item.parsed}
-                    onSubmit={(input) => saveImportItem(item.id, input)}
+                    onSubmit={(input) => saveImportItem(item.id, item.origin, input)}
                     onCancel={() => dismissImportItem(item.id)}
                   />
                 </div>

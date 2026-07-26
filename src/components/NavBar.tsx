@@ -2,12 +2,13 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { FolderHeart, Map, type LucideIcon } from "lucide-react";
+import { FolderHeart, Map, User, type LucideIcon } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 
 const LINKS: { href: string; label: string; icon: LucideIcon }[] = [
   { href: "/", label: "Ideas", icon: FolderHeart },
   { href: "/map", label: "Map", icon: Map },
+  { href: "/profile", label: "Profile", icon: User },
 ];
 
 export default function NavBar() {

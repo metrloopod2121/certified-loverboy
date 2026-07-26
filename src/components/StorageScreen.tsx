@@ -2,14 +2,14 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ChevronDown, Pencil, Trash2, Plus, X, Link as LinkIcon, Upload, Download, PencilLine, FileUp, Navigation, MapPin } from "lucide-react";
-import { apiFetch, downloadWithToken } from "@/lib/apiClient";
+import { ChevronDown, Pencil, Trash2, Plus, X, Link as LinkIcon, Upload, PencilLine, FileUp, Navigation, MapPin } from "lucide-react";
+import { apiFetch } from "@/lib/apiClient";
 import { dateIdeaToInput, type DateIdea, type DateIdeaInput } from "@/lib/types";
 import DateIdeaForm from "@/components/DateIdeaForm";
 import ImportReviewSheet from "@/components/ImportReviewSheet";
 import MultiSelectFilter from "@/components/MultiSelectFilter";
 import { parseDateMarkdown, type ParsedDateIdea } from "@/lib/parseDateMarkdown";
-import { parseCoordinates, parseMapsLink } from "@/lib/coords";
+import { parseCoordinates, parseMapsLink, findYandexMapsLink } from "@/lib/coords";
 import { distanceKm, formatDistanceKm, type LatLng } from "@/lib/geo";
 import { priceTier } from "@/lib/priceTier";
 import {
@@ -65,9 +65,9 @@ type PendingImport = {
 let nextImportId = 0;
 
 // Temporarily hidden for the public launch (link import covers the common case) — the
-// underlying file-import/export code stays intact behind these, flip back on when needed.
+// underlying file-import code stays intact behind this, flip back on when needed. Export moved
+// to the Profile tab.
 const SHOW_FILE_IMPORT = false;
-const SHOW_EXPORT = false;
 
 export default function StorageScreen() {
   const router = useRouter();
@@ -89,7 +89,6 @@ export default function StorageScreen() {
   const [locatingMe, setLocatingMe] = useState(false);
   const [locationError, setLocationError] = useState<string | null>(null);
   const [manualLocationInput, setManualLocationInput] = useState("");
-  const [exporting, setExporting] = useState(false);
 
   async function reload() {
     const data = await apiFetch("/api/date-ideas");
@@ -200,16 +199,6 @@ export default function StorageScreen() {
     setManualLocationInput("");
   }
 
-  async function exportAll() {
-    setExporting(true);
-    try {
-      const filename = `certified-loverboy-export-${new Date().toISOString().slice(0, 10)}.zip`;
-      await downloadWithToken("/api/export/token", "/api/export", filename);
-    } finally {
-      setExporting(false);
-    }
-  }
-
   function toggleAddPanel() {
     setAddMode((m) => (m === "none" ? "manual" : "none"));
     setImportItems([]);
@@ -252,6 +241,14 @@ export default function StorageScreen() {
     setImportItems((prev) => prev.filter((i) => i.id !== id));
   }
 
+  // Yandex Maps' own "Share" action copies "Title\nAddress\nhttps://..." as one block, not a
+  // bare URL -- rather than leaving that clutter sitting in the field, collapse it down to just
+  // the link the moment one is found, so what's left is only the link, no extra text.
+  function handleLinkInputChange(value: string) {
+    const extracted = findYandexMapsLink(value);
+    setLinkInput(extracted && extracted !== value.trim() ? extracted : value);
+  }
+
   async function importFromLink() {
     const url = linkInput.trim();
     if (!url) return;
@@ -286,17 +283,6 @@ export default function StorageScreen() {
           <h1 className={`${pageHeading} whitespace-nowrap`}>Ideas Storage</h1>
         </div>
         <div className="flex gap-2">
-          {SHOW_EXPORT && (
-            <button
-              onClick={exportAll}
-              disabled={exporting}
-              aria-label="Export all as files"
-              title="Export all as files"
-              className={`${iconButton} size-12 bg-[var(--app-overlay)] text-[var(--app-ink)] ring-1 ring-[var(--app-outline)]/10 disabled:opacity-50`}
-            >
-              <Download size={18} />
-            </button>
-          )}
           <button
             onClick={toggleAddPanel}
             aria-label={addMode === "none" ? "Add idea" : "Close form"}
@@ -440,7 +426,7 @@ export default function StorageScreen() {
               <textarea
                 placeholder="https://yandex.ru/maps/... (or the whole shared text)"
                 value={linkInput}
-                onChange={(e) => setLinkInput(e.target.value)}
+                onChange={(e) => handleLinkInputChange(e.target.value)}
                 className={input}
                 rows={2}
               />
@@ -536,11 +522,6 @@ export default function StorageScreen() {
                     const stations = metroStations(loc.metro);
                     return (
                       <div key={loc.id} className="flex flex-wrap items-center gap-x-1.5 gap-y-1">
-                        {loc.address ? (
-                          <p className={mutedText}>{loc.address}</p>
-                        ) : stations.length === 0 ? (
-                          <p className={mutedText}>No address</p>
-                        ) : null}
                         {stations.map((station) => (
                           <span
                             key={station}
@@ -550,6 +531,11 @@ export default function StorageScreen() {
                             {station}
                           </span>
                         ))}
+                        {loc.address ? (
+                          <p className={mutedText}>{loc.address}</p>
+                        ) : stations.length === 0 ? (
+                          <p className={mutedText}>No address</p>
+                        ) : null}
                         {loc.url && (
                           <a
                             href={loc.url}

@@ -1,6 +1,6 @@
 import { extractIdeaFromText, extractIdeasFromText, type ExtractedIdea } from "@/lib/cloudflareAi";
 import { braveSearchSnippets } from "@/lib/braveSearch";
-import { parseMapsLink } from "@/lib/coords";
+import { parseMapsLink, findYandexMapsLink, stripTrailingPunctuation } from "@/lib/coords";
 
 export type ParsedFromLink = Omit<ExtractedIdea, "otherLinks"> & {
   lat: number | null;
@@ -8,19 +8,12 @@ export type ParsedFromLink = Omit<ExtractedIdea, "otherLinks"> & {
   links: { label: string | null; url: string }[];
 };
 
-const YANDEX_MAPS_URL = /https?:\/\/(www\.)?(yandex\.[a-z.]+|ya\.ru)\/maps\/[^\s]+/iu;
+// Re-exported for existing callers (webhook route, from-link API route) -- the extraction
+// logic itself lives in coords.ts so the client-side link-import field can also import it
+// directly, without pulling this module's server-only AI/search dependencies into the bundle.
+export { findYandexMapsLink };
+
 const TELEGRAM_POST_URL = /https?:\/\/(t\.me|telegram\.me)\/[^\s]+/iu;
-
-// A shared link often has trailing prose punctuation (comma, closing bracket, ellipsis)
-// glued right after the URL — strip it, it's not part of the link we persist.
-function stripTrailingPunctuation(url: string): string {
-  return url.replace(/[.,;:!?…)}\]>"']+$/u, "");
-}
-
-export function findYandexMapsLink(text: string): string | null {
-  const match = text.match(YANDEX_MAPS_URL);
-  return match ? stripTrailingPunctuation(match[0]) : null;
-}
 
 export function findTelegramPostLink(text: string): string | null {
   const match = text.match(TELEGRAM_POST_URL);

@@ -2,7 +2,7 @@ export const card =
   "rounded-[22px] border border-[var(--app-outline)]/10 bg-[var(--app-surface)] p-4 shadow-[0_2px_0_rgba(28,26,23,0.08)]";
 
 export const input =
-  "w-full rounded-xl border border-[var(--app-outline)]/15 bg-[var(--app-surface)] px-3.5 py-2.5 text-[15px] leading-tight text-[var(--app-ink)] outline-none focus:border-[var(--app-ink)] focus:ring-2 focus:ring-[var(--app-yellow)] placeholder:text-[var(--app-muted)] transition";
+  "w-full rounded-xl border border-[var(--app-outline)]/15 bg-[var(--app-surface)] px-3.5 py-2.5 text-[15px] leading-tight text-[var(--app-ink)] outline-none focus:border-[var(--app-ink)] focus:ring-2 focus:ring-[var(--app-yellow)] placeholder:text-[var(--app-muted)]/55 transition";
 
 export const label = "text-[12px] font-semibold uppercase tracking-[0.06em] text-[var(--app-muted)]";
 

@@ -19,6 +19,7 @@ model DateIdea {
   priceNote        String?
   tags             TagsOnDateIdeas[]
   locations        Location[]
+  links            PlaceLink[]
   createdAt        DateTime          @default(now())
   updatedAt        DateTime          @updatedAt
 
@@ -34,6 +35,20 @@ model Location {
   lng        Float?
   url        String?
   dateIdea   DateIdea @relation(fields: [dateIdeaId], references: [id], onDelete: Cascade)
+}
+
+/// A place can carry several free-form links (Instagram, booking, website, the source post)
+/// beyond the one map link on its Location -- kept in their own ordered list so a non-map
+/// link found while parsing never has to overwrite or get dropped in favor of the map link.
+model PlaceLink {
+  id         String   @id @default(cuid())
+  dateIdeaId String
+  label      String?
+  url        String
+  position   Int
+  dateIdea   DateIdea @relation(fields: [dateIdeaId], references: [id], onDelete: Cascade)
+
+  @@unique([dateIdeaId, position])
 }
 
 model Tag {

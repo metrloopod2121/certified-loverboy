@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, Pencil, Trash2, X } from "lucide-react";
+import { Plus, Pencil, Trash2, X, Link as LinkIcon } from "lucide-react";
 import DateIdeaForm from "@/components/DateIdeaForm";
 import type { DateIdeaInput } from "@/lib/types";
 import type { ParsedDateIdea } from "@/lib/parseDateMarkdown";
@@ -80,6 +80,23 @@ export default function ImportReviewSheet({
                   <div className="flex flex-wrap gap-1.5">
                     {item.parsed.tags.map((tag) => (
                       <span key={tag} className={pill}>{hashtag(tag)}</span>
+                    ))}
+                  </div>
+                )}
+                {item.parsed.links.length > 0 && (
+                  <div className="flex flex-col gap-1">
+                    {item.parsed.links.map((link) => (
+                      <a
+                        key={link.url}
+                        href={link.url}
+                        target="_blank"
+                        rel="noreferrer"
+                        onClick={(e) => e.stopPropagation()}
+                        className="inline-flex w-fit items-center gap-1 text-[13px] font-semibold text-[var(--app-ink)] active:opacity-60"
+                      >
+                        <LinkIcon size={13} />
+                        {link.label || link.url}
+                      </a>
                     ))}
                   </div>
                 )}

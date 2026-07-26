@@ -7,6 +7,9 @@ export type ExtractedIdea = {
   description: string | null;
   /** Ссылка на карту (Яндекс/2ГИС/Google/goo.gl), относящаяся именно к этому месту, если есть. */
   mapUrl: string | null;
+  /** Любые другие ссылки на это место (Instagram, сайт, бронирование, пост), не являющиеся
+   *  ссылкой на карту -- сохраняются отдельно, а не отбрасываются и не путаются с mapUrl. */
+  otherLinks: string[];
 };
 
 const SYSTEM_PROMPT = `Ты помощник, который вытаскивает структурированные данные о месте (кафе, музей, парк и т.п.) из текста страницы Яндекс.Карт (и, возможно, пары строк из поиска).
@@ -22,17 +25,18 @@ const SYSTEM_PROMPT = `Ты помощник, который вытаскива�
 
 const MULTI_SYSTEM_PROMPT = `Ты помощник, который вытаскивает ОДНО ИЛИ НЕСКОЛЬКО мест (кафе, музей, парк, ресторан и т.п.) из текста поста Telegram-канала. В одном посте часто перечислено несколько мест — у каждого своё название, описание, адрес, цена и, возможно, ссылка на карту.
 Отвечай ТОЛЬКО валидным JSON без пояснений и без markdown-разметки, в формате:
-{"places": [{"title": string, "address": string|null, "metro": string|null, "priceNote": string|null, "tags": string[], "description": string|null, "mapUrl": string|null}]}
+{"places": [{"title": string, "address": string|null, "metro": string|null, "priceNote": string|null, "tags": string[], "description": string|null, "mapUrl": string|null, "otherLinks": string[]}]}
 - Каждый элемент массива places — отдельное место. Если в тексте одно место — верни массив из одного элемента.
 - Не объединяй разные места в одно и не дроби одно место на несколько.
 - mapUrl: ссылка именно на карту (Яндекс.Карты / 2ГИС / Google Maps / goo.gl), которая явно ведёт на страницу этого места на карте. НИКОГДА не подставляй сюда ссылку на Instagram, сайт заведения, бронирование, телеграм-канал/пост или любую другую не-картографическую ссылку, даже если это единственная ссылка в посте — в таком случае верни null. Не угадывай.
+- otherLinks: любые другие ссылки, относящиеся именно к этому месту, но НЕ являющиеся ссылкой на карту (Instagram, сайт, бронирование, телеграм-канал/пост и т.п.) — каждая отдельной строкой. Если таких ссылок нет — [].
 - title: название заведения/места
 - address: полный адрес, если есть в тексте
 - metro: ближайшая станция метро, если упомянута (без слова "метро"/"м.")
 - priceNote: диапазон цен, если есть (например "500–1000 ₽")
 - tags: 2-3 коротких тега-категории на русском (одно слово каждый), например "кофе", "искусство", "природа", "еда" — НЕ описательные прилагательные вроде "уютный"
 - description: 1-2 предложения о месте своими словами, по-русски
-Если поле не найдено в тексте — используй null (или [] для tags). Не выдумывай данные, которых нет в тексте.`;
+Если поле не найдено в тексте — используй null (или [] для tags/otherLinks). Не выдумывай данные, которых нет в тексте.`;
 
 function extractJsonBlock(text: string): unknown {
   const trimmed = text.trim();
@@ -73,6 +77,9 @@ function toExtractedIdea(value: unknown): ExtractedIdea | null {
     tags: Array.isArray(obj.tags) ? obj.tags.filter((t): t is string => typeof t === "string") : [],
     description: typeof obj.description === "string" && obj.description.trim() ? obj.description.trim() : null,
     mapUrl: typeof obj.mapUrl === "string" && obj.mapUrl.trim() ? obj.mapUrl.trim() : null,
+    otherLinks: Array.isArray(obj.otherLinks)
+      ? obj.otherLinks.filter((l): l is string => typeof l === "string" && l.trim().length > 0).map((l) => l.trim())
+      : [],
   };
 }
 

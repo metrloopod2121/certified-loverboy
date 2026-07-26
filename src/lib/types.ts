@@ -15,6 +15,17 @@ export type LocationInput = {
   url: string;
 };
 
+export type PlaceLink = {
+  id: string;
+  label: string | null;
+  url: string;
+};
+
+export type PlaceLinkInput = {
+  label: string;
+  url: string;
+};
+
 export type DateIdea = {
   id: string;
   title: string;
@@ -23,6 +34,7 @@ export type DateIdea = {
   priceNote: string | null;
   tags: { tag: { id: string; name: string } }[];
   locations: Location[];
+  links: PlaceLink[];
   createdAt: string;
   updatedAt: string;
 };
@@ -34,6 +46,7 @@ export type DateIdeaInput = {
   priceNote: string;
   tags: string[];
   locations: LocationInput[];
+  links: PlaceLinkInput[];
 };
 
 export function locationToInput(location: Location): LocationInput {
@@ -46,6 +59,10 @@ export function locationToInput(location: Location): LocationInput {
   };
 }
 
+export function linkToInput(link: PlaceLink): PlaceLinkInput {
+  return { label: link.label ?? "", url: link.url };
+}
+
 export function dateIdeaToInput(idea: DateIdea): DateIdeaInput {
   return {
     title: idea.title,
@@ -54,5 +71,6 @@ export function dateIdeaToInput(idea: DateIdea): DateIdeaInput {
     priceNote: idea.priceNote ?? "",
     tags: idea.tags.map((t) => t.tag.name),
     locations: idea.locations.map(locationToInput),
+    links: idea.links.map(linkToInput),
   };
 }

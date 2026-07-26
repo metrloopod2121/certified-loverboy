@@ -2,7 +2,11 @@ import { extractIdeaFromText, extractIdeasFromText, type ExtractedIdea } from "@
 import { braveSearchSnippets } from "@/lib/braveSearch";
 import { parseMapsLink } from "@/lib/coords";
 
-export type ParsedFromLink = ExtractedIdea & { lat: number | null; lng: number | null };
+export type ParsedFromLink = Omit<ExtractedIdea, "otherLinks"> & {
+  lat: number | null;
+  lng: number | null;
+  links: { label: string | null; url: string }[];
+};
 
 const YANDEX_MAPS_URL = /https?:\/\/(www\.)?(yandex\.[a-z.]+|ya\.ru)\/maps\/[^\s]+/iu;
 const TELEGRAM_POST_URL = /https?:\/\/(t\.me|telegram\.me)\/[^\s]+/iu;
@@ -37,6 +41,25 @@ export function isMapsProviderLink(raw: string): boolean {
   } catch {
     return false;
   }
+}
+
+/** Turns the model's raw `otherLinks` strings into the place's link list — trimmed, deduped,
+ *  dropping anything that isn't a real URL or that duplicates the map link already chosen. */
+function dedupeLinks(rawLinks: string[], exclude: string | null): { label: string | null; url: string }[] {
+  const seen = new Set<string>();
+  const links: { label: string | null; url: string }[] = [];
+  for (const raw of rawLinks) {
+    const url = stripTrailingPunctuation(raw.trim());
+    if (!url || url === exclude || seen.has(url)) continue;
+    try {
+      new URL(url);
+    } catch {
+      continue;
+    }
+    seen.add(url);
+    links.push({ label: null, url });
+  }
+  return links;
 }
 
 function decodeHtmlEntities(text: string): string {
@@ -136,7 +159,8 @@ export async function parseYandexMapsLink(url: string): Promise<ParsedFromLink |
   }
 
   const coords = page.coordinates ?? parseMapsLink(url);
-  return { ...idea, lat: coords?.lat ?? null, lng: coords?.lng ?? null };
+  const { otherLinks, ...rest } = idea;
+  return { ...rest, links: dedupeLinks(otherLinks, idea.mapUrl), lat: coords?.lat ?? null, lng: coords?.lng ?? null };
 }
 
 /** Structures a Telegram post's own text (channel forward caption, pasted post text, or a
@@ -151,7 +175,12 @@ export async function parsePostTextMulti(text: string): Promise<ParsedFromLink[]
   return ideas.map((idea) => {
     const mapUrl = idea.mapUrl && isMapsProviderLink(idea.mapUrl) ? idea.mapUrl : null;
     const coords = (mapUrl ? parseMapsLink(mapUrl) : null) ?? textCoords;
-    return { ...idea, mapUrl, lat: coords?.lat ?? null, lng: coords?.lng ?? null };
+    // A link the model found but rejected as mapUrl (e.g. Instagram) lands here instead of
+    // being silently dropped, same as one it correctly filed under otherLinks to begin with.
+    const rejectedMapUrl = idea.mapUrl && !mapUrl ? idea.mapUrl : null;
+    const links = dedupeLinks(rejectedMapUrl ? [...idea.otherLinks, rejectedMapUrl] : idea.otherLinks, mapUrl);
+    const { otherLinks, ...rest } = idea;
+    return { ...rest, mapUrl, links, lat: coords?.lat ?? null, lng: coords?.lng ?? null };
   });
 }
 
@@ -215,6 +244,7 @@ export function formatIdeaPreview(idea: ParsedFromLink, header = "📍 Ново�
   if (idea.metro) lines.push(`Метро: ${idea.metro}`);
   if (idea.priceNote) lines.push(`Цена: ${idea.priceNote}`);
   if (idea.tags.length > 0) lines.push(`Теги: ${idea.tags.join(", ")}`);
+  if (idea.links.length > 0) lines.push(`Ссылки: ${idea.links.map((l) => l.url).join(", ")}`);
   if (idea.description) lines.push("", idea.description);
   lines.push("", "Добавить в базу?");
   return lines.join("\n");

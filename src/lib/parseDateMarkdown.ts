@@ -4,7 +4,7 @@ import type { DateIdeaInput } from "@/lib/types";
 
 export type ParsedDateIdea = Pick<
   DateIdeaInput,
-  "title" | "tags" | "priceNote" | "description" | "swipeDescription" | "locations"
+  "title" | "tags" | "priceNote" | "description" | "swipeDescription" | "locations" | "links"
 >;
 
 type LocationKey = "address" | "metro" | "url";
@@ -78,6 +78,7 @@ export function parseDateMarkdown(raw: string): ParsedDateIdea {
     description: "",
     swipeDescription: "",
     locations: [],
+    links: [],
   };
   let currentLocation: ParsedLocation | null = null;
 

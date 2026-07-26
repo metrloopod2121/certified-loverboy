@@ -3,7 +3,7 @@ import { prisma } from "@/lib/db";
 import { requireAuth, isAuthUser } from "@/lib/apiAuth";
 import { resolveTagIds } from "@/lib/tags";
 import { withoutMetroTags } from "@/lib/metro";
-import type { LocationInput } from "@/lib/types";
+import type { LocationInput, PlaceLinkInput } from "@/lib/types";
 
 export async function GET(
   request: Request,
@@ -15,7 +15,7 @@ export async function GET(
   const { id } = await params;
   const idea = await prisma.dateIdea.findUnique({
     where: { id },
-    include: { tags: { include: { tag: true } }, locations: true },
+    include: { tags: { include: { tag: true } }, locations: true, links: { orderBy: { position: "asc" } } },
   });
   if (!idea || idea.telegramUserId !== auth.telegramId) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
@@ -71,10 +71,20 @@ export async function PATCH(
     };
   }
 
+  if (Array.isArray(body.links)) {
+    const links: PlaceLinkInput[] = body.links;
+    data.links = {
+      deleteMany: {},
+      create: links
+        .filter((link) => link.url.trim())
+        .map((link, position) => ({ label: link.label.trim() || null, url: link.url.trim(), position })),
+    };
+  }
+
   const idea = await prisma.dateIdea.update({
     where: { id },
     data,
-    include: { tags: { include: { tag: true } }, locations: true },
+    include: { tags: { include: { tag: true } }, locations: true, links: { orderBy: { position: "asc" } } },
   });
   return NextResponse.json(idea);
 }

@@ -532,24 +532,38 @@ export default function StorageScreen() {
               </div>
               {idea.locations.length > 0 && (
                 <div className="flex flex-col gap-1">
-                  {idea.locations.map((loc) => (
-                    <div key={loc.id} className="flex items-center gap-1.5">
-                      <p className={mutedText}>
-                        {[loc.address, loc.metro && `M ${loc.metro}`].filter(Boolean).join(" · ") || "No address"}
-                      </p>
-                      {loc.url && (
-                        <a
-                          href={loc.url}
-                          target="_blank"
-                          rel="noreferrer"
-                          onClick={(e) => e.stopPropagation()}
-                          className="text-[var(--app-ink)]"
-                        >
-                          <LinkIcon size={12} />
-                        </a>
-                      )}
-                    </div>
-                  ))}
+                  {idea.locations.map((loc) => {
+                    const stations = metroStations(loc.metro);
+                    return (
+                      <div key={loc.id} className="flex flex-wrap items-center gap-x-1.5 gap-y-1">
+                        {loc.address ? (
+                          <p className={mutedText}>{loc.address}</p>
+                        ) : stations.length === 0 ? (
+                          <p className={mutedText}>No address</p>
+                        ) : null}
+                        {stations.map((station) => (
+                          <span
+                            key={station}
+                            className="inline-flex items-center gap-1 text-[13px] font-semibold text-[var(--app-ink)]"
+                          >
+                            <span className={`size-2 shrink-0 rounded-full ${metroLineTone(station) ?? "bg-[var(--app-muted)]"}`} />
+                            {station}
+                          </span>
+                        ))}
+                        {loc.url && (
+                          <a
+                            href={loc.url}
+                            target="_blank"
+                            rel="noreferrer"
+                            onClick={(e) => e.stopPropagation()}
+                            className="text-[var(--app-ink)]"
+                          >
+                            <LinkIcon size={12} />
+                          </a>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               )}
               {sort === "nearby" && userLocation && (

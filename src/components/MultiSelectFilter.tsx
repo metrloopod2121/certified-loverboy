@@ -38,13 +38,12 @@ export default function MultiSelectFilter({
   const [query, setQuery] = useState("");
 
   useEffect(() => {
-    if (!open) setQuery("");
-  }, [open]);
-
-  useEffect(() => {
     if (!open) return;
     function onClickOutside(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) onOpenChange(false);
+      if (ref.current && !ref.current.contains(e.target as Node)) {
+        setQuery("");
+        onOpenChange(false);
+      }
     }
     document.addEventListener("mousedown", onClickOutside);
     return () => document.removeEventListener("mousedown", onClickOutside);
@@ -94,7 +93,10 @@ export default function MultiSelectFilter({
     <div className={`relative isolate ${fullWidth ? "min-w-0" : ""}`} ref={ref}>
       <button
         type="button"
-        onClick={() => onOpenChange(!open)}
+        onClick={() => {
+          setQuery("");
+          onOpenChange(!open);
+        }}
         className={`${select} gap-1 ${fullWidth ? "w-full" : ""} ${selected.length > 0 ? "border-[var(--app-ink)] bg-[var(--app-yellow)]" : ""}`}
       >
         {label}

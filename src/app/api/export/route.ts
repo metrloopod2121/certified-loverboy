@@ -20,7 +20,7 @@ export async function GET(request: Request) {
 
   const ideas = await prisma.dateIdea.findMany({
     where: { telegramUserId: telegramId },
-    include: { tags: { include: { tag: true } }, locations: true },
+    include: { tags: { include: { tag: true } }, locations: true, links: { orderBy: { position: "asc" } } },
     orderBy: { createdAt: "asc" },
   });
 

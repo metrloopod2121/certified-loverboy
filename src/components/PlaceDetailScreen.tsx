@@ -24,17 +24,20 @@ export default function PlaceDetailScreen({ id }: { id: string }) {
   const router = useRouter();
   const { lang } = useLang();
   const t = useT();
-  const [idea, setIdea] = useState<DateIdea | LoadState>("loading");
+  const [loadState, setLoadState] = useState<{ id: string; value: DateIdea | LoadState }>({
+    id,
+    value: "loading",
+  });
+  const idea = loadState.id === id ? loadState.value : "loading";
 
   useEffect(() => {
     let cancelled = false;
-    setIdea("loading");
     apiFetch(`/api/date-ideas/${id}`)
       .then((data) => {
-        if (!cancelled) setIdea(data);
+        if (!cancelled) setLoadState({ id, value: data });
       })
       .catch(() => {
-        if (!cancelled) setIdea("error");
+        if (!cancelled) setLoadState({ id, value: "error" });
       });
     return () => {
       cancelled = true;

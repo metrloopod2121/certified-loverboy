@@ -56,6 +56,18 @@ function dedupeLinks(rawLinks: string[], exclude: string | null): { label: strin
   return links;
 }
 
+function withoutOtherLinks(idea: ExtractedIdea): Omit<ExtractedIdea, "otherLinks"> {
+  return {
+    title: idea.title,
+    address: idea.address,
+    metro: idea.metro,
+    priceNote: idea.priceNote,
+    tags: idea.tags,
+    description: idea.description,
+    mapUrl: idea.mapUrl,
+  };
+}
+
 function decodeHtmlEntities(text: string): string {
   return text
     .replace(/&#x([0-9a-fA-F]+);/g, (_, code) => String.fromCharCode(parseInt(code, 16)))
@@ -153,8 +165,12 @@ export async function parseYandexMapsLink(url: string): Promise<ParsedFromLink |
   }
 
   const coords = page.coordinates ?? parseMapsLink(url);
-  const { otherLinks, ...rest } = idea;
-  return { ...rest, links: dedupeLinks(otherLinks, idea.mapUrl), lat: coords?.lat ?? null, lng: coords?.lng ?? null };
+  return {
+    ...withoutOtherLinks(idea),
+    links: dedupeLinks(idea.otherLinks, idea.mapUrl),
+    lat: coords?.lat ?? null,
+    lng: coords?.lng ?? null,
+  };
 }
 
 /** Structures a Telegram post's own text (channel forward caption, pasted post text, or a
@@ -173,8 +189,7 @@ export async function parsePostTextMulti(text: string): Promise<ParsedFromLink[]
     // being silently dropped, same as one it correctly filed under otherLinks to begin with.
     const rejectedMapUrl = idea.mapUrl && !mapUrl ? idea.mapUrl : null;
     const links = dedupeLinks(rejectedMapUrl ? [...idea.otherLinks, rejectedMapUrl] : idea.otherLinks, mapUrl);
-    const { otherLinks, ...rest } = idea;
-    return { ...rest, mapUrl, links, lat: coords?.lat ?? null, lng: coords?.lng ?? null };
+    return { ...withoutOtherLinks(idea), mapUrl, links, lat: coords?.lat ?? null, lng: coords?.lng ?? null };
   });
 }
 

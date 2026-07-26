@@ -46,12 +46,14 @@ export function OpenFreeMapLayer() {
 export function InvalidateSizeOnMount() {
   const map = useMap();
   useEffect(() => {
-    const raf = requestAnimationFrame(() => map.invalidateSize());
-    const timeout = setTimeout(() => map.invalidateSize(), 300);
-    window.addEventListener("resize", () => map.invalidateSize());
+    const invalidate = () => map.invalidateSize();
+    const raf = requestAnimationFrame(invalidate);
+    const timeout = setTimeout(invalidate, 300);
+    window.addEventListener("resize", invalidate);
     return () => {
       cancelAnimationFrame(raf);
       clearTimeout(timeout);
+      window.removeEventListener("resize", invalidate);
     };
   }, [map]);
   return null;

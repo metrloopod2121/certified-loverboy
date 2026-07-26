@@ -1,4 +1,4 @@
-import { parseCoordinates, parseMapsLink } from "@/lib/coords";
+import { parseCoordinates, parseMapsLink, isYandexMapsUrl } from "@/lib/coords";
 import { withoutMetroTags } from "@/lib/metro";
 import type { DateIdeaInput } from "@/lib/types";
 
@@ -129,6 +129,14 @@ export function parseDateMarkdown(raw: string): ParsedDateIdea {
       }
       if (key in LOCATION_KEYS) {
         const field = LOCATION_KEYS[key];
+        // "Ссылка:" is ambiguous in this legacy format -- it could be the map link or just some
+        // other link the author pasted in (Instagram, booking...). Only a real Yandex Maps link
+        // is trusted as the location's map link; anything else goes to the idea's link list
+        // instead of silently becoming (and being displayed as) the map link.
+        if (field === "url" && !isYandexMapsUrl(value)) {
+          result.links.push({ label: "", url: value });
+          continue;
+        }
         const baseLocation = currentOrNewLocation(result.locations, currentLocation);
         const location = hasFieldValue(baseLocation, field)
           ? startLocation(result.locations)

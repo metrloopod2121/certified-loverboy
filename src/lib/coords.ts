@@ -9,6 +9,25 @@ export function formatCoordinates(lat: number | null, lng: number | null): strin
   return `${lat}, ${lng}`;
 }
 
+const YANDEX_HOST = /^(?:www\.)?(?:yandex\.[a-z.]+|ya\.ru)$/iu;
+const YANDEX_MAPS_SUBHOST = /^maps\.yandex\.[a-z.]+$/iu;
+
+/** Strict single-provider check for the "Yandex Maps link" field in the place editor — unlike
+ *  `isMapsProviderLink` in socialImport.ts (which also accepts 2GIS/Google for the bot's more
+ *  permissive parsing), this deliberately rejects everything but Yandex, per product decision
+ *  to only support Yandex Maps links for manual position entry. */
+export function isYandexMapsUrl(raw: string): boolean {
+  try {
+    const { hostname, pathname } = new URL(raw.trim());
+    const host = hostname.toLowerCase();
+    if (YANDEX_MAPS_SUBHOST.test(host)) return true;
+    if (YANDEX_HOST.test(host)) return pathname.toLowerCase().startsWith("/maps");
+    return false;
+  } catch {
+    return false;
+  }
+}
+
 function safeDecode(text: string): string {
   try {
     return decodeURIComponent(text);

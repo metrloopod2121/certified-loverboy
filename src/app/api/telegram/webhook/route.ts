@@ -17,6 +17,7 @@ import {
   parsePostTextMulti,
   fetchTelegramPostText,
   formatIdeaPreview,
+  isMapsProviderLink,
   type ParsedFromLink,
 } from "@/lib/socialImport";
 
@@ -90,21 +91,38 @@ type TelegramUpdate = {
   callback_query?: TelegramCallbackQuery;
 };
 
+/** Decides what (if anything) becomes this place's map link. `fallback` is a candidate URL that
+ *  isn't from the model's own `mapUrl` field (e.g. the first hidden link in the post, or the
+ *  post's own t.me address) -- it's only trusted as the map link if it actually looks like one.
+ *  A fallback that doesn't qualify (Instagram, the post link itself, ...) is never dropped --
+ *  it's kept as a regular link instead, same as any other non-map link found while parsing. */
+function resolveLocationUrl(idea: ParsedFromLink, fallback: string): { locationUrl: string; extraLink: string | null } {
+  if (idea.mapUrl) return { locationUrl: idea.mapUrl, extraLink: null };
+  if (fallback && isMapsProviderLink(fallback)) return { locationUrl: fallback, extraLink: null };
+  return { locationUrl: "", extraLink: fallback || null };
+}
+
 /** Creates a PendingImport + approve/reject preview for each parsed place. A single post can
  *  list several venues, so this fires once per place rather than once per message. */
 async function sendDraftsForApproval(
   chatId: string,
   ideas: ParsedFromLink[],
   header: string,
-  sourceUrlFor: (idea: ParsedFromLink) => string,
+  fallbackUrlFor: (idea: ParsedFromLink) => string,
   source: string
 ) {
   for (const idea of ideas) {
+    const { locationUrl, extraLink } = resolveLocationUrl(idea, fallbackUrlFor(idea));
+    const enrichedIdea: ParsedFromLink =
+      extraLink && !idea.links.some((link) => link.url === extraLink)
+        ? { ...idea, links: [...idea.links, { label: null, url: extraLink }] }
+        : idea;
+
     const pending = await prisma.pendingImport.create({
-      data: { chatId, sourceUrl: sourceUrlFor(idea), payload: JSON.stringify(idea), source },
+      data: { chatId, sourceUrl: locationUrl, payload: JSON.stringify(enrichedIdea), source },
     });
 
-    await sendTelegramMessageWithButtons(chatId, formatIdeaPreview(idea, header), [
+    await sendTelegramMessageWithButtons(chatId, formatIdeaPreview(enrichedIdea, header), [
       { text: "✅ Да", callback_data: `pi:approve:${pending.id}` },
       { text: "❌ Нет", callback_data: `pi:reject:${pending.id}` },
     ]);
@@ -159,7 +177,7 @@ async function handleTelegramPostLink(message: TelegramMessage, url: string) {
     return;
   }
 
-  await sendDraftsForApproval(chatId, drafts, "📩 Пост по ссылке:", (idea) => idea.mapUrl ?? url, "bot_telegram_post_link");
+  await sendDraftsForApproval(chatId, drafts, "📩 Пост по ссылке:", () => url, "bot_telegram_post_link");
 }
 
 /** A channel post forwarded straight into the chat — post text already has address/price/
@@ -197,7 +215,7 @@ async function handleChannelForwardPost(message: TelegramMessage) {
   }
 
   const fallbackUrl = hiddenLinks[0] ?? forwardedChannelSourceUrl(message);
-  await sendDraftsForApproval(chatId, drafts, "📩 Пост из канала:", (idea) => idea.mapUrl ?? fallbackUrl, "bot_channel_forward");
+  await sendDraftsForApproval(chatId, drafts, "📩 Пост из канала:", () => fallbackUrl, "bot_channel_forward");
 }
 
 /** Fallback for when forwarding doesn't work (protected content, etc.) — pastes the post text
@@ -226,7 +244,7 @@ async function handlePastedPostText(message: TelegramMessage) {
   }
 
   const fallbackUrl = hiddenLinks[0] ?? "";
-  await sendDraftsForApproval(chatId, drafts, "📋 Вставленный текст:", (idea) => idea.mapUrl ?? fallbackUrl, "bot_pasted_text");
+  await sendDraftsForApproval(chatId, drafts, "📋 Вставленный текст:", () => fallbackUrl, "bot_pasted_text");
 }
 
 async function handleStartCommand(message: TelegramMessage) {

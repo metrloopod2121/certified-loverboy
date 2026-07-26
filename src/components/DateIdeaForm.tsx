@@ -2,9 +2,9 @@
 
 import { useState } from "react";
 import dynamic from "next/dynamic";
-import { MapPin, Plus, X, Link as LinkIcon } from "lucide-react";
+import { MapPin, Plus, X, Link as LinkIcon, Check } from "lucide-react";
 import type { DateIdeaInput, LocationInput, PlaceLinkInput } from "@/lib/types";
-import { parseCoordinates, parseMapsLink, formatCoordinates } from "@/lib/coords";
+import { parseMapsLink, isYandexMapsUrl } from "@/lib/coords";
 import { input, label as labelClass, buttonPrimary, buttonSecondary, buttonGhost, iconButton } from "@/lib/ui";
 
 const LocationPicker = dynamic(() => import("@/components/LocationPicker"), { ssr: false });
@@ -12,14 +12,50 @@ const LocationPicker = dynamic(() => import("@/components/LocationPicker"), { ss
 type LocationForm = {
   address: string;
   metro: string;
-  coords: string;
-  url: string;
+  lat: number | null;
+  lng: number | null;
+  mapsLink: string;
+  /** Invalid domain (not Yandex Maps) -- blocks submit until fixed. */
+  mapsLinkError: string | null;
+  /** Valid Yandex Maps link but no coordinates could be read from it -- informational only. */
+  mapsLinkHint: string | null;
+  /** A pre-existing, non-map `url` carried over from an older record (e.g. Instagram) --
+   *  never shown in the maps-link field, migrated into the idea's `links` list on save. */
+  staleUrl: string | null;
 };
 
-const EMPTY_LOCATION: LocationForm = { address: "", metro: "", coords: "", url: "" };
+const EMPTY_LOCATION: LocationForm = {
+  address: "",
+  metro: "",
+  lat: null,
+  lng: null,
+  mapsLink: "",
+  mapsLinkError: null,
+  mapsLinkHint: null,
+  staleUrl: null,
+};
 
 function toLocationForm(loc: LocationInput): LocationForm {
-  return { address: loc.address, metro: loc.metro, coords: formatCoordinates(loc.lat, loc.lng), url: loc.url };
+  const isMapLink = loc.url.trim() && isYandexMapsUrl(loc.url);
+  return {
+    address: loc.address,
+    metro: loc.metro,
+    lat: loc.lat,
+    lng: loc.lng,
+    mapsLink: isMapLink ? loc.url : "",
+    mapsLinkError: null,
+    mapsLinkHint: null,
+    staleUrl: !isMapLink && loc.url.trim() ? loc.url.trim() : null,
+  };
+}
+
+/** Best-effort label for a link migrated out of the old single `location.url` slot. */
+function guessLinkLabel(url: string): string {
+  try {
+    return new URL(url).hostname.replace(/^www\./, "").includes("instagram.com") ? "Instagram" : "";
+  } catch {
+    return "";
+  }
 }
 
 export default function DateIdeaForm({
@@ -50,23 +86,35 @@ export default function DateIdeaForm({
     setLocations((prev) => prev.map((loc, i) => (i === index ? { ...loc, ...patch } : loc)));
   }
 
-  function handleCoordsChange(index: number, value: string) {
-    if (/https?:\/\//.test(value)) {
-      const parsed = parseMapsLink(value);
-      if (parsed) {
-        // Keep the original link too (not just the extracted point) so the popup/list
-        // can still take you to the actual venue page, not just a bare map pin.
-        setLocations((prev) =>
-          prev.map((loc, i) =>
-            i === index
-              ? { ...loc, coords: formatCoordinates(parsed.lat, parsed.lng), url: loc.url.trim() ? loc.url : value }
-              : loc
-          )
-        );
-        return;
-      }
-    }
-    updateLocation(index, { coords: value });
+  function handleMapsLinkChange(index: number, value: string) {
+    // Preserves any already-known lat/lng when the new link doesn't itself carry coordinates,
+    // rather than blanking out a good pin just because a link couldn't be read.
+    setLocations((prev) =>
+      prev.map((loc, i) => {
+        if (i !== index) return loc;
+        if (!value.trim()) return { ...loc, mapsLink: "", mapsLinkError: null, mapsLinkHint: null };
+        if (!isYandexMapsUrl(value)) {
+          return { ...loc, mapsLink: value, mapsLinkError: "Only Yandex Maps links are supported", mapsLinkHint: null };
+        }
+        const coords = parseMapsLink(value);
+        return {
+          ...loc,
+          mapsLink: value,
+          mapsLinkError: null,
+          mapsLinkHint: coords ? null : "Couldn't read coordinates from this link — try Choose on map instead",
+          lat: coords?.lat ?? loc.lat,
+          lng: coords?.lng ?? loc.lng,
+        };
+      })
+    );
+  }
+
+  function pickOnMap(index: number, lat: number, lng: number) {
+    updateLocation(index, { lat, lng });
+  }
+
+  function clearLocationPin(index: number) {
+    updateLocation(index, { lat: null, lng: null });
   }
 
   function addLocation() {
@@ -94,27 +142,38 @@ export default function DateIdeaForm({
     e.preventDefault();
     setError(null);
 
-    const resolvedLocations: LocationInput[] = [];
-    for (const loc of locations) {
-      const isEmpty = !loc.address.trim() && !loc.metro.trim() && !loc.coords.trim() && !loc.url.trim();
-      if (isEmpty) continue;
+    const blockingError = locations.find((loc) => loc.mapsLinkError)?.mapsLinkError;
+    if (blockingError) {
+      setError(blockingError);
+      return;
+    }
 
-      const parsedCoords = loc.coords.trim()
-        ? parseCoordinates(loc.coords) ?? parseMapsLink(loc.coords)
-        : null;
-      if (loc.coords.trim() && !parsedCoords) {
-        setError("Enter coordinates like 55.75, 37.61 or a Yandex/Google Maps link");
-        return;
-      }
+    const resolvedLocations: LocationInput[] = [];
+    // Carries a non-map `url` inherited from an older record over to the idea-level links list
+    // instead of dropping it, since it's no longer allowed to live in location.url.
+    const migratedLinks: PlaceLinkInput[] = [];
+    for (const loc of locations) {
+      const isEmpty = !loc.address.trim() && !loc.metro.trim() && !loc.mapsLink.trim() && loc.lat == null && loc.lng == null && !loc.staleUrl;
+      if (isEmpty) continue;
 
       resolvedLocations.push({
         address: loc.address,
         metro: loc.metro,
-        lat: parsedCoords?.lat ?? null,
-        lng: parsedCoords?.lng ?? null,
-        url: loc.url,
+        lat: loc.lat,
+        lng: loc.lng,
+        url: loc.mapsLink.trim(),
       });
+
+      if (loc.staleUrl) migratedLinks.push({ label: guessLinkLabel(loc.staleUrl), url: loc.staleUrl });
     }
+
+    const resolvedLinks = [...links, ...migratedLinks].filter((link) => link.url.trim());
+    const seenLinkUrls = new Set<string>();
+    const dedupedLinks = resolvedLinks.filter((link) => {
+      if (seenLinkUrls.has(link.url)) return false;
+      seenLinkUrls.add(link.url);
+      return true;
+    });
 
     setSaving(true);
     try {
@@ -125,7 +184,7 @@ export default function DateIdeaForm({
         priceNote,
         tags: tags.split(",").map((t) => t.trim()).filter(Boolean),
         locations: resolvedLocations,
-        links: links.filter((link) => link.url.trim()),
+        links: dedupedLinks,
       });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Couldn't save");
@@ -180,37 +239,43 @@ export default function DateIdeaForm({
               />
             </div>
 
-            <div className="flex gap-2">
-              <input
-                placeholder="55.75, 37.61 or a maps link"
-                value={loc.coords}
-                onChange={(e) => handleCoordsChange(index, e.target.value)}
-                className={input}
-              />
-              <button
-                type="button"
-                onClick={() => setPickerFor(pickerFor === index ? null : index)}
-                className={buttonGhost}
-              >
-                <MapPin size={16} />
-                Map
-              </button>
+            <div className="flex flex-col gap-1">
+              <div className="flex gap-2">
+                <input
+                  placeholder="https://yandex.ru/maps/..."
+                  value={loc.mapsLink}
+                  onChange={(e) => handleMapsLinkChange(index, e.target.value)}
+                  className={input}
+                />
+                <button
+                  type="button"
+                  onClick={() => setPickerFor(pickerFor === index ? null : index)}
+                  className={`${buttonGhost} shrink-0`}
+                >
+                  <MapPin size={16} />
+                  Choose on map
+                </button>
+              </div>
+              {loc.mapsLinkError && <span className="text-[12px] font-medium text-red-500">{loc.mapsLinkError}</span>}
+              {!loc.mapsLinkError && loc.mapsLinkHint && (
+                <span className="text-[12px] text-[var(--app-muted)]">{loc.mapsLinkHint}</span>
+              )}
             </div>
 
-            {pickerFor === index && (
-              <LocationPicker
-                lat={parseCoordinates(loc.coords)?.lat ?? null}
-                lng={parseCoordinates(loc.coords)?.lng ?? null}
-                onPick={(lat, lng) => updateLocation(index, { coords: formatCoordinates(lat, lng) })}
-              />
-            )}
+            {pickerFor === index && <LocationPicker lat={loc.lat} lng={loc.lng} onPick={(lat, lng) => pickOnMap(index, lat, lng)} />}
 
-            <input
-              placeholder="Maps link (opens this pin)"
-              value={loc.url}
-              onChange={(e) => updateLocation(index, { url: e.target.value })}
-              className={input}
-            />
+            {loc.lat != null && loc.lng != null && (
+              <div className="flex items-center justify-between rounded-xl bg-[var(--app-mint)]/50 px-3 py-2">
+                <span className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-[var(--app-ink)]">
+                  <Check size={14} />
+                  Location selected
+                </span>
+                <button type="button" onClick={() => clearLocationPin(index)} className={buttonGhost}>
+                  <X size={14} />
+                  Clear
+                </button>
+              </div>
+            )}
           </div>
         ))}
         <button type="button" onClick={addLocation} className={`${buttonSecondary} self-start`}>

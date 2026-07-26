@@ -33,7 +33,9 @@ export default function DateIdeaForm({
 }) {
   const [title, setTitle] = useState(initial?.title ?? "");
   const [description, setDescription] = useState(initial?.description ?? "");
-  const [swipeDescription, setSwipeDescription] = useState(initial?.swipeDescription ?? "");
+  // No longer editable (the swipe feature is gone) -- kept as-is on save so editing an older
+  // place doesn't silently wipe whatever it already had here.
+  const [swipeDescription] = useState(initial?.swipeDescription ?? "");
   const [priceNote, setPriceNote] = useState(initial?.priceNote ?? "");
   const [tags, setTags] = useState(initial?.tags?.join(", ") ?? "");
   const [locations, setLocations] = useState<LocationForm[]>(
@@ -212,17 +214,6 @@ export default function DateIdeaForm({
       <div className="flex flex-col gap-1">
         <span className={labelClass}>Price</span>
         <input placeholder="1500–3000 ₽" value={priceNote} onChange={(e) => setPriceNote(e.target.value)} className={input} />
-      </div>
-
-      <div className="flex flex-col gap-1">
-        <span className={labelClass}>Swipe description</span>
-        <textarea
-          placeholder="Short: what it is, and why it's worth a like"
-          value={swipeDescription}
-          onChange={(e) => setSwipeDescription(e.target.value)}
-          className={input}
-          rows={2}
-        />
       </div>
 
       <div className="flex flex-col gap-1">

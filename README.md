@@ -41,6 +41,7 @@ telegram-пост, или просто вставленный текст пос�
 /setuserpic       — аватарка
 /setcommands      — start - Что я умею
                     support - Написать в поддержку
+                    usage - Usage-отчёт (admin)
 ```
 
 ## Деплой

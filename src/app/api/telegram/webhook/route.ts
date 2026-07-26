@@ -1,3 +1,5 @@
+import { execFile } from "node:child_process";
+import { promisify } from "node:util";
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { resolveTagIds } from "@/lib/tags";
@@ -23,6 +25,10 @@ import {
   isMapsProviderLink,
   type ParsedFromLink,
 } from "@/lib/socialImport";
+
+export const runtime = "nodejs";
+
+const execFileAsync = promisify(execFile);
 
 type TelegramForwardChat = { type: string; username?: string };
 
@@ -280,6 +286,38 @@ async function handleSupportCommand(message: TelegramMessage) {
   await sendTelegramMessage(chatId, t(lang, "supportThanks"));
 }
 
+async function handleUsageCommand(message: TelegramMessage) {
+  const chatId = String(message.chat.id);
+  const adminId = process.env.ADMIN_TG_ID;
+  if (!adminId || String(message.from?.id) !== adminId) {
+    await sendTelegramMessage(chatId, "Команда доступна только админу.");
+    return;
+  }
+
+  await sendTelegramMessage(chatId, "Собираю usage-отчёт, секунду...");
+
+  try {
+    const { stdout } = await execFileAsync("node", ["scripts/usageReport.mjs", "--mode=daily"], {
+      cwd: process.cwd(),
+      env: {
+        ...process.env,
+        CLB_USAGE_MONITOR_DRY_RUN: "1",
+        CLB_USAGE_MONITOR_STATE: "/tmp/certified-loverboy-usage-command-state.json",
+      },
+      maxBuffer: 1024 * 1024,
+      timeout: 45_000,
+    });
+    const report = stdout.trim();
+    if (!report) throw new Error("usage report produced no output");
+
+    await sendTelegramMessage(chatId, report, { parseMode: "HTML", disableWebPagePreview: true });
+  } catch (err) {
+    const detail = err instanceof Error ? err.message : String(err);
+    console.log(`[usage] /usage command failed: ${detail}`);
+    await sendTelegramMessage(chatId, `Не смог собрать usage-отчёт: ${detail}`);
+  }
+}
+
 async function handleCallbackQuery(callbackQuery: TelegramCallbackQuery) {
   const data = callbackQuery.data ?? "";
   const match = data.match(/^pi:(approve|reject):(.+)$/);
@@ -368,6 +406,11 @@ export async function POST(request: Request) {
 
   if (/^\/support(@\w+)?(\s|$)/i.test(text)) {
     await handleSupportCommand(message);
+    return NextResponse.json({ ok: true });
+  }
+
+  if (/^\/usage(@\w+)?(\s|$)/i.test(text)) {
+    await handleUsageCommand(message);
     return NextResponse.json({ ok: true });
   }
 

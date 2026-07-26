@@ -8,11 +8,6 @@ import {
   pageHeading,
   mutedText,
   input,
-  buttonPrimary,
-  buttonSecondary,
-  pillToggle,
-  pillToggleActive,
-  pillToggleInactive,
 } from "@/lib/ui";
 import { useLang, useT } from "@/hooks/useLang";
 import type { Lang } from "@/lib/i18n";
@@ -21,6 +16,12 @@ const LANGUAGES: { value: Lang; label: string }[] = [
   { value: "ru", label: "Русский" },
   { value: "en", label: "English" },
 ];
+
+const compactPrimaryButton =
+  "inline-flex w-full min-h-10 items-center justify-center gap-1.5 rounded-full bg-[var(--app-ink)] px-5 py-2 text-[14px] font-semibold text-[var(--app-canvas)] disabled:opacity-50 active:scale-[0.98] transition";
+
+const compactSecondaryButton =
+  "inline-flex w-full min-h-10 items-center justify-center gap-1.5 rounded-full border border-[var(--app-outline)]/20 bg-[var(--app-surface)] px-5 py-2 text-[14px] font-semibold text-[var(--app-ink)] disabled:opacity-50 active:scale-[0.98] transition";
 
 export default function ProfileScreen() {
   const { lang, setLang } = useLang();
@@ -87,18 +88,13 @@ export default function ProfileScreen() {
           {t("languageHeading")}
         </span>
         <p className={mutedText}>{t("languageDescription")}</p>
-        <div className="flex gap-2">
+        <select value={lang} onChange={(e) => setLang(e.target.value as Lang)} className={`${input} appearance-auto`}>
           {LANGUAGES.map((option) => (
-            <button
-              key={option.value}
-              type="button"
-              onClick={() => setLang(option.value)}
-              className={`${pillToggle} ${lang === option.value ? pillToggleActive : pillToggleInactive}`}
-            >
+            <option key={option.value} value={option.value}>
               {option.label}
-            </button>
+            </option>
           ))}
-        </div>
+        </select>
       </div>
 
       <div className={`${card} flex flex-col gap-2`}>
@@ -141,7 +137,7 @@ export default function ProfileScreen() {
         <button
           type="submit"
           disabled={sending || !supportText.trim()}
-          className={`${buttonPrimary} self-start disabled:opacity-50`}
+          className={compactPrimaryButton}
         >
           {sending ? t("sendingBtn") : t("sendBtn")}
         </button>
@@ -154,7 +150,7 @@ export default function ProfileScreen() {
           type="button"
           onClick={exportAll}
           disabled={exporting}
-          className={`${buttonSecondary} self-start disabled:opacity-50`}
+          className={compactSecondaryButton}
         >
           <Download size={16} />
           {exporting ? t("exportingBtn") : t("exportBtn")}

@@ -39,7 +39,7 @@ export default function PlaceDetailScreen({ id }: { id: string }) {
 
   return (
     <div className="fixed inset-0 z-30 flex flex-col bg-[var(--app-canvas)]">
-      <div className="flex items-center px-4 pb-2" style={{ paddingTop: "calc(var(--safe-top) + var(--content-top-gap))" }}>
+      <div className="flex items-center px-4 pb-2" style={{ paddingTop: "calc(var(--safe-top) + var(--content-top-gap) + 14px)" }}>
         <button
           type="button"
           onClick={() => router.back()}

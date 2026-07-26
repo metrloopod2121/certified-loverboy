@@ -28,6 +28,22 @@ export function isYandexMapsUrl(raw: string): boolean {
   }
 }
 
+const YANDEX_MAPS_URL = /https?:\/\/(www\.)?(yandex\.[a-z.]+|ya\.ru)\/maps\/[^\s]+/iu;
+
+// A shared link often has trailing prose punctuation (comma, closing bracket, ellipsis)
+// glued right after the URL -- strip it, it's not part of the link we persist.
+export function stripTrailingPunctuation(url: string): string {
+  return url.replace(/[.,;:!?…)}\]>"']+$/u, "");
+}
+
+/** Extracts a Yandex Maps URL out of arbitrary text -- a bare link, or the "Title\nAddress\nURL"
+ *  block Yandex Maps' own Share action copies. Used both server-side (bot/import parsing) and
+ *  client-side (cleaning up the link-import field down to just the link as the user pastes). */
+export function findYandexMapsLink(text: string): string | null {
+  const match = text.match(YANDEX_MAPS_URL);
+  return match ? stripTrailingPunctuation(match[0]) : null;
+}
+
 function safeDecode(text: string): string {
   try {
     return decodeURIComponent(text);

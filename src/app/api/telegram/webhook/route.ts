@@ -4,6 +4,7 @@ import { resolveTagIds } from "@/lib/tags";
 import { withoutMetroTags } from "@/lib/metro";
 import { tryConsumeImportQuota, quotaExhaustedMessage } from "@/lib/importQuota";
 import { trackEvent } from "@/lib/analytics";
+import { submitSupportMessage } from "@/lib/support";
 import {
   sendTelegramMessage,
   sendTelegramMessageWithButtons,
@@ -279,12 +280,7 @@ async function handleSupportCommand(message: TelegramMessage) {
   }
 
   const username = message.from?.username ? `@${message.from.username}` : null;
-  await prisma.supportMessage.create({ data: { telegramUserId: chatId, username, text } });
-
-  const adminId = process.env.ADMIN_TG_ID;
-  if (adminId) {
-    await sendTelegramMessage(adminId, `🆘 Support от ${username ?? `id ${chatId}`}:\n${text}`);
-  }
+  await submitSupportMessage(chatId, username, text);
 
   await sendTelegramMessage(chatId, "Спасибо! Передал в поддержку, скоро ответим.");
 }

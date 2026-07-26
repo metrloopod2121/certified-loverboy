@@ -23,6 +23,22 @@ export function findTelegramPostLink(text: string): string | null {
   return match ? stripTrailingPunctuation(match[0]) : null;
 }
 
+const MAPS_HOST = /(?:^|\.)(yandex\.[a-z.]+|ya\.ru|2gis\.[a-z.]+|google\.[a-z.]+|goo\.gl)$/iu;
+
+/** The model sometimes hands back a booking/Instagram/channel link as "mapUrl" even when
+ *  told not to — checked before we trust it for coordinates or store it as the venue's link,
+ *  since a wrong link there is worse than no link at all. */
+export function isMapsProviderLink(raw: string): boolean {
+  try {
+    const { hostname, pathname } = new URL(raw);
+    if (!MAPS_HOST.test(hostname)) return false;
+    if (/google\.[a-z.]+$/iu.test(hostname)) return pathname.includes("/maps");
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 function decodeHtmlEntities(text: string): string {
   return text
     .replace(/&#x([0-9a-fA-F]+);/g, (_, code) => String.fromCharCode(parseInt(code, 16)))
@@ -133,8 +149,9 @@ export async function parsePostTextMulti(text: string): Promise<ParsedFromLink[]
   const ideas = await extractIdeasFromText(text);
   const textCoords = parseMapsLink(text);
   return ideas.map((idea) => {
-    const coords = (idea.mapUrl ? parseMapsLink(idea.mapUrl) : null) ?? textCoords;
-    return { ...idea, lat: coords?.lat ?? null, lng: coords?.lng ?? null };
+    const mapUrl = idea.mapUrl && isMapsProviderLink(idea.mapUrl) ? idea.mapUrl : null;
+    const coords = (mapUrl ? parseMapsLink(mapUrl) : null) ?? textCoords;
+    return { ...idea, mapUrl, lat: coords?.lat ?? null, lng: coords?.lng ?? null };
   });
 }
 

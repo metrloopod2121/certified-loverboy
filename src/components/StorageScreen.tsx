@@ -6,6 +6,7 @@ import { ChevronDown, Pencil, Trash2, Plus, X, Link as LinkIcon, Upload, Downloa
 import { apiFetch, downloadWithToken } from "@/lib/apiClient";
 import { dateIdeaToInput, type DateIdea, type DateIdeaInput } from "@/lib/types";
 import DateIdeaForm from "@/components/DateIdeaForm";
+import ImportReviewSheet from "@/components/ImportReviewSheet";
 import MultiSelectFilter from "@/components/MultiSelectFilter";
 import { parseDateMarkdown, type ParsedDateIdea } from "@/lib/parseDateMarkdown";
 import { parseCoordinates, parseMapsLink } from "@/lib/coords";
@@ -271,7 +272,8 @@ export default function StorageScreen() {
     }
   }
 
-  async function saveImportItem(id: string, origin: PendingImport["origin"], input: DateIdeaInput) {
+  async function saveImportItem(id: string, input: DateIdeaInput) {
+    const origin = importItems.find((item) => item.id === id)?.origin ?? "link_in_app";
     await apiFetch("/api/date-ideas", { method: "POST", body: JSON.stringify({ ...input, source: origin }) });
     dismissImportItem(id);
     await reload();
@@ -431,22 +433,25 @@ export default function StorageScreen() {
           {addMode === "link" && (
             <div className="flex flex-col gap-2 rounded-[22px] border border-[var(--app-outline)]/10 bg-[var(--app-yellow)] p-4 shadow-[0_2px_0_rgba(28,26,23,0.08)]">
               <span className={mutedText}>Paste a Yandex Maps link</span>
-              <div className="flex gap-2">
-                <input
-                  placeholder="https://yandex.ru/maps/..."
-                  value={linkInput}
-                  onChange={(e) => setLinkInput(e.target.value)}
-                  className={input}
-                />
-                <button
-                  type="button"
-                  onClick={importFromLink}
-                  disabled={linkImporting || !linkInput.trim()}
-                  className={`${buttonSecondary} bg-[var(--app-overlay)] disabled:opacity-50`}
-                >
-                  {linkImporting ? "…" : "Add"}
-                </button>
-              </div>
+              {/* A textarea, not a single-line input: sharing a place from the Yandex Maps app
+                  often copies "Title\nAddress\nhttps://..." as one block, not a bare URL — a
+                  single-line input can mangle or truncate that on paste. The server pulls the
+                  link out of whatever text lands here either way. */}
+              <textarea
+                placeholder="https://yandex.ru/maps/... (or the whole shared text)"
+                value={linkInput}
+                onChange={(e) => setLinkInput(e.target.value)}
+                className={input}
+                rows={2}
+              />
+              <button
+                type="button"
+                onClick={importFromLink}
+                disabled={linkImporting || !linkInput.trim()}
+                className={`${buttonSecondary} w-full bg-[var(--app-overlay)] disabled:opacity-50`}
+              >
+                {linkImporting ? "Reading…" : "Add"}
+              </button>
               {linkError && <p className="text-[13px] font-medium text-red-500">{linkError}</p>}
             </div>
           )}
@@ -473,27 +478,6 @@ export default function StorageScreen() {
             </div>
           )}
 
-          {importItems.length > 0 && (
-            <div className="flex flex-col gap-4">
-              <p className={mutedText}>
-                Parsed {importItems.length} {importItems.length === 1 ? "place" : "places"} — review and save each:
-              </p>
-
-              {importItems.map((item) => (
-                <div key={item.id} className="panel-appear flex flex-col gap-2">
-                  <div className="flex items-center justify-between">
-                    <span className={mutedText}>{item.source}</span>
-                    <button onClick={() => dismissImportItem(item.id)} className={buttonGhost}>Skip</button>
-                  </div>
-                  <DateIdeaForm
-                    initial={item.parsed}
-                    onSubmit={(input) => saveImportItem(item.id, item.origin, input)}
-                    onCancel={() => dismissImportItem(item.id)}
-                  />
-                </div>
-              ))}
-            </div>
-          )}
         </div>
       )}
 
@@ -592,6 +576,21 @@ export default function StorageScreen() {
           <p className={`${card} ${mutedText}`}>Nothing here yet — add your first idea.</p>
         )}
       </div>
+
+      {linkImporting && (
+        <div className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-3 bg-[var(--app-canvas)]/90 backdrop-blur-sm">
+          <div className="size-10 animate-spin rounded-full border-4 border-[var(--app-outline)]/15 border-t-[var(--app-ink)]" />
+          <p className="text-[15px] font-semibold text-[var(--app-ink)]">Reading the link…</p>
+          <p className={mutedText}>AI is looking up the place, a few seconds</p>
+        </div>
+      )}
+
+      <ImportReviewSheet
+        items={importItems}
+        onAdd={saveImportItem}
+        onSkip={dismissImportItem}
+        onClose={() => setImportItems([])}
+      />
     </div>
   );
 }

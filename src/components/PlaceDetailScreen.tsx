@@ -10,6 +10,14 @@ import { pill, mutedText, hashtag } from "@/lib/ui";
 
 type LoadState = "loading" | "error";
 
+function linkHostname(url: string): string {
+  try {
+    return new URL(url).hostname.replace(/^www\./, "");
+  } catch {
+    return url;
+  }
+}
+
 export default function PlaceDetailScreen({ id }: { id: string }) {
   const router = useRouter();
   const [idea, setIdea] = useState<DateIdea | LoadState>("loading");
@@ -93,6 +101,26 @@ export default function PlaceDetailScreen({ id }: { id: string }) {
                     )}
                   </div>
                 ))}
+              </div>
+            )}
+
+            {idea.links.length > 0 && (
+              <div className="flex flex-col gap-2.5 pt-2">
+                <h2 className={mutedText}>Links</h2>
+                <div className="flex flex-col gap-1.5 rounded-[18px] border border-[var(--app-outline)]/10 bg-[var(--app-overlay)] p-3.5">
+                  {idea.links.map((link) => (
+                    <a
+                      key={link.id}
+                      href={link.url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex w-fit items-center gap-1.5 text-[14px] font-medium text-[var(--app-ink)] active:opacity-60"
+                    >
+                      <LinkIcon size={14} />
+                      {link.label || linkHostname(link.url)}
+                    </a>
+                  ))}
+                </div>
               </div>
             )}
           </div>

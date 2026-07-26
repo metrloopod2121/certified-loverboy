@@ -317,6 +317,9 @@ async function handleCallbackQuery(callbackQuery: TelegramCallbackQuery) {
           },
         ],
       },
+      links: {
+        create: idea.links.map((link, position) => ({ label: link.label, url: link.url, position })),
+      },
     },
   });
 

@@ -22,6 +22,7 @@ function toDraft(parsed: ParsedFromLink, sourceUrl: string): ParsedDateIdea {
         url: parsed.mapUrl ?? sourceUrl,
       },
     ],
+    links: parsed.links.map((link) => ({ label: link.label ?? "", url: link.url })),
   };
 }
 

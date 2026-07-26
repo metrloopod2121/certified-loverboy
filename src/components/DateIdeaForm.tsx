@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 import dynamic from "next/dynamic";
-import { MapPin, Plus, X } from "lucide-react";
-import type { DateIdeaInput, LocationInput } from "@/lib/types";
+import { MapPin, Plus, X, Link as LinkIcon } from "lucide-react";
+import type { DateIdeaInput, LocationInput, PlaceLinkInput } from "@/lib/types";
 import { parseCoordinates, parseMapsLink, formatCoordinates } from "@/lib/coords";
 import { input, label as labelClass, buttonPrimary, buttonSecondary, buttonGhost, iconButton } from "@/lib/ui";
 
@@ -41,6 +41,7 @@ export default function DateIdeaForm({
   const [locations, setLocations] = useState<LocationForm[]>(
     initial?.locations?.length ? initial.locations.map(toLocationForm) : [EMPTY_LOCATION]
   );
+  const [links, setLinks] = useState<PlaceLinkInput[]>(initial?.links ?? []);
   const [pickerFor, setPickerFor] = useState<number | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -75,6 +76,18 @@ export default function DateIdeaForm({
   function removeLocation(index: number) {
     setLocations((prev) => prev.filter((_, i) => i !== index));
     if (pickerFor === index) setPickerFor(null);
+  }
+
+  function updateLink(index: number, patch: Partial<PlaceLinkInput>) {
+    setLinks((prev) => prev.map((link, i) => (i === index ? { ...link, ...patch } : link)));
+  }
+
+  function addLink() {
+    setLinks((prev) => [...prev, { label: "", url: "" }]);
+  }
+
+  function removeLink(index: number) {
+    setLinks((prev) => prev.filter((_, i) => i !== index));
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -112,6 +125,7 @@ export default function DateIdeaForm({
         priceNote,
         tags: tags.split(",").map((t) => t.trim()).filter(Boolean),
         locations: resolvedLocations,
+        links: links.filter((link) => link.url.trim()),
       });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Couldn't save");
@@ -192,7 +206,7 @@ export default function DateIdeaForm({
             )}
 
             <input
-              placeholder="Link (booking, instagram, etc.)"
+              placeholder="Maps link (opens this pin)"
               value={loc.url}
               onChange={(e) => updateLocation(index, { url: e.target.value })}
               className={input}
@@ -202,6 +216,40 @@ export default function DateIdeaForm({
         <button type="button" onClick={addLocation} className={`${buttonSecondary} self-start`}>
           <Plus size={16} />
           Add location
+        </button>
+      </div>
+
+      <div className="flex flex-col gap-3">
+        <span className={labelClass}>Links</span>
+        {links.map((link, index) => (
+          <div key={index} className="flex items-center gap-2 rounded-2xl bg-[var(--app-subtle-overlay)] p-3">
+            <div className="flex flex-1 flex-col gap-2">
+              <input
+                placeholder="Label (Instagram, booking…)"
+                value={link.label}
+                onChange={(e) => updateLink(index, { label: e.target.value })}
+                className={input}
+              />
+              <input
+                placeholder="https://"
+                value={link.url}
+                onChange={(e) => updateLink(index, { url: e.target.value })}
+                className={input}
+              />
+            </div>
+            <button
+              type="button"
+              onClick={() => removeLink(index)}
+              aria-label="Remove link"
+              className={`${iconButton} size-7 shrink-0 bg-black/5 text-[var(--app-ink)]`}
+            >
+              <X size={14} />
+            </button>
+          </div>
+        ))}
+        <button type="button" onClick={addLink} className={`${buttonSecondary} self-start`}>
+          <LinkIcon size={16} />
+          Add link
         </button>
       </div>
 

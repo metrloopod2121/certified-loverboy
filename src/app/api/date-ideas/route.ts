@@ -5,7 +5,7 @@ import { resolveTagIds } from "@/lib/tags";
 import { withoutMetroTags } from "@/lib/metro";
 import { seedDemoPlacesIfEmpty } from "@/lib/demoPlaces";
 import { trackEvent } from "@/lib/analytics";
-import type { LocationInput } from "@/lib/types";
+import type { LocationInput, PlaceLinkInput } from "@/lib/types";
 
 const KNOWN_CREATE_SOURCES = new Set(["manual", "file_import", "link_in_app"]);
 
@@ -17,7 +17,7 @@ export async function GET(request: Request) {
 
   const ideas = await prisma.dateIdea.findMany({
     where: { telegramUserId: auth.telegramId },
-    include: { tags: { include: { tag: true } }, locations: true },
+    include: { tags: { include: { tag: true } }, locations: true, links: { orderBy: { position: "asc" } } },
     orderBy: { createdAt: "desc" },
   });
 
@@ -30,6 +30,7 @@ export async function POST(request: Request) {
 
   const body = await request.json();
   const locations: LocationInput[] = Array.isArray(body.locations) ? body.locations : [];
+  const links: PlaceLinkInput[] = Array.isArray(body.links) ? body.links : [];
   const tagIds = await resolveTagIds(withoutMetroTags(body.tags ?? [], locations.map((location) => location.metro)));
 
   const idea = await prisma.dateIdea.create({
@@ -49,8 +50,13 @@ export async function POST(request: Request) {
           url: loc.url || null,
         })),
       },
+      links: {
+        create: links
+          .filter((link) => link.url.trim())
+          .map((link, position) => ({ label: link.label.trim() || null, url: link.url.trim(), position })),
+      },
     },
-    include: { tags: { include: { tag: true } }, locations: true },
+    include: { tags: { include: { tag: true } }, locations: true, links: { orderBy: { position: "asc" } } },
   });
 
   const source = typeof body.source === "string" && KNOWN_CREATE_SOURCES.has(body.source) ? body.source : "manual";

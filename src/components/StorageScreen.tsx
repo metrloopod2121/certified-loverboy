@@ -60,15 +60,23 @@ type PendingImport = {
 
 let nextImportId = 0;
 
+// Temporarily hidden for the public launch (link import covers the common case) — the
+// underlying file-import/export code stays intact behind these, flip back on when needed.
+const SHOW_FILE_IMPORT = false;
+const SHOW_EXPORT = false;
+
 export default function StorageScreen() {
   const router = useRouter();
   const [ideas, setIdeas] = useState<DateIdea[] | null>(null);
   const [tagFilters, setTagFilters] = useState<string[]>([]);
   const [metroFilters, setMetroFilters] = useState<string[]>([]);
   const [sort, setSort] = useState<Sort>("newest");
-  const [addMode, setAddMode] = useState<"none" | "manual" | "import">("none");
+  const [addMode, setAddMode] = useState<"none" | "manual" | "import" | "link">("none");
   const [importItems, setImportItems] = useState<PendingImport[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [linkInput, setLinkInput] = useState("");
+  const [linkImporting, setLinkImporting] = useState(false);
+  const [linkError, setLinkError] = useState<string | null>(null);
   const [editing, setEditing] = useState<DateIdea | null>(null);
   const [openFilter, setOpenFilter] = useState<"tags" | "metro" | "sort" | null>(null);
   const sortRef = useRef<HTMLDivElement>(null);
@@ -239,6 +247,26 @@ export default function StorageScreen() {
     setImportItems((prev) => prev.filter((i) => i.id !== id));
   }
 
+  async function importFromLink() {
+    const url = linkInput.trim();
+    if (!url) return;
+
+    setLinkImporting(true);
+    setLinkError(null);
+    try {
+      const parsed: ParsedDateIdea = await apiFetch("/api/date-ideas/from-link", {
+        method: "POST",
+        body: JSON.stringify({ url }),
+      });
+      setImportItems((prev) => [...prev, { id: `l${nextImportId++}`, source: url, parsed }]);
+      setLinkInput("");
+    } catch (err) {
+      setLinkError(err instanceof Error ? err.message : "Couldn't parse this link");
+    } finally {
+      setLinkImporting(false);
+    }
+  }
+
   async function saveImportItem(id: string, input: DateIdeaInput) {
     await apiFetch("/api/date-ideas", { method: "POST", body: JSON.stringify(input) });
     dismissImportItem(id);
@@ -252,15 +280,17 @@ export default function StorageScreen() {
           <h1 className={`${pageHeading} whitespace-nowrap`}>Ideas Storage</h1>
         </div>
         <div className="flex gap-2">
-          <button
-            onClick={exportAll}
-            disabled={exporting}
-            aria-label="Export all as files"
-            title="Export all as files"
-            className={`${iconButton} size-12 bg-[var(--app-overlay)] text-[var(--app-ink)] ring-1 ring-[var(--app-outline)]/10 disabled:opacity-50`}
-          >
-            <Download size={18} />
-          </button>
+          {SHOW_EXPORT && (
+            <button
+              onClick={exportAll}
+              disabled={exporting}
+              aria-label="Export all as files"
+              title="Export all as files"
+              className={`${iconButton} size-12 bg-[var(--app-overlay)] text-[var(--app-ink)] ring-1 ring-[var(--app-outline)]/10 disabled:opacity-50`}
+            >
+              <Download size={18} />
+            </button>
+          )}
           <button
             onClick={toggleAddPanel}
             aria-label={addMode === "none" ? "Add idea" : "Close form"}
@@ -374,43 +404,76 @@ export default function StorageScreen() {
             </button>
             <button
               type="button"
-              onClick={() => setAddMode("import")}
-              className={`${pillToggle} inline-flex items-center gap-1 border-0 ${addMode === "import" ? pillToggleActive : pillToggleInactive}`}
+              onClick={() => setAddMode("link")}
+              className={`${pillToggle} inline-flex items-center gap-1 border-0 ${addMode === "link" ? pillToggleActive : pillToggleInactive}`}
             >
-              <FileUp size={14} />
-              Import file
+              <LinkIcon size={14} />
+              Link
             </button>
+            {SHOW_FILE_IMPORT && (
+              <button
+                type="button"
+                onClick={() => setAddMode("import")}
+                className={`${pillToggle} inline-flex items-center gap-1 border-0 ${addMode === "import" ? pillToggleActive : pillToggleInactive}`}
+              >
+                <FileUp size={14} />
+                Import file
+              </button>
+            )}
           </div>
 
           {addMode === "manual" && <DateIdeaForm onSubmit={createIdea} onCancel={() => setAddMode("none")} />}
 
-          {addMode === "import" && (
-            <div className="flex flex-col gap-4">
-              <div className="flex flex-col gap-2 rounded-[22px] border border-[var(--app-outline)]/10 bg-[var(--app-yellow)] p-4 shadow-[0_2px_0_rgba(28,26,23,0.08)]">
-                <span className={mutedText}>Files (.md / .txt) — pick several at once if you like</span>
+          {addMode === "link" && (
+            <div className="flex flex-col gap-2 rounded-[22px] border border-[var(--app-outline)]/10 bg-[var(--app-yellow)] p-4 shadow-[0_2px_0_rgba(28,26,23,0.08)]">
+              <span className={mutedText}>Paste a Yandex Maps link</span>
+              <div className="flex gap-2">
                 <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept=".md,.txt"
-                  multiple
-                  onChange={handleFiles}
-                  className="hidden"
+                  placeholder="https://yandex.ru/maps/..."
+                  value={linkInput}
+                  onChange={(e) => setLinkInput(e.target.value)}
+                  className={input}
                 />
                 <button
                   type="button"
-                  onClick={() => fileInputRef.current?.click()}
-                  className={`${buttonSecondary} w-full bg-[var(--app-overlay)]`}
+                  onClick={importFromLink}
+                  disabled={linkImporting || !linkInput.trim()}
+                  className={`${buttonSecondary} bg-[var(--app-overlay)] disabled:opacity-50`}
                 >
-                  <Upload size={18} />
-                  Choose files
+                  {linkImporting ? "…" : "Add"}
                 </button>
               </div>
+              {linkError && <p className="text-[13px] font-medium text-red-500">{linkError}</p>}
+            </div>
+          )}
 
-              {importItems.length > 0 && (
-                <p className={mutedText}>
-                  Parsed {importItems.length} {importItems.length === 1 ? "file" : "files"} — review and save each:
-                </p>
-              )}
+          {addMode === "import" && (
+            <div className="flex flex-col gap-2 rounded-[22px] border border-[var(--app-outline)]/10 bg-[var(--app-yellow)] p-4 shadow-[0_2px_0_rgba(28,26,23,0.08)]">
+              <span className={mutedText}>Files (.md / .txt) — pick several at once if you like</span>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".md,.txt"
+                multiple
+                onChange={handleFiles}
+                className="hidden"
+              />
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className={`${buttonSecondary} w-full bg-[var(--app-overlay)]`}
+              >
+                <Upload size={18} />
+                Choose files
+              </button>
+            </div>
+          )}
+
+          {importItems.length > 0 && (
+            <div className="flex flex-col gap-4">
+              <p className={mutedText}>
+                Parsed {importItems.length} {importItems.length === 1 ? "place" : "places"} — review and save each:
+              </p>
 
               {importItems.map((item) => (
                 <div key={item.id} className="panel-appear flex flex-col gap-2">

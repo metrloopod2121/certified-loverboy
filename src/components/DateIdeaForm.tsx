@@ -6,6 +6,8 @@ import { MapPin, Plus, X, Link as LinkIcon, Check } from "lucide-react";
 import type { DateIdeaInput, LocationInput, PlaceLinkInput } from "@/lib/types";
 import { parseMapsLink, isYandexMapsUrl } from "@/lib/coords";
 import { input, label as labelClass, buttonPrimary, buttonSecondary, buttonGhost, iconButton } from "@/lib/ui";
+import { useLang, useT } from "@/hooks/useLang";
+import { locationsCountLabel, locationOrdinalLabel } from "@/lib/i18n";
 
 const LocationPicker = dynamic(() => import("@/components/LocationPicker"), { ssr: false });
 
@@ -67,6 +69,8 @@ export default function DateIdeaForm({
   onSubmit: (input: DateIdeaInput) => Promise<void>;
   onCancel: () => void;
 }) {
+  const { lang } = useLang();
+  const t = useT();
   const [title, setTitle] = useState(initial?.title ?? "");
   const [description, setDescription] = useState(initial?.description ?? "");
   const [priceNote, setPriceNote] = useState(initial?.priceNote ?? "");
@@ -91,14 +95,14 @@ export default function DateIdeaForm({
         if (i !== index) return loc;
         if (!value.trim()) return { ...loc, mapsLink: "", mapsLinkError: null, mapsLinkHint: null };
         if (!isYandexMapsUrl(value)) {
-          return { ...loc, mapsLink: value, mapsLinkError: "Only Yandex Maps links are supported", mapsLinkHint: null };
+          return { ...loc, mapsLink: value, mapsLinkError: t("onlyYandexError"), mapsLinkHint: null };
         }
         const coords = parseMapsLink(value);
         return {
           ...loc,
           mapsLink: value,
           mapsLinkError: null,
-          mapsLinkHint: coords ? null : "Couldn't read coordinates from this link — try Choose on map instead",
+          mapsLinkHint: coords ? null : t("noCoordsHint"),
           lat: coords?.lat ?? loc.lat,
           lng: coords?.lng ?? loc.lng,
         };
@@ -183,7 +187,7 @@ export default function DateIdeaForm({
         links: dedupedLinks,
       });
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Couldn't save");
+      setError(err instanceof Error ? err.message : t("couldntSave"));
     } finally {
       setSaving(false);
     }
@@ -195,24 +199,24 @@ export default function DateIdeaForm({
       className="panel-appear flex flex-col gap-3 rounded-[22px] border border-[var(--app-outline)]/10 bg-[var(--app-mint)] p-4 shadow-[0_2px_0_rgba(28,26,23,0.08)]"
     >
       <div>
-        <h2 className="text-[20px] font-semibold leading-none">Place details</h2>
+        <h2 className="text-[20px] font-semibold leading-none">{t("placeDetails")}</h2>
       </div>
       <div className="flex flex-col gap-1">
-        <span className={labelClass}>Title</span>
-        <input required placeholder="Picnic in the park, cozy café nearby…" value={title} onChange={(e) => setTitle(e.target.value)} className={input} />
+        <span className={labelClass}>{t("titleLabel")}</span>
+        <input required placeholder={t("titlePlaceholder")} value={title} onChange={(e) => setTitle(e.target.value)} className={input} />
       </div>
 
       <div className="flex flex-col gap-3">
-        <span className={labelClass}>Locations ({locations.length})</span>
+        <span className={labelClass}>{locationsCountLabel(lang, locations.length)}</span>
         {locations.map((loc, index) => (
           <div key={index} className="flex flex-col gap-2 rounded-2xl bg-[var(--app-subtle-overlay)] p-3">
             <div className="flex items-center justify-between">
-              <span className="text-[12px] font-semibold text-[var(--app-muted)]">Location {index + 1}</span>
+              <span className="text-[12px] font-semibold text-[var(--app-muted)]">{locationOrdinalLabel(lang, index + 1)}</span>
               {locations.length > 0 && (
                 <button
                   type="button"
                   onClick={() => removeLocation(index)}
-                  aria-label="Remove location"
+                  aria-label={t("removeLocationAria")}
                   className={`${iconButton} size-7 bg-black/5 text-[var(--app-ink)]`}
                 >
                   <X size={14} />
@@ -222,13 +226,13 @@ export default function DateIdeaForm({
 
             <div className="grid grid-cols-2 gap-2">
               <input
-                placeholder="Street, building"
+                placeholder={t("addressPlaceholder")}
                 value={loc.address}
                 onChange={(e) => updateLocation(index, { address: e.target.value })}
                 className={input}
               />
               <input
-                placeholder="Metro"
+                placeholder={t("metroPlaceholder")}
                 value={loc.metro}
                 onChange={(e) => updateLocation(index, { metro: e.target.value })}
                 className={input}
@@ -238,7 +242,7 @@ export default function DateIdeaForm({
             <div className="flex flex-col gap-1">
               <div className="flex gap-2">
                 <input
-                  placeholder="https://yandex.ru/maps/..."
+                  placeholder={t("mapsLinkPlaceholder")}
                   value={loc.mapsLink}
                   onChange={(e) => handleMapsLinkChange(index, e.target.value)}
                   className={input}
@@ -249,7 +253,7 @@ export default function DateIdeaForm({
                   className={`${buttonGhost} shrink-0`}
                 >
                   <MapPin size={16} />
-                  Choose on map
+                  {t("chooseOnMap")}
                 </button>
               </div>
               {loc.mapsLinkError && <span className="text-[12px] font-medium text-red-500">{loc.mapsLinkError}</span>}
@@ -264,11 +268,11 @@ export default function DateIdeaForm({
               <div className="flex items-center justify-between rounded-xl bg-[var(--app-mint)]/50 px-3 py-2">
                 <span className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-[var(--app-ink)]">
                   <Check size={14} />
-                  Location selected
+                  {t("locationSelected")}
                 </span>
                 <button type="button" onClick={() => clearLocationPin(index)} className={buttonGhost}>
                   <X size={14} />
-                  Clear
+                  {t("clear")}
                 </button>
               </div>
             )}
@@ -276,23 +280,23 @@ export default function DateIdeaForm({
         ))}
         <button type="button" onClick={addLocation} className={`${buttonSecondary} self-start`}>
           <Plus size={16} />
-          Add location
+          {t("addLocationBtn")}
         </button>
       </div>
 
       <div className="flex flex-col gap-3">
-        <span className={labelClass}>Links</span>
+        <span className={labelClass}>{t("linksLabel")}</span>
         {links.map((link, index) => (
           <div key={index} className="flex items-center gap-2 rounded-2xl bg-[var(--app-subtle-overlay)] p-3">
             <div className="flex flex-1 flex-col gap-2">
               <input
-                placeholder="Label (Instagram, booking…)"
+                placeholder={t("linkLabelPlaceholder")}
                 value={link.label}
                 onChange={(e) => updateLink(index, { label: e.target.value })}
                 className={input}
               />
               <input
-                placeholder="https://"
+                placeholder={t("urlPlaceholder")}
                 value={link.url}
                 onChange={(e) => updateLink(index, { url: e.target.value })}
                 className={input}
@@ -301,7 +305,7 @@ export default function DateIdeaForm({
             <button
               type="button"
               onClick={() => removeLink(index)}
-              aria-label="Remove link"
+              aria-label={t("removeLinkAria")}
               className={`${iconButton} size-7 shrink-0 bg-black/5 text-[var(--app-ink)]`}
             >
               <X size={14} />
@@ -310,25 +314,25 @@ export default function DateIdeaForm({
         ))}
         <button type="button" onClick={addLink} className={`${buttonSecondary} self-start`}>
           <LinkIcon size={16} />
-          Add link
+          {t("addLinkBtn")}
         </button>
       </div>
 
       <div className="flex flex-col gap-1">
-        <span className={labelClass}>Tags</span>
-        <input placeholder="date, romance, art…" value={tags} onChange={(e) => setTags(e.target.value)} className={input} />
-        <span className="text-[12px] leading-snug text-[var(--app-muted)]">Tag it “date” to mark a date idea — leave it off for a plain venue</span>
+        <span className={labelClass}>{t("tagsLabel")}</span>
+        <input placeholder={t("tagsPlaceholder")} value={tags} onChange={(e) => setTags(e.target.value)} className={input} />
+        <span className="text-[12px] leading-snug text-[var(--app-muted)]">{t("tagsHint")}</span>
       </div>
 
       <div className="flex flex-col gap-1">
-        <span className={labelClass}>Price</span>
-        <input placeholder="1500–3000 ₽" value={priceNote} onChange={(e) => setPriceNote(e.target.value)} className={input} />
+        <span className={labelClass}>{t("priceLabel")}</span>
+        <input placeholder={t("pricePlaceholder")} value={priceNote} onChange={(e) => setPriceNote(e.target.value)} className={input} />
       </div>
 
       <div className="flex flex-col gap-1">
-        <span className={labelClass}>Description</span>
+        <span className={labelClass}>{t("descriptionLabel")}</span>
         <textarea
-          placeholder="Free-form notes"
+          placeholder={t("descriptionPlaceholder")}
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           className={input}
@@ -340,10 +344,10 @@ export default function DateIdeaForm({
 
       <div className="flex gap-2 pt-1">
         <button type="submit" disabled={saving} className={buttonPrimary}>
-          {saving ? "Saving…" : "Save"}
+          {saving ? t("savingBtn") : t("saveBtn")}
         </button>
         <button type="button" onClick={onCancel} className={buttonSecondary}>
-          Cancel
+          {t("cancelBtn")}
         </button>
       </div>
     </form>

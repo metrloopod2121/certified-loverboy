@@ -7,6 +7,8 @@ import type { DateIdeaInput } from "@/lib/types";
 import type { ParsedDateIdea } from "@/lib/parseDateMarkdown";
 import { priceTier } from "@/lib/priceTier";
 import { card, pill, mutedText, buttonPrimary, buttonSecondary, buttonGhost, iconButton, hashtag } from "@/lib/ui";
+import { useLang, useT } from "@/hooks/useLang";
+import { foundPlacesText } from "@/lib/i18n";
 
 export type ReviewItem = { id: string; parsed: ParsedDateIdea };
 
@@ -24,6 +26,8 @@ export default function ImportReviewSheet({
   onSkip: (id: string) => void;
   onClose: () => void;
 }) {
+  const { lang } = useLang();
+  const t = useT();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [savingId, setSavingId] = useState<string | null>(null);
 
@@ -46,13 +50,11 @@ export default function ImportReviewSheet({
         onClick={(e) => e.stopPropagation()}
       >
         <div className="relative flex items-center justify-center">
-          <h2 className="text-[17px] font-semibold">
-            Found {items.length} {items.length === 1 ? "place" : "places"}
-          </h2>
+          <h2 className="text-[17px] font-semibold">{foundPlacesText(lang, items.length)}</h2>
           <button
             type="button"
             onClick={onClose}
-            aria-label="Close"
+            aria-label={t("closeAria")}
             className={`${iconButton} absolute right-0 size-8 bg-[var(--app-overlay)] text-[var(--app-ink)]`}
           >
             <X size={16} />
@@ -70,7 +72,7 @@ export default function ImportReviewSheet({
               />
             ) : (
               <div key={item.id} className={`${card} flex flex-col gap-2.5`}>
-                <h3 className="text-[18px] font-semibold leading-[1.1]">{item.parsed.title || "Untitled"}</h3>
+                <h3 className="text-[18px] font-semibold leading-[1.1]">{item.parsed.title || t("untitled")}</h3>
                 {item.parsed.locations[0]?.address && <p className={mutedText}>{item.parsed.locations[0].address}</p>}
                 {item.parsed.priceNote && (
                   <p className="text-[14px] font-semibold">{priceTier(item.parsed.priceNote) ?? item.parsed.priceNote}</p>
@@ -103,11 +105,11 @@ export default function ImportReviewSheet({
                 <div className="flex gap-2 pt-1">
                   <button type="button" onClick={() => onSkip(item.id)} className={buttonGhost}>
                     <Trash2 size={16} />
-                    Delete
+                    {t("deleteAria")}
                   </button>
                   <button type="button" onClick={() => setEditingId(item.id)} className={buttonSecondary}>
                     <Pencil size={16} />
-                    Edit
+                    {t("editAria")}
                   </button>
                   <button
                     type="button"
@@ -116,7 +118,7 @@ export default function ImportReviewSheet({
                     className={`${buttonPrimary} disabled:opacity-50`}
                   >
                     <Plus size={16} />
-                    {savingId === item.id ? "Adding…" : "Add"}
+                    {savingId === item.id ? t("addingBtn") : t("add")}
                   </button>
                 </div>
               </div>

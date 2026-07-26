@@ -4,16 +4,19 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { FolderHeart, Map, User, type LucideIcon } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import { useT } from "@/hooks/useLang";
+import type { StringKey } from "@/lib/i18n";
 
-const LINKS: { href: string; label: string; icon: LucideIcon }[] = [
-  { href: "/", label: "Ideas", icon: FolderHeart },
-  { href: "/map", label: "Map", icon: Map },
-  { href: "/profile", label: "Profile", icon: User },
+const LINKS: { href: string; labelKey: StringKey; icon: LucideIcon }[] = [
+  { href: "/", labelKey: "navIdeas", icon: FolderHeart },
+  { href: "/map", labelKey: "navMap", icon: Map },
+  { href: "/profile", labelKey: "navProfile", icon: User },
 ];
 
 export default function NavBar() {
   const auth = useAuth();
   const pathname = usePathname();
+  const t = useT();
 
   if (auth.status !== "authorized") return null;
   // The place detail screen is a full-screen overlay (back button only, no tabbar).
@@ -38,7 +41,7 @@ export default function NavBar() {
             }`}
           >
             <Icon size={20} strokeWidth={2} />
-            {link.label}
+            {t(link.labelKey)}
           </Link>
         );
       })}

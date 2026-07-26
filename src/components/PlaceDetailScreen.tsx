@@ -7,6 +7,8 @@ import { apiFetch } from "@/lib/apiClient";
 import type { DateIdea } from "@/lib/types";
 import { priceTier } from "@/lib/priceTier";
 import { pill, mutedText, hashtag } from "@/lib/ui";
+import { useLang, useT } from "@/hooks/useLang";
+import { locationsHeading } from "@/lib/i18n";
 
 type LoadState = "loading" | "error";
 
@@ -20,6 +22,8 @@ function linkHostname(url: string): string {
 
 export default function PlaceDetailScreen({ id }: { id: string }) {
   const router = useRouter();
+  const { lang } = useLang();
+  const t = useT();
   const [idea, setIdea] = useState<DateIdea | LoadState>("loading");
 
   useEffect(() => {
@@ -43,7 +47,7 @@ export default function PlaceDetailScreen({ id }: { id: string }) {
         <button
           type="button"
           onClick={() => router.back()}
-          aria-label="Back"
+          aria-label={t("backAria")}
           className="inline-flex size-10 items-center justify-center rounded-full bg-[var(--app-overlay)] text-[var(--app-ink)] ring-1 ring-[var(--app-outline)]/10 active:scale-90 transition"
         >
           <ArrowLeft size={20} />
@@ -51,8 +55,8 @@ export default function PlaceDetailScreen({ id }: { id: string }) {
       </div>
 
       <div className="flex-1 overflow-y-auto px-4 pb-10">
-        {idea === "loading" && <p className={mutedText}>Loading…</p>}
-        {idea === "error" && <p className={mutedText}>Couldn't load this place.</p>}
+        {idea === "loading" && <p className={mutedText}>{t("loadingEllipsis")}</p>}
+        {idea === "error" && <p className={mutedText}>{t("couldntLoadPlace")}</p>}
         {idea !== "loading" && idea !== "error" && (
           <div className="mx-auto flex max-w-2xl flex-col gap-4 pt-2">
             <h1 className="text-[26px] font-semibold leading-[1.1]">{idea.title}</h1>
@@ -75,7 +79,7 @@ export default function PlaceDetailScreen({ id }: { id: string }) {
 
             {idea.locations.length > 0 && (
               <div className="flex flex-col gap-2.5 pt-2">
-                <h2 className={mutedText}>{idea.locations.length > 1 ? "Locations" : "Location"}</h2>
+                <h2 className={mutedText}>{locationsHeading(lang, idea.locations.length)}</h2>
                 {idea.locations.map((loc) => (
                   <div
                     key={loc.id}
@@ -84,7 +88,7 @@ export default function PlaceDetailScreen({ id }: { id: string }) {
                     <div className="flex items-start gap-2">
                       <MapPin size={16} className="mt-0.5 shrink-0" />
                       <div className="flex flex-col gap-0.5">
-                        <span className="text-[14px] font-medium">{loc.address || "No address"}</span>
+                        <span className="text-[14px] font-medium">{loc.address || t("noAddress")}</span>
                         {loc.metro && <span className={mutedText}>M {loc.metro}</span>}
                       </div>
                     </div>
@@ -96,7 +100,7 @@ export default function PlaceDetailScreen({ id }: { id: string }) {
                         className="inline-flex w-fit items-center gap-1 text-[13px] font-semibold text-[var(--app-ink)] active:opacity-60"
                       >
                         <LinkIcon size={13} />
-                        Open link
+                        {t("openLink")}
                       </a>
                     )}
                   </div>
@@ -106,7 +110,7 @@ export default function PlaceDetailScreen({ id }: { id: string }) {
 
             {idea.links.length > 0 && (
               <div className="flex flex-col gap-2.5 pt-2">
-                <h2 className={mutedText}>Links</h2>
+                <h2 className={mutedText}>{t("linksLabel")}</h2>
                 <div className="flex flex-col gap-1.5 rounded-[18px] border border-[var(--app-outline)]/10 bg-[var(--app-overlay)] p-3.5">
                   {idea.links.map((link) => (
                     <a

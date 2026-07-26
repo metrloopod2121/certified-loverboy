@@ -3,6 +3,7 @@
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from "react";
 import { Check, ChevronDown, Search } from "lucide-react";
 import { select, input, hashtag } from "@/lib/ui";
+import { useT } from "@/hooks/useLang";
 
 const dropdownWidths = { list: 224, pills: 288 } as const;
 const viewportPadding = 16;
@@ -30,6 +31,7 @@ export default function MultiSelectFilter({
    *  flowing row of tap-to-toggle chips sized to their own text, no checkbox — for tags. */
   variant?: "list" | "pills";
 }) {
+  const t = useT();
   const ref = useRef<HTMLDivElement>(null);
   const dropdownWidth = dropdownWidths[variant];
   const [dropdownStyle, setDropdownStyle] = useState<CSSProperties>({ width: dropdownWidth });
@@ -108,7 +110,7 @@ export default function MultiSelectFilter({
               <Search size={13} className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-[var(--app-muted)]" />
               <input
                 autoFocus
-                placeholder="Search…"
+                placeholder={t("searchPlaceholder")}
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 className={`${input} py-1.5 pl-7 text-[13px]`}
@@ -120,13 +122,13 @@ export default function MultiSelectFilter({
                 onClick={() => onChange([])}
                 className="w-full rounded-lg px-2 py-1 text-left text-[12px] font-semibold text-[var(--app-ink)] active:bg-black/5"
               >
-                Clear
+                {t("clear")}
               </button>
             )}
           </div>
 
           <div className="overflow-y-auto p-2 pt-1">
-            {visibleOptions.length === 0 && <p className="px-2 py-1.5 text-[13px] text-[var(--app-muted)]">Nothing found</p>}
+            {visibleOptions.length === 0 && <p className="px-2 py-1.5 text-[13px] text-[var(--app-muted)]">{t("nothingFound")}</p>}
             {variant === "pills" ? (
               <div className="flex flex-wrap gap-1.5 p-0.5">
                 {visibleOptions.map((option) => {

@@ -6,6 +6,7 @@ import "maplibre-gl/dist/maplibre-gl.css";
 import "@maplibre/maplibre-gl-leaflet";
 import "./leaflet-theme.css";
 import { OpenFreeMapLayer, InvalidateSizeOnMount, dateMarkerIcon, venueMarkerIcon, MOSCOW_CENTER } from "./mapInternals";
+import { useT } from "@/hooks/useLang";
 
 export type MapMarker = {
   id: string;
@@ -20,6 +21,7 @@ export type MapMarker = {
 };
 
 export default function LeafletMap({ markers }: { markers: MapMarker[] }) {
+  const t = useT();
   return (
     <MapContainer center={MOSCOW_CENTER} zoom={11} className="h-full w-full" zoomControl={false}>
       <InvalidateSizeOnMount />
@@ -38,7 +40,7 @@ export default function LeafletMap({ markers }: { markers: MapMarker[] }) {
             {marker.url && (
               <div>
                 <a href={marker.url} target="_blank" rel="noreferrer">
-                  Link
+                  {t("linkWord")}
                 </a>
               </div>
             )}

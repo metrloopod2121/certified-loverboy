@@ -29,13 +29,15 @@ import {
   hashtag,
 } from "@/lib/ui";
 import { metroPastelTone, metroStations, metroLineTone, sortStationsByLine } from "@/lib/metro";
+import { useLang, useT } from "@/hooks/useLang";
+import { awayText, type StringKey } from "@/lib/i18n";
 
 type Sort = "newest" | "title" | "nearby";
 
-const sortOptions: { value: Sort; label: string }[] = [
-  { value: "newest", label: "Newest" },
-  { value: "title", label: "Title" },
-  { value: "nearby", label: "Nearby" },
+const sortOptions: { value: Sort; labelKey: StringKey }[] = [
+  { value: "newest", labelKey: "sortNewest" },
+  { value: "title", labelKey: "sortTitle" },
+  { value: "nearby", labelKey: "sortNearby" },
 ];
 
 const LOCATION_STORAGE_KEY = "certified-loverboy:user-location";
@@ -70,6 +72,8 @@ let nextImportId = 0;
 const SHOW_FILE_IMPORT = false;
 
 export default function StorageScreen() {
+  const { lang } = useLang();
+  const t = useT();
   const router = useRouter();
   const [ideas, setIdeas] = useState<DateIdea[] | null>(null);
   const [tagFilters, setTagFilters] = useState<string[]>([]);
@@ -84,7 +88,7 @@ export default function StorageScreen() {
   const [editing, setEditing] = useState<DateIdea | null>(null);
   const [openFilter, setOpenFilter] = useState<"tags" | "metro" | "sort" | null>(null);
   const sortRef = useRef<HTMLDivElement>(null);
-  const sortLabel = sortOptions.find((option) => option.value === sort)?.label ?? "Sort";
+  const sortLabel = t(sortOptions.find((option) => option.value === sort)?.labelKey ?? "sortDefaultLabel");
   const [userLocation, setUserLocation] = useState<LatLng | null>(() => loadSavedLocation());
   const [locatingMe, setLocatingMe] = useState(false);
   const [locationError, setLocationError] = useState<string | null>(null);
@@ -171,7 +175,7 @@ export default function StorageScreen() {
 
   function useMyLocation() {
     if (!navigator.geolocation) {
-      setLocationError("Geolocation isn't supported here");
+      setLocationError(t("geoNotSupported"));
       return;
     }
     setLocatingMe(true);
@@ -182,7 +186,7 @@ export default function StorageScreen() {
         setLocatingMe(false);
       },
       (err) => {
-        setLocationError(err.message || "Couldn't get your location");
+        setLocationError(err.message || t("geoFailed"));
         setLocatingMe(false);
       },
       { enableHighAccuracy: true, timeout: 10000 }
@@ -192,7 +196,7 @@ export default function StorageScreen() {
   function applyManualLocation() {
     const parsed = parseCoordinates(manualLocationInput) ?? parseMapsLink(manualLocationInput);
     if (!parsed) {
-      setLocationError("Enter coordinates like 55.75, 37.61 or a maps link");
+      setLocationError(t("manualLocationInvalid"));
       return;
     }
     saveLocation(parsed);
@@ -263,7 +267,7 @@ export default function StorageScreen() {
       setImportItems((prev) => [...prev, { id: `l${nextImportId++}`, source: url, origin: "link_in_app", parsed }]);
       setLinkInput("");
     } catch (err) {
-      setLinkError(err instanceof Error ? err.message : "Couldn't parse this link");
+      setLinkError(err instanceof Error ? err.message : t("couldntParseLink"));
     } finally {
       setLinkImporting(false);
     }
@@ -280,13 +284,13 @@ export default function StorageScreen() {
     <div className="flex flex-col gap-5 max-w-2xl mx-auto p-4 pt-6 pb-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className={`${pageHeading} whitespace-nowrap`}>Ideas Storage</h1>
+          <h1 className={`${pageHeading} whitespace-nowrap`}>{t("storageTitle")}</h1>
         </div>
         <div className="flex gap-2">
           <button
             onClick={toggleAddPanel}
-            aria-label={addMode === "none" ? "Add idea" : "Close form"}
-            title={addMode === "none" ? "Add idea" : "Close form"}
+            aria-label={addMode === "none" ? t("addIdea") : t("closeForm")}
+            title={addMode === "none" ? t("addIdea") : t("closeForm")}
             className="inline-flex size-12 items-center justify-center rounded-full bg-[var(--app-ink)] text-[var(--app-canvas)] shadow-[0_3px_0_rgba(28,26,23,0.18)] active:scale-90 transition"
           >
             {addMode === "none" ? <Plus size={18} /> : <X size={18} />}
@@ -297,7 +301,7 @@ export default function StorageScreen() {
       <div className="relative z-10 flex flex-col gap-2">
         <div className="grid grid-cols-3 gap-2">
           <MultiSelectFilter
-            label="Tags"
+            label={t("filterTags")}
             options={allTags}
             selected={tagFilters}
             onChange={setTagFilters}
@@ -307,7 +311,7 @@ export default function StorageScreen() {
             fullWidth
           />
           <MultiSelectFilter
-            label="Metro"
+            label={t("filterMetro")}
             options={allMetro}
             selected={metroFilters}
             onChange={setMetroFilters}
@@ -339,7 +343,7 @@ export default function StorageScreen() {
                       sort === option.value ? "bg-[var(--app-yellow)] text-[var(--app-ink)]" : "text-[var(--app-ink)]"
                     }`}
                   >
-                    {option.label}
+                    {t(option.labelKey)}
                   </button>
                 ))}
               </div>
@@ -354,27 +358,27 @@ export default function StorageScreen() {
             <div className="flex items-center justify-between gap-2">
               <span className={mutedText}>
                 <MapPin className="mr-1 inline align-text-bottom" size={14} />
-                Location set — sorting by distance
+                {t("locationSet")}
               </span>
               <button type="button" onClick={clearLocation} className={buttonGhost}>
-                Change
+                {t("change")}
               </button>
             </div>
           ) : (
             <div className="flex flex-col gap-2">
               <button type="button" onClick={useMyLocation} disabled={locatingMe} className={`${buttonSecondary} w-full`}>
                 <Navigation size={16} />
-                {locatingMe ? "Locating…" : "Use my location"}
+                {locatingMe ? t("locating") : t("useMyLocation")}
               </button>
               <div className="flex gap-2">
                 <input
-                  placeholder="55.75, 37.61 or a maps link"
+                  placeholder={t("manualLocationPlaceholder")}
                   value={manualLocationInput}
                   onChange={(e) => setManualLocationInput(e.target.value)}
                   className={input}
                 />
                 <button type="button" onClick={applyManualLocation} className={buttonGhost}>
-                  Set
+                  {t("setLocation")}
                 </button>
               </div>
             </div>
@@ -392,7 +396,7 @@ export default function StorageScreen() {
               className={`${pillToggle} inline-flex items-center gap-1 border-0 ${addMode === "manual" ? pillToggleActive : pillToggleInactive}`}
             >
               <PencilLine size={14} />
-              Manual
+              {t("tabManual")}
             </button>
             <button
               type="button"
@@ -400,7 +404,7 @@ export default function StorageScreen() {
               className={`${pillToggle} inline-flex items-center gap-1 border-0 ${addMode === "link" ? pillToggleActive : pillToggleInactive}`}
             >
               <LinkIcon size={14} />
-              Link
+              {t("tabLink")}
             </button>
             {SHOW_FILE_IMPORT && (
               <button
@@ -409,7 +413,7 @@ export default function StorageScreen() {
                 className={`${pillToggle} inline-flex items-center gap-1 border-0 ${addMode === "import" ? pillToggleActive : pillToggleInactive}`}
               >
                 <FileUp size={14} />
-                Import file
+                {t("tabImportFile")}
               </button>
             )}
           </div>
@@ -418,13 +422,13 @@ export default function StorageScreen() {
 
           {addMode === "link" && (
             <div className="flex flex-col gap-2 rounded-[22px] border border-[var(--app-outline)]/10 bg-[var(--app-yellow)] p-4 shadow-[0_2px_0_rgba(28,26,23,0.08)]">
-              <span className={mutedText}>Paste a Yandex Maps link</span>
+              <span className={mutedText}>{t("pasteYandexLink")}</span>
               {/* A textarea, not a single-line input: sharing a place from the Yandex Maps app
                   often copies "Title\nAddress\nhttps://..." as one block, not a bare URL — a
                   single-line input can mangle or truncate that on paste. The server pulls the
                   link out of whatever text lands here either way. */}
               <textarea
-                placeholder="https://yandex.ru/maps/... (or the whole shared text)"
+                placeholder={t("linkPlaceholder")}
                 value={linkInput}
                 onChange={(e) => handleLinkInputChange(e.target.value)}
                 className={input}
@@ -436,7 +440,7 @@ export default function StorageScreen() {
                 disabled={linkImporting || !linkInput.trim()}
                 className={`${buttonSecondary} w-full bg-[var(--app-overlay)] disabled:opacity-50`}
               >
-                {linkImporting ? "Reading…" : "Add"}
+                {linkImporting ? t("reading") : t("add")}
               </button>
               {linkError && <p className="text-[13px] font-medium text-red-500">{linkError}</p>}
             </div>
@@ -444,7 +448,7 @@ export default function StorageScreen() {
 
           {addMode === "import" && (
             <div className="flex flex-col gap-2 rounded-[22px] border border-[var(--app-outline)]/10 bg-[var(--app-yellow)] p-4 shadow-[0_2px_0_rgba(28,26,23,0.08)]">
-              <span className={mutedText}>Files (.md / .txt) — pick several at once if you like</span>
+              <span className={mutedText}>{t("filesHint")}</span>
               <input
                 ref={fileInputRef}
                 type="file"
@@ -459,7 +463,7 @@ export default function StorageScreen() {
                 className={`${buttonSecondary} w-full bg-[var(--app-overlay)]`}
               >
                 <Upload size={18} />
-                Choose files
+                {t("chooseFiles")}
               </button>
             </div>
           )}
@@ -467,7 +471,7 @@ export default function StorageScreen() {
         </div>
       )}
 
-      {!ideas && <p className={mutedText}>Loading…</p>}
+      {!ideas && <p className={mutedText}>{t("loadingEllipsis")}</p>}
 
       <div className="flex flex-col gap-3">
         {filtered.map((idea) =>
@@ -499,7 +503,7 @@ export default function StorageScreen() {
                       e.stopPropagation();
                       setEditing(idea);
                     }}
-                    aria-label="Edit"
+                    aria-label={t("editAria")}
                     className={`${iconButton} bg-[var(--app-overlay)] text-[var(--app-ink)] ring-1 ring-[var(--app-outline)]/10`}
                   >
                     <Pencil size={16} />
@@ -509,7 +513,7 @@ export default function StorageScreen() {
                       e.stopPropagation();
                       remove(idea.id);
                     }}
-                    aria-label="Delete"
+                    aria-label={t("deleteAria")}
                     className={`${iconButton} bg-[var(--app-overlay)] text-red-500 ring-1 ring-[var(--app-outline)]/10`}
                   >
                     <Trash2 size={16} />
@@ -534,7 +538,7 @@ export default function StorageScreen() {
                         {loc.address ? (
                           <p className={mutedText}>{loc.address}</p>
                         ) : stations.length === 0 ? (
-                          <p className={mutedText}>No address</p>
+                          <p className={mutedText}>{t("noAddress")}</p>
                         ) : null}
                         {loc.url && (
                           <a
@@ -555,7 +559,7 @@ export default function StorageScreen() {
               {sort === "nearby" && userLocation && (
                 <p className={mutedText}>
                   <MapPin className="mr-1 inline align-text-bottom" size={12} />
-                  {distanceById.has(idea.id) ? `${formatDistanceKm(distanceById.get(idea.id)!)} away` : "No coordinates"}
+                  {distanceById.has(idea.id) ? awayText(lang, formatDistanceKm(distanceById.get(idea.id)!)) : t("noCoordinates")}
                 </p>
               )}
               {idea.priceNote && <p className="text-[14px] font-semibold">{priceTier(idea.priceNote) ?? idea.priceNote}</p>}
@@ -570,15 +574,15 @@ export default function StorageScreen() {
           )
         )}
         {ideas && filtered.length === 0 && (
-          <p className={`${card} ${mutedText}`}>Nothing here yet — add your first idea.</p>
+          <p className={`${card} ${mutedText}`}>{t("nothingYet")}</p>
         )}
       </div>
 
       {linkImporting && (
         <div className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-3 bg-[var(--app-canvas)]/90 backdrop-blur-sm">
           <div className="size-10 animate-spin rounded-full border-4 border-[var(--app-outline)]/15 border-t-[var(--app-ink)]" />
-          <p className="text-[15px] font-semibold text-[var(--app-ink)]">Reading the link…</p>
-          <p className={mutedText}>AI is looking up the place, a few seconds</p>
+          <p className="text-[15px] font-semibold text-[var(--app-ink)]">{t("readingLinkOverlay")}</p>
+          <p className={mutedText}>{t("aiLookingUp")}</p>
         </div>
       )}
 

@@ -21,6 +21,8 @@ export async function GET(request: Request) {
     orderBy: { createdAt: "desc" },
   });
 
+  await trackEvent("places_list_loaded", auth.telegramId, { count: ideas.length });
+
   return NextResponse.json(ideas);
 }
 
@@ -59,7 +61,13 @@ export async function POST(request: Request) {
   });
 
   const source = typeof body.source === "string" && KNOWN_CREATE_SOURCES.has(body.source) ? body.source : "manual";
-  await trackEvent("place_created", auth.telegramId, { source });
+  await trackEvent("place_created", auth.telegramId, {
+    source,
+    placeId: idea.id,
+    tagsCount: idea.tags.length,
+    locationsCount: idea.locations.length,
+    linksCount: idea.links.length,
+  });
 
   return NextResponse.json(idea, { status: 201 });
 }

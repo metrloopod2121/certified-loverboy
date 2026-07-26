@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Download, LifeBuoy, Info, Languages, Link as LinkIcon } from "lucide-react";
 import { apiFetch, downloadWithToken } from "@/lib/apiClient";
 import {
@@ -10,6 +10,7 @@ import {
   input,
 } from "@/lib/ui";
 import { useLang, useT } from "@/hooks/useLang";
+import { trackClientEvent } from "@/lib/clientAnalytics";
 import type { Lang } from "@/lib/i18n";
 
 const LANGUAGES: { value: Lang; label: string }[] = [
@@ -32,6 +33,7 @@ export default function ProfileScreen() {
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const supportStartedRef = useRef(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -51,6 +53,7 @@ export default function ProfileScreen() {
     linkImportsRemaining === "loading" ? "..." : linkImportsRemaining === null ? "∞" : String(linkImportsRemaining);
 
   async function exportAll() {
+    trackClientEvent("profile_export_clicked");
     setExporting(true);
     try {
       const filename = `certified-loverboy-export-${new Date().toISOString().slice(0, 10)}.zip`;
@@ -126,6 +129,10 @@ export default function ProfileScreen() {
           placeholder={t("supportPlaceholder")}
           value={supportText}
           onChange={(e) => {
+            if (!supportStartedRef.current && e.target.value.trim()) {
+              supportStartedRef.current = true;
+              trackClientEvent("profile_support_started");
+            }
             setSupportText(e.target.value);
             setSent(false);
           }}

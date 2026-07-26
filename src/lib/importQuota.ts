@@ -11,6 +11,7 @@ function importLimit(): number | null {
 
 export type ImportQuotaStatus = {
   usedCount: number;
+  limit: number | null;
   /** `null` means imports are currently unlimited. */
   remaining: number | null;
 };
@@ -24,6 +25,7 @@ export async function getImportQuotaStatus(telegramUserId: string): Promise<Impo
 
   return {
     usedCount,
+    limit,
     remaining: limit === null ? null : Math.max(0, limit - usedCount),
   };
 }

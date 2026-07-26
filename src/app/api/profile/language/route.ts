@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { requireAuth, isAuthUser } from "@/lib/apiAuth";
 import { getUserLanguage, setUserLanguage } from "@/lib/userSettings";
 import { isLang } from "@/lib/i18n";
+import { trackEvent } from "@/lib/analytics";
 
 export async function GET(request: Request) {
   const auth = requireAuth(request);
@@ -21,5 +22,6 @@ export async function PATCH(request: Request) {
   }
 
   await setUserLanguage(auth.telegramId, body.language);
+  await trackEvent("language_changed", auth.telegramId, { language: body.language });
   return NextResponse.json({ language: body.language });
 }

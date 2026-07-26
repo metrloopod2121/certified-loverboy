@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import Script from "next/script";
 import TelegramInit from "@/components/TelegramInit";
 import NavBar from "@/components/NavBar";
+import AnalyticsTracker from "@/components/AnalyticsTracker";
 import { LangProvider } from "@/hooks/useLang";
 import "./globals.css";
 
@@ -40,6 +41,7 @@ export default function RootLayout({
       <body className="min-h-full flex flex-col">
         <Script src="https://telegram.org/js/telegram-web-app.js" strategy="beforeInteractive" />
         <TelegramInit />
+        <AnalyticsTracker />
         <LangProvider>
           <main
             className="flex-1 overflow-y-auto"

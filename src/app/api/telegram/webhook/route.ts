@@ -75,6 +75,24 @@ function textWithHiddenLinks(text: string, links: string[]): string {
  *  guards against accidental LLM calls on short one-off chat messages. */
 const PASTED_POST_MIN_LENGTH = 40;
 
+function urlHost(raw: string): string | null {
+  try {
+    return new URL(raw).hostname.replace(/^www\./, "");
+  } catch {
+    return null;
+  }
+}
+
+function messageTelemetry(message: TelegramMessage) {
+  return {
+    chatId: String(message.chat.id),
+    username: message.from?.username ? `@${message.from.username}` : null,
+    textLength: (message.text ?? message.caption ?? "").length,
+    hasCaption: Boolean(message.caption),
+    mediaGroup: Boolean(message.media_group_id),
+  };
+}
+
 /** Only channel posts count as "posts" for this flow — forwarded messages from a group or a
  *  person are left alone. */
 function forwardedChannelSourceUrl(message: TelegramMessage): string {
@@ -132,6 +150,14 @@ async function sendDraftsForApproval(
       data: { chatId, sourceUrl: locationUrl, payload: JSON.stringify(enrichedIdea), source },
     });
 
+    await trackEvent("pending_import_draft_created", chatId, {
+      source,
+      pendingId: pending.id,
+      hasCoordinates: enrichedIdea.lat != null && enrichedIdea.lng != null,
+      linksCount: enrichedIdea.links.length,
+      tagsCount: enrichedIdea.tags.length,
+    });
+
     await sendTelegramMessageWithButtons(chatId, formatIdeaPreview(enrichedIdea, header, lang), [
       { text: t(lang, "yesButton"), callback_data: `pi:approve:${pending.id}` },
       { text: t(lang, "noButton"), callback_data: `pi:reject:${pending.id}` },
@@ -145,8 +171,10 @@ async function handleYandexLink(message: TelegramMessage) {
 
   const chatId = String(message.chat.id);
   const lang = await getUserLanguage(chatId);
+  await trackEvent("link_import_started", chatId, { surface: "bot", source: "bot_yandex_link", host: urlHost(url), ...messageTelemetry(message) });
   const quota = await tryConsumeImportQuota(chatId);
   if (!quota.ok) {
+    await trackEvent("link_import_failed", chatId, { surface: "bot", source: "bot_yandex_link", reason: "quota_exhausted", host: urlHost(url) });
     await sendTelegramMessage(chatId, quotaExhaustedMessage(lang));
     return;
   }
@@ -155,9 +183,20 @@ async function handleYandexLink(message: TelegramMessage) {
 
   const parsed = await parseYandexMapsLink(url);
   if (!parsed) {
+    await trackEvent("link_import_failed", chatId, { surface: "bot", source: "bot_yandex_link", reason: "parse_failed", host: urlHost(url) });
     await sendTelegramMessage(chatId, t(lang, "linkParseFailed"));
     return;
   }
+
+  await trackEvent("link_import_parsed", chatId, {
+    surface: "bot",
+    source: "bot_yandex_link",
+    host: urlHost(url),
+    tagsCount: parsed.tags.length,
+    linksCount: parsed.links.length,
+    hasCoordinates: parsed.lat != null && parsed.lng != null,
+    remaining: quota.remaining,
+  });
 
   await sendDraftsForApproval(chatId, [parsed], t(lang, "headerYandexLink"), () => url, "bot_yandex_link", lang);
 }
@@ -167,8 +206,20 @@ async function handleYandexLink(message: TelegramMessage) {
 async function handleTelegramPostLink(message: TelegramMessage, url: string) {
   const chatId = String(message.chat.id);
   const lang = await getUserLanguage(chatId);
+  await trackEvent("link_import_started", chatId, {
+    surface: "bot",
+    source: "bot_telegram_post_link",
+    host: urlHost(url),
+    ...messageTelemetry(message),
+  });
   const quota = await tryConsumeImportQuota(chatId);
   if (!quota.ok) {
+    await trackEvent("link_import_failed", chatId, {
+      surface: "bot",
+      source: "bot_telegram_post_link",
+      reason: "quota_exhausted",
+      host: urlHost(url),
+    });
     await sendTelegramMessage(chatId, quotaExhaustedMessage(lang));
     return;
   }
@@ -178,6 +229,12 @@ async function handleTelegramPostLink(message: TelegramMessage, url: string) {
   const postText = await fetchTelegramPostText(url);
   if (!postText) {
     console.log(`[import] telegram post link fetch failed chatId=${chatId} url=${url}`);
+    await trackEvent("link_import_failed", chatId, {
+      surface: "bot",
+      source: "bot_telegram_post_link",
+      reason: "fetch_failed",
+      host: urlHost(url),
+    });
     await sendTelegramMessage(chatId, t(lang, "postLinkOpenFailed"));
     return;
   }
@@ -185,9 +242,23 @@ async function handleTelegramPostLink(message: TelegramMessage, url: string) {
   const drafts = await parsePostTextMulti(postText);
   if (drafts.length === 0) {
     console.log(`[import] telegram post link parse failed chatId=${chatId} url=${url}`);
+    await trackEvent("link_import_failed", chatId, {
+      surface: "bot",
+      source: "bot_telegram_post_link",
+      reason: "parse_failed",
+      host: urlHost(url),
+    });
     await sendTelegramMessage(chatId, t(lang, "postLinkParseFailed"));
     return;
   }
+
+  await trackEvent("link_import_parsed", chatId, {
+    surface: "bot",
+    source: "bot_telegram_post_link",
+    host: urlHost(url),
+    draftsCount: drafts.length,
+    remaining: quota.remaining,
+  });
 
   await sendDraftsForApproval(chatId, drafts, t(lang, "headerPostLink"), () => url, "bot_telegram_post_link", lang);
 }
@@ -199,20 +270,29 @@ async function handleChannelForwardPost(message: TelegramMessage) {
   const chatId = String(message.chat.id);
   const lang = await getUserLanguage(chatId);
   const text = (message.text ?? message.caption ?? "").trim();
+  await trackEvent("bot_forward_received", chatId, { source: "bot_channel_forward", ...messageTelemetry(message) });
   if (!text) {
     // Multi-photo posts arrive as one message per photo, all sharing a media_group_id, with
     // the caption on only one of them — silently skip the caption-less ones instead of
     // spamming an error per photo. A genuinely caption-less single-photo forward still errors.
     if (message.media_group_id) {
       console.log(`[import] album photo without caption, skipping chatId=${chatId} group=${message.media_group_id}`);
+      await trackEvent("link_import_failed", chatId, {
+        surface: "bot",
+        source: "bot_channel_forward",
+        reason: "album_item_without_caption",
+      });
       return;
     }
+    await trackEvent("link_import_failed", chatId, { surface: "bot", source: "bot_channel_forward", reason: "empty_forward" });
     await sendTelegramMessage(chatId, t(lang, "forwardedNoText"));
     return;
   }
 
+  await trackEvent("link_import_started", chatId, { surface: "bot", source: "bot_channel_forward", ...messageTelemetry(message) });
   const quota = await tryConsumeImportQuota(chatId);
   if (!quota.ok) {
+    await trackEvent("link_import_failed", chatId, { surface: "bot", source: "bot_channel_forward", reason: "quota_exhausted" });
     await sendTelegramMessage(chatId, quotaExhaustedMessage(lang));
     return;
   }
@@ -223,9 +303,18 @@ async function handleChannelForwardPost(message: TelegramMessage) {
   const drafts = await parsePostTextMulti(textWithHiddenLinks(text, hiddenLinks));
   if (drafts.length === 0) {
     console.log(`[import] channel forward parse failed chatId=${chatId}`);
+    await trackEvent("link_import_failed", chatId, { surface: "bot", source: "bot_channel_forward", reason: "parse_failed" });
     await sendTelegramMessage(chatId, t(lang, "forwardedParseFailed"));
     return;
   }
+
+  await trackEvent("link_import_parsed", chatId, {
+    surface: "bot",
+    source: "bot_channel_forward",
+    draftsCount: drafts.length,
+    hiddenLinksCount: hiddenLinks.length,
+    remaining: quota.remaining,
+  });
 
   const fallbackUrl = hiddenLinks[0] ?? forwardedChannelSourceUrl(message);
   await sendDraftsForApproval(chatId, drafts, t(lang, "headerChannelForward"), () => fallbackUrl, "bot_channel_forward", lang);
@@ -240,9 +329,11 @@ async function handlePastedPostText(message: TelegramMessage) {
   const text = (message.text ?? "").trim();
 
   console.log(`[import] pasted post text instead of forwarding chatId=${chatId} length=${text.length}`);
+  await trackEvent("link_import_started", chatId, { surface: "bot", source: "bot_pasted_text", ...messageTelemetry(message) });
 
   const quota = await tryConsumeImportQuota(chatId);
   if (!quota.ok) {
+    await trackEvent("link_import_failed", chatId, { surface: "bot", source: "bot_pasted_text", reason: "quota_exhausted" });
     await sendTelegramMessage(chatId, quotaExhaustedMessage(lang));
     return;
   }
@@ -253,9 +344,18 @@ async function handlePastedPostText(message: TelegramMessage) {
   const drafts = await parsePostTextMulti(textWithHiddenLinks(text, hiddenLinks));
   if (drafts.length === 0) {
     console.log(`[import] pasted text parse failed chatId=${chatId}`);
+    await trackEvent("link_import_failed", chatId, { surface: "bot", source: "bot_pasted_text", reason: "parse_failed" });
     await sendTelegramMessage(chatId, t(lang, "pastedParseFailed"));
     return;
   }
+
+  await trackEvent("link_import_parsed", chatId, {
+    surface: "bot",
+    source: "bot_pasted_text",
+    draftsCount: drafts.length,
+    hiddenLinksCount: hiddenLinks.length,
+    remaining: quota.remaining,
+  });
 
   const fallbackUrl = hiddenLinks[0] ?? "";
   await sendDraftsForApproval(chatId, drafts, t(lang, "headerPastedText"), () => fallbackUrl, "bot_pasted_text", lang);
@@ -264,7 +364,7 @@ async function handlePastedPostText(message: TelegramMessage) {
 async function handleStartCommand(message: TelegramMessage) {
   const chatId = String(message.chat.id);
   const lang = await getUserLanguage(chatId);
-  await trackEvent("bot_start", chatId);
+  await trackEvent("bot_start", chatId, messageTelemetry(message));
   await sendTelegramMessage(chatId, t(lang, "start"));
 }
 
@@ -276,12 +376,18 @@ async function handleSupportCommand(message: TelegramMessage) {
   const text = (message.text ?? "").replace(/^\/support(@\w+)?\s*/i, "").trim();
 
   if (!text) {
+    await trackEvent("bot_command_help_shown", chatId, { command: "support", ...messageTelemetry(message) });
     await sendTelegramMessage(chatId, t(lang, "supportUsage"));
     return;
   }
 
   const username = message.from?.username ? `@${message.from.username}` : null;
   await submitSupportMessage(chatId, username, text);
+  await trackEvent("support_submitted", chatId, {
+    surface: "bot",
+    username,
+    textLength: text.length,
+  });
 
   await sendTelegramMessage(chatId, t(lang, "supportThanks"));
 }
@@ -289,7 +395,9 @@ async function handleSupportCommand(message: TelegramMessage) {
 async function handleUsageCommand(message: TelegramMessage) {
   const chatId = String(message.chat.id);
   const adminId = process.env.ADMIN_TG_ID;
+  await trackEvent("usage_command_requested", String(message.from?.id ?? chatId), messageTelemetry(message));
   if (!adminId || String(message.from?.id) !== adminId) {
+    await trackEvent("usage_command_denied", String(message.from?.id ?? chatId), messageTelemetry(message));
     await sendTelegramMessage(chatId, "Команда доступна только админу.");
     return;
   }
@@ -301,9 +409,11 @@ async function handleUsageCommand(message: TelegramMessage) {
     if (!report) throw new Error("usage report produced no output");
 
     await sendTelegramMessage(chatId, report, { parseMode: "HTML", disableWebPagePreview: true });
+    await trackEvent("usage_command_sent", chatId, { reportLength: report.length });
   } catch (err) {
     const detail = err instanceof Error ? err.message : String(err);
     console.log(`[usage] /usage command failed: ${detail}`);
+    await trackEvent("usage_command_failed", chatId, { detail });
     await sendTelegramMessage(chatId, `Usage-отчёт ещё не готов. Подожди ближайший monitor run или запусти daily monitor на сервере.`);
   }
 }
@@ -312,6 +422,7 @@ async function handleCallbackQuery(callbackQuery: TelegramCallbackQuery) {
   const data = callbackQuery.data ?? "";
   const match = data.match(/^pi:(approve|reject):(.+)$/);
   if (!match) {
+    await trackEvent("bot_callback_ignored", String(callbackQuery.from.id), { dataPrefix: data.slice(0, 20) });
     await answerCallbackQuery(callbackQuery.id);
     return;
   }
@@ -321,6 +432,7 @@ async function handleCallbackQuery(callbackQuery: TelegramCallbackQuery) {
   const [, action, pendingId] = match;
   const pending = await prisma.pendingImport.findUnique({ where: { id: pendingId } });
   if (!pending || pending.chatId !== String(callbackQuery.from.id)) {
+    await trackEvent("pending_import_callback_stale", String(callbackQuery.from.id), { action, pendingId });
     await answerCallbackQuery(callbackQuery.id, t(lang, "callbackStale"));
     return;
   }
@@ -330,6 +442,7 @@ async function handleCallbackQuery(callbackQuery: TelegramCallbackQuery) {
 
   if (action === "reject") {
     await prisma.pendingImport.delete({ where: { id: pendingId } });
+    await trackEvent("pending_import_rejected", pending.chatId, { pendingId, source: pending.source });
     await answerCallbackQuery(callbackQuery.id, t(lang, "callbackCancelled"));
     if (chatId && messageId) await editTelegramMessageText(String(chatId), messageId, t(lang, "cancelledEdit"));
     return;
@@ -338,7 +451,7 @@ async function handleCallbackQuery(callbackQuery: TelegramCallbackQuery) {
   const idea = JSON.parse(pending.payload) as ParsedFromLink;
   const tagIds = await resolveTagIds(withoutMetroTags(idea.tags, [idea.metro]));
 
-  await prisma.dateIdea.create({
+  const created = await prisma.dateIdea.create({
     data: {
       telegramUserId: pending.chatId,
       title: idea.title,
@@ -363,7 +476,14 @@ async function handleCallbackQuery(callbackQuery: TelegramCallbackQuery) {
   });
 
   await prisma.pendingImport.delete({ where: { id: pendingId } });
-  await trackEvent("place_created", pending.chatId, { source: pending.source });
+  await trackEvent("pending_import_approved", pending.chatId, { pendingId, source: pending.source, placeId: created.id });
+  await trackEvent("place_created", pending.chatId, {
+    source: pending.source,
+    placeId: created.id,
+    tagsCount: idea.tags.length,
+    locationsCount: 1,
+    linksCount: idea.links.length,
+  });
   await answerCallbackQuery(callbackQuery.id, t(lang, "callbackAdded"));
   if (chatId && messageId) await editTelegramMessageText(String(chatId), messageId, addedEditText(lang, idea.title));
 }
@@ -388,6 +508,10 @@ export async function POST(request: Request) {
   if (!message || !message.from) return NextResponse.json({ ok: true });
 
   const text = message.text ?? "";
+  const command = text.match(/^\/([a-z0-9_]+)/i)?.[1]?.toLowerCase();
+  if (command) {
+    await trackEvent("bot_command_received", String(message.from.id), { command, ...messageTelemetry(message) });
+  }
 
   if (/^\/start(\s|$)/i.test(text)) {
     await handleStartCommand(message);
@@ -423,6 +547,8 @@ export async function POST(request: Request) {
     await handleTelegramPostLink(message, telegramLink);
   } else if (trimmed.length >= PASTED_POST_MIN_LENGTH) {
     await handlePastedPostText(message);
+  } else {
+    await trackEvent("bot_message_ignored", String(message.from.id), messageTelemetry(message));
   }
 
   return NextResponse.json({ ok: true });

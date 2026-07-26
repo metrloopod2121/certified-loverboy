@@ -4,6 +4,12 @@
 
 ## 2026-07-27
 
+**Полное покрытие продуктовой аналитикой + управляемые sink'и**
+- `trackEvent()` теперь пишет не только в SQLite `AnalyticsEvent`, но умеет опционально дублировать события в JSONL-файл (`ANALYTICS_FILE_ENABLED=1`, default path `data/analytics-events.jsonl`) и слать каждое событие админу в Telegram (`ANALYTICS_TELEGRAM_ENABLED=1`). `ANALYTICS_ENABLED=0` полностью ставит аналитику на паузу без деплоя.
+- Добавлен `/api/analytics` для клиентских событий Mini App и `AnalyticsTracker`: логируются `app_opened`, `screen_view`, tab navigation, фильтры/сортировки, открытие/редактирование/удаление карточек, геолокация, support-start, export-click и внешние ссылки.
+- Backend покрыт серверными событиями: list/detail/create/update/delete мест, link import success/fail по причинам, export token/download, quota view, language change, support submit. Telegram webhook покрывает команды, `/usage`, все bot import флоу, draft created, approve/reject/stale callback и ignored messages.
+- Суточный usage-report теперь показывает active users и топ событий за 24 часа, а не только `place_created`/`bot_start`.
+
 **Вернули `/usage` для админа**
 - Бот снова понимает `/usage` только от `ADMIN_TG_ID`: команда отправляет последний HTML-отчёт из `data/usage-report-latest.html`.
 - `scripts/usageReport.mjs` теперь обновляет этот cached report на каждом hourly/daily monitor run, а сам monitor по-прежнему читает journal от root/systemd, поэтому токены/нейроны не обнуляются из-за прав веб-процесса.

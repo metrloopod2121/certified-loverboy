@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { FolderHeart, Map, User, type LucideIcon } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useT } from "@/hooks/useLang";
+import { trackClientEvent } from "@/lib/clientAnalytics";
 import type { StringKey } from "@/lib/i18n";
 
 const LINKS: { href: string; labelKey: StringKey; icon: LucideIcon }[] = [
@@ -34,6 +35,7 @@ export default function NavBar() {
           <Link
             key={link.href}
             href={link.href}
+            onClick={() => trackClientEvent("nav_click", { href: link.href })}
             className={`flex min-h-[58px] min-w-[64px] flex-col items-center justify-center gap-0.5 rounded-full px-4 py-2 text-[10px] font-semibold transition ${
               active
                 ? "bg-[var(--app-ink)] text-[var(--app-canvas)] shadow-[0_2px_0_rgba(28,26,23,0.16)]"

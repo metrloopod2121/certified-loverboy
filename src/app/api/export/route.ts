@@ -4,6 +4,7 @@ import { requireAuth, isAuthUser } from "@/lib/apiAuth";
 import { serializeDateIdeaMarkdown, exportFilenames } from "@/lib/dateIdeaMarkdown";
 import { createZip } from "@/lib/zip";
 import { verifyExportToken } from "@/lib/exportToken";
+import { trackEvent } from "@/lib/analytics";
 
 export async function GET(request: Request) {
   // Plain navigation and Telegram.WebApp.downloadFile can't send the usual
@@ -26,6 +27,12 @@ export async function GET(request: Request) {
 
   const names = exportFilenames(ideas);
   const zip = createZip(ideas.map((idea, i) => ({ name: names[i], content: serializeDateIdeaMarkdown(idea) })));
+
+  await trackEvent("export_downloaded", telegramId, {
+    tokenAuth: Boolean(tokenTelegramId),
+    placesCount: ideas.length,
+    bytes: zip.length,
+  });
 
   return new NextResponse(new Uint8Array(zip), {
     headers: {

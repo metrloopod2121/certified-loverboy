@@ -30,6 +30,7 @@ import {
 } from "@/lib/ui";
 import { metroPastelTone, metroStations, metroLineTone, sortStationsByLine } from "@/lib/metro";
 import { useLang, useT } from "@/hooks/useLang";
+import { trackClientEvent } from "@/lib/clientAnalytics";
 import { awayText, type StringKey } from "@/lib/i18n";
 
 type Sort = "newest" | "title" | "nearby";
@@ -162,31 +163,56 @@ export default function StorageScreen() {
     return result;
   }, [ideas, tagFilters, metroFilters, sort, distanceById]);
 
-  function saveLocation(loc: LatLng) {
+  function updateTagFilters(next: string[]) {
+    setTagFilters(next);
+    trackClientEvent("storage_filter_changed", { type: "tags", count: next.length });
+  }
+
+  function updateMetroFilters(next: string[]) {
+    setMetroFilters(next);
+    trackClientEvent("storage_filter_changed", { type: "metro", count: next.length });
+  }
+
+  function selectAddMode(mode: "manual" | "import" | "link") {
+    setAddMode(mode);
+    trackClientEvent("storage_add_mode_selected", { mode });
+  }
+
+  function openPlace(id: string) {
+    trackClientEvent("storage_place_opened", { placeId: id });
+    router.push(`/place/${id}`);
+  }
+
+  function saveLocation(loc: LatLng, source: "browser" | "manual") {
     setUserLocation(loc);
     setLocationError(null);
     window.localStorage.setItem(LOCATION_STORAGE_KEY, JSON.stringify(loc));
+    trackClientEvent("geo_location_saved", { source });
   }
 
   function clearLocation() {
     setUserLocation(null);
     window.localStorage.removeItem(LOCATION_STORAGE_KEY);
+    trackClientEvent("geo_location_cleared");
   }
 
   function useMyLocation() {
+    trackClientEvent("geo_location_requested");
     if (!navigator.geolocation) {
       setLocationError(t("geoNotSupported"));
+      trackClientEvent("geo_location_failed", { reason: "unsupported" });
       return;
     }
     setLocatingMe(true);
     setLocationError(null);
     navigator.geolocation.getCurrentPosition(
       (pos) => {
-        saveLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+        saveLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude }, "browser");
         setLocatingMe(false);
       },
       (err) => {
         setLocationError(err.message || t("geoFailed"));
+        trackClientEvent("geo_location_failed", { reason: err.code, message: err.message || "unknown" });
         setLocatingMe(false);
       },
       { enableHighAccuracy: true, timeout: 10000 }
@@ -197,14 +223,19 @@ export default function StorageScreen() {
     const parsed = parseCoordinates(manualLocationInput) ?? parseMapsLink(manualLocationInput);
     if (!parsed) {
       setLocationError(t("manualLocationInvalid"));
+      trackClientEvent("geo_location_failed", { reason: "manual_parse_failed" });
       return;
     }
-    saveLocation(parsed);
+    saveLocation(parsed, "manual");
     setManualLocationInput("");
   }
 
   function toggleAddPanel() {
-    setAddMode((m) => (m === "none" ? "manual" : "none"));
+    setAddMode((m) => {
+      const next = m === "none" ? "manual" : "none";
+      trackClientEvent(next === "none" ? "storage_add_panel_closed" : "storage_add_panel_opened", { mode: next });
+      return next;
+    });
     setImportItems([]);
   }
 
@@ -237,11 +268,14 @@ export default function StorageScreen() {
         parsed: parseDateMarkdown(await file.text()),
       }))
     );
+    trackClientEvent("storage_file_import_selected", { filesCount: newItems.length });
     setImportItems((prev) => [...prev, ...newItems]);
     e.target.value = "";
   }
 
   function dismissImportItem(id: string) {
+    const item = importItems.find((candidate) => candidate.id === id);
+    trackClientEvent("storage_import_draft_removed", { origin: item?.origin ?? "unknown" });
     setImportItems((prev) => prev.filter((i) => i.id !== id));
   }
 
@@ -250,6 +284,9 @@ export default function StorageScreen() {
   // the link the moment one is found, so what's left is only the link, no extra text.
   function handleLinkInputChange(value: string) {
     const extracted = findYandexMapsLink(value);
+    if (extracted && extracted !== value.trim()) {
+      trackClientEvent("storage_link_input_normalized", { rawLength: value.length });
+    }
     setLinkInput(extracted && extracted !== value.trim() ? extracted : value);
   }
 
@@ -304,7 +341,7 @@ export default function StorageScreen() {
             label={t("filterTags")}
             options={allTags}
             selected={tagFilters}
-            onChange={setTagFilters}
+            onChange={updateTagFilters}
             open={openFilter === "tags"}
             onOpenChange={(v) => setOpenFilter(v ? "tags" : null)}
             variant="pills"
@@ -314,7 +351,7 @@ export default function StorageScreen() {
             label={t("filterMetro")}
             options={allMetro}
             selected={metroFilters}
-            onChange={setMetroFilters}
+            onChange={updateMetroFilters}
             open={openFilter === "metro"}
             onOpenChange={(v) => setOpenFilter(v ? "metro" : null)}
             dotColor={metroLineTone}
@@ -337,6 +374,7 @@ export default function StorageScreen() {
                     type="button"
                     onClick={() => {
                       setSort(option.value);
+                      trackClientEvent("storage_sort_changed", { sort: option.value });
                       setOpenFilter(null);
                     }}
                     className={`w-full rounded-lg px-2.5 py-2 text-left text-[13px] font-semibold leading-none active:bg-black/5 ${
@@ -392,7 +430,7 @@ export default function StorageScreen() {
           <div className="inline-flex w-fit gap-1 self-start rounded-full bg-[var(--app-overlay)] p-1 ring-1 ring-[var(--app-outline)]/10">
             <button
               type="button"
-              onClick={() => setAddMode("manual")}
+              onClick={() => selectAddMode("manual")}
               className={`${pillToggle} inline-flex items-center gap-1 border-0 ${addMode === "manual" ? pillToggleActive : pillToggleInactive}`}
             >
               <PencilLine size={14} />
@@ -400,7 +438,7 @@ export default function StorageScreen() {
             </button>
             <button
               type="button"
-              onClick={() => setAddMode("link")}
+              onClick={() => selectAddMode("link")}
               className={`${pillToggle} inline-flex items-center gap-1 border-0 ${addMode === "link" ? pillToggleActive : pillToggleInactive}`}
             >
               <LinkIcon size={14} />
@@ -409,7 +447,7 @@ export default function StorageScreen() {
             {SHOW_FILE_IMPORT && (
               <button
                 type="button"
-                onClick={() => setAddMode("import")}
+                onClick={() => selectAddMode("import")}
                 className={`${pillToggle} inline-flex items-center gap-1 border-0 ${addMode === "import" ? pillToggleActive : pillToggleInactive}`}
               >
                 <FileUp size={14} />
@@ -487,9 +525,9 @@ export default function StorageScreen() {
               key={idea.id}
               role="button"
               tabIndex={0}
-              onClick={() => router.push(`/place/${idea.id}`)}
+              onClick={() => openPlace(idea.id)}
               onKeyDown={(e) => {
-                if (e.key === "Enter") router.push(`/place/${idea.id}`);
+                if (e.key === "Enter") openPlace(idea.id);
               }}
               className={`${card} ${metroPastelTone(idea.locations[0]?.metro) ?? pastelTone(idea.id)} flex cursor-pointer flex-col gap-2.5 transition active:scale-[0.99]`}
             >
@@ -501,6 +539,7 @@ export default function StorageScreen() {
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
+                      trackClientEvent("storage_place_edit_opened", { placeId: idea.id });
                       setEditing(idea);
                     }}
                     aria-label={t("editAria")}
@@ -511,6 +550,7 @@ export default function StorageScreen() {
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
+                      trackClientEvent("storage_place_delete_clicked", { placeId: idea.id });
                       remove(idea.id);
                     }}
                     aria-label={t("deleteAria")}

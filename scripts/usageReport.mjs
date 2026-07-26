@@ -210,7 +210,7 @@ function resolveDatabasePath() {
 // Product analytics (AnalyticsEvent rows written by src/lib/analytics.ts) -- read straight
 // off the app's own SQLite file rather than through the app process, same as backupDb.mjs.
 function collectAnalytics() {
-  const empty = { placesBySource: [], botStarts: 0 };
+  const empty = { placesBySource: [], botStarts: 0, activeUsers: 0, eventCounts: [] };
   try {
     const db = new Database(resolveDatabasePath(), { readonly: true, fileMustExist: true });
     const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
@@ -229,8 +229,23 @@ function collectAnalytics() {
       .prepare(`SELECT COUNT(*) AS count FROM AnalyticsEvent WHERE name = 'bot_start' AND createdAt >= ?`)
       .get(since).count;
 
+    const activeUsers = db
+      .prepare(`SELECT COUNT(DISTINCT telegramUserId) AS count FROM AnalyticsEvent WHERE telegramUserId IS NOT NULL AND createdAt >= ?`)
+      .get(since).count;
+
+    const eventCounts = db
+      .prepare(
+        `SELECT name, COUNT(*) AS count
+         FROM AnalyticsEvent
+         WHERE createdAt >= ?
+         GROUP BY name
+         ORDER BY count DESC, name ASC
+         LIMIT 12`,
+      )
+      .all(since);
+
     db.close();
-    return { placesBySource, botStarts };
+    return { placesBySource, botStarts, activeUsers, eventCounts };
   } catch (error) {
     console.error(`[usage-monitor] analytics query failed: ${error.message}`);
     return empty;
@@ -328,8 +343,10 @@ function buildAnalyticsSection(analytics) {
   return [
     "",
     "<b>Продукт (последние 24ч)</b>",
+    `Активных пользователей: <code>${formatNumber(analytics.activeUsers)}</code>`,
     `Стартов бота: <code>${formatNumber(analytics.botStarts)}</code>`,
     `Мест создано: <code>${formatNumber(totalPlaces)}</code> (${bySourceText})`,
+    `Топ событий: ${analytics.eventCounts.length > 0 ? analytics.eventCounts.map((row) => `${escapeHtml(row.name)}: ${formatNumber(row.count)}`).join(", ") : "нет данных"}`,
   ];
 }
 

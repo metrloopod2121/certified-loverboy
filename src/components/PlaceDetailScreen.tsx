@@ -7,6 +7,7 @@ import { apiFetch } from "@/lib/apiClient";
 import type { DateIdea } from "@/lib/types";
 import { priceTier } from "@/lib/priceTier";
 import { pill, mutedText, hashtag } from "@/lib/ui";
+import { trackClientEvent } from "@/lib/clientAnalytics";
 import { useLang, useT } from "@/hooks/useLang";
 import { locationsHeading } from "@/lib/i18n";
 
@@ -49,7 +50,10 @@ export default function PlaceDetailScreen({ id }: { id: string }) {
       <div className="flex items-center px-4 pb-2" style={{ paddingTop: "calc(var(--safe-top) + var(--content-top-gap) + 14px)" }}>
         <button
           type="button"
-          onClick={() => router.back()}
+          onClick={() => {
+            trackClientEvent("place_back_clicked", { placeId: id });
+            router.back();
+          }}
           aria-label={t("backAria")}
           className="inline-flex size-10 items-center justify-center rounded-full bg-[var(--app-overlay)] text-[var(--app-ink)] ring-1 ring-[var(--app-outline)]/10 active:scale-90 transition"
         >
@@ -100,6 +104,7 @@ export default function PlaceDetailScreen({ id }: { id: string }) {
                         href={loc.url}
                         target="_blank"
                         rel="noreferrer"
+                        onClick={() => trackClientEvent("place_external_link_opened", { placeId: id, type: "map", host: linkHostname(loc.url!) })}
                         className="inline-flex w-fit items-center gap-1 text-[13px] font-semibold text-[var(--app-ink)] active:opacity-60"
                       >
                         <LinkIcon size={13} />
@@ -121,6 +126,7 @@ export default function PlaceDetailScreen({ id }: { id: string }) {
                       href={link.url}
                       target="_blank"
                       rel="noreferrer"
+                      onClick={() => trackClientEvent("place_external_link_opened", { placeId: id, type: "link", host: linkHostname(link.url) })}
                       className="inline-flex w-fit items-center gap-1.5 text-[14px] font-medium text-[var(--app-ink)] active:opacity-60"
                     >
                       <LinkIcon size={14} />

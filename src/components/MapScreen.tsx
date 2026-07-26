@@ -5,6 +5,7 @@ import dynamic from "next/dynamic";
 import { apiFetch } from "@/lib/apiClient";
 import type { DateIdea } from "@/lib/types";
 import { mutedText } from "@/lib/ui";
+import { trackClientEvent } from "@/lib/clientAnalytics";
 import MultiSelectFilter from "@/components/MultiSelectFilter";
 import { metroStations, metroLineTone, sortStationsByLine } from "@/lib/metro";
 import type { MapMarker } from "@/components/LeafletMap";
@@ -68,6 +69,16 @@ export default function MapScreen() {
     return result;
   }, [allMarkers, tagFilters, metroFilters]);
 
+  function updateTagFilters(next: string[]) {
+    setTagFilters(next);
+    trackClientEvent("map_filter_changed", { type: "tags", count: next.length });
+  }
+
+  function updateMetroFilters(next: string[]) {
+    setMetroFilters(next);
+    trackClientEvent("map_filter_changed", { type: "metro", count: next.length });
+  }
+
   return (
     <div
       className="relative h-[100dvh] -mb-[82px] overflow-hidden"
@@ -83,8 +94,8 @@ export default function MapScreen() {
       >
         <div className="relative z-20 flex flex-col gap-2">
           <div className="grid grid-cols-2 gap-2">
-            <MultiSelectFilter label={t("filterTags")} options={allTags} selected={tagFilters} onChange={setTagFilters} open={openFilter === "tags"} onOpenChange={(v) => setOpenFilter(v ? "tags" : null)} variant="pills" fullWidth />
-            <MultiSelectFilter label={t("filterMetro")} options={allMetro} selected={metroFilters} onChange={setMetroFilters} open={openFilter === "metro"} onOpenChange={(v) => setOpenFilter(v ? "metro" : null)} dotColor={metroLineTone} fullWidth />
+            <MultiSelectFilter label={t("filterTags")} options={allTags} selected={tagFilters} onChange={updateTagFilters} open={openFilter === "tags"} onOpenChange={(v) => setOpenFilter(v ? "tags" : null)} variant="pills" fullWidth />
+            <MultiSelectFilter label={t("filterMetro")} options={allMetro} selected={metroFilters} onChange={updateMetroFilters} open={openFilter === "metro"} onOpenChange={(v) => setOpenFilter(v ? "metro" : null)} dotColor={metroLineTone} fullWidth />
           </div>
         </div>
 

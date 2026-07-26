@@ -31,6 +31,16 @@ AI-парсинг ссылки/поста сейчас без лимита. Сч
 telegram-пост, или просто вставленный текст поста. `/support <текст>` — сообщение уходит
 и в БД (`SupportMessage`), и админу в личку (`ADMIN_TG_ID`), чтобы ничего не потерялось.
 
+## Аналитика
+
+Все ключевые действия пользователя пишутся в `AnalyticsEvent`: просмотры экранов, навигация,
+фильтры, импорт, CRUD мест, экспорт, support, язык, quota, bot-команды, approve/reject.
+`ANALYTICS_ENABLED=0` ставит всё на паузу. По умолчанию включена SQLite-запись
+(`ANALYTICS_DB_ENABLED=1`); JSONL-файл для выгрузки в LLM включается через
+`ANALYTICS_FILE_ENABLED=1` и лежит в `ANALYTICS_LOG_PATH` (default:
+`./data/analytics-events.jsonl`). Личные Telegram-сообщения по каждому событию включаются
+отдельно: `ANALYTICS_TELEGRAM_ENABLED=1`.
+
 ## Публичный бот в BotFather
 
 Чтобы бот был приятно находим и понятен новому человеку:

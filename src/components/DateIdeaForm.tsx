@@ -6,6 +6,7 @@ import { MapPin, Plus, X, Link as LinkIcon, Check } from "lucide-react";
 import type { DateIdeaInput, LocationInput, PlaceLinkInput } from "@/lib/types";
 import { parseMapsLink, isYandexMapsUrl } from "@/lib/coords";
 import { input, label as labelClass, buttonPrimary, buttonSecondary, buttonGhost, iconButton } from "@/lib/ui";
+import { trackClientEvent } from "@/lib/clientAnalytics";
 import { useLang, useT } from "@/hooks/useLang";
 import { locationsCountLabel, locationOrdinalLabel } from "@/lib/i18n";
 
@@ -82,6 +83,7 @@ export default function DateIdeaForm({
   const [pickerFor, setPickerFor] = useState<number | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const formMode = initial ? "edit" : "create";
 
   function updateLocation(index: number, patch: Partial<LocationForm>) {
     setLocations((prev) => prev.map((loc, i) => (i === index ? { ...loc, ...patch } : loc)));
@@ -112,19 +114,23 @@ export default function DateIdeaForm({
 
   function pickOnMap(index: number, lat: number, lng: number) {
     updateLocation(index, { lat, lng });
+    trackClientEvent("place_form_location_pin_selected", { mode: formMode, index });
   }
 
   function clearLocationPin(index: number) {
     updateLocation(index, { lat: null, lng: null });
+    trackClientEvent("place_form_location_pin_cleared", { mode: formMode, index });
   }
 
   function addLocation() {
     setLocations((prev) => [...prev, EMPTY_LOCATION]);
+    trackClientEvent("place_form_location_added", { mode: formMode });
   }
 
   function removeLocation(index: number) {
     setLocations((prev) => prev.filter((_, i) => i !== index));
     if (pickerFor === index) setPickerFor(null);
+    trackClientEvent("place_form_location_removed", { mode: formMode, index });
   }
 
   function updateLink(index: number, patch: Partial<PlaceLinkInput>) {
@@ -133,19 +139,23 @@ export default function DateIdeaForm({
 
   function addLink() {
     setLinks((prev) => [...prev, { label: "", url: "" }]);
+    trackClientEvent("place_form_link_added", { mode: formMode });
   }
 
   function removeLink(index: number) {
     setLinks((prev) => prev.filter((_, i) => i !== index));
+    trackClientEvent("place_form_link_removed", { mode: formMode, index });
   }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+    trackClientEvent("place_form_submit_attempted", { mode: formMode });
 
     const blockingError = locations.find((loc) => loc.mapsLinkError)?.mapsLinkError;
     if (blockingError) {
       setError(blockingError);
+      trackClientEvent("place_form_validation_failed", { mode: formMode, reason: "maps_link" });
       return;
     }
 
@@ -188,6 +198,7 @@ export default function DateIdeaForm({
       });
     } catch (err) {
       setError(err instanceof Error ? err.message : t("couldntSave"));
+      trackClientEvent("place_form_submit_failed", { mode: formMode, reason: err instanceof Error ? err.message : "unknown" });
     } finally {
       setSaving(false);
     }
@@ -249,7 +260,11 @@ export default function DateIdeaForm({
                 />
                 <button
                   type="button"
-                  onClick={() => setPickerFor(pickerFor === index ? null : index)}
+                  onClick={() => {
+                    const next = pickerFor === index ? null : index;
+                    setPickerFor(next);
+                    trackClientEvent("place_form_map_picker_toggled", { mode: formMode, index, open: next === index });
+                  }}
                   className={`${buttonGhost} shrink-0`}
                 >
                   <MapPin size={16} />
@@ -346,7 +361,14 @@ export default function DateIdeaForm({
         <button type="submit" disabled={saving} className={buttonPrimary}>
           {saving ? t("savingBtn") : t("saveBtn")}
         </button>
-        <button type="button" onClick={onCancel} className={buttonSecondary}>
+        <button
+          type="button"
+          onClick={() => {
+            trackClientEvent("place_form_cancelled", { mode: formMode });
+            onCancel();
+          }}
+          className={buttonSecondary}
+        >
           {t("cancelBtn")}
         </button>
       </div>

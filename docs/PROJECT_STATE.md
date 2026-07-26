@@ -66,6 +66,20 @@ sudo systemctl restart certified-loverboy.service
 - один пост может дать несколько draft'ов;
 - каждый draft подтверждается inline-кнопками approve/reject.
 
+`/start` отдельно уведомляет админа (`ADMIN_TG_ID`) с username/именем/id, языком Telegram
+и deep-link payload. Для рекламных источников можно использовать ссылки вида:
+
+```text
+https://t.me/certified7overBot?start=ads_instagram
+```
+
+Тогда в уведомлении будет `Источник: ads_instagram`. Отключается флагом:
+
+```bash
+BOT_START_NOTIFY_ENABLED="0"
+sudo systemctl restart certified-loverboy.service
+```
+
 ## Данные и модель
 
 Основные таблицы:
@@ -152,6 +166,7 @@ sudo systemctl restart certified-loverboy.service
 - quota viewed;
 - bot commands;
 - `/usage`;
+- `/start` with start payload;
 - bot import flows;
 - pending draft created;
 - approve/reject/stale callback;

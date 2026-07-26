@@ -4,6 +4,11 @@
 
 ## 2026-07-27
 
+**Уведомление админу о каждом `/start`**
+- `/start` теперь отдельно отправляет `ADMIN_TG_ID` human-readable уведомление с username, именем, Telegram id, language_code и deep-link payload (`/start <payload>`).
+- Для источников трафика можно использовать ссылки вида `https://t.me/certified7overBot?start=ads_instagram`; payload попадёт в уведомление и в `bot_start` analytics properties.
+- Отдельный kill-switch: `BOT_START_NOTIFY_ENABLED=0` отключает только эти start-уведомления, не трогая support/usage/analytics.
+
 **Зафиксирован актуальный project state**
 - Добавлен `docs/PROJECT_STATE.md`: текущая память проекта по продакшену, UI, импорту, лимитам, аналитике, `/usage`, support/export, деплою, бэкапам, рискам и follow-up'ам.
 - README теперь ссылается на `docs/PROJECT_STATE.md`, а `docs/RESTORE.md` дополнен командами для analytics JSONL / Telegram stream / kill-switch.

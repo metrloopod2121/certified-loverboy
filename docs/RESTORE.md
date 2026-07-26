@@ -90,3 +90,16 @@ sudo systemctl restart certified-loverboy.service
 ```bash
 tail -n 50 /srv/web/app/certified-loverboy/app/data/analytics-events.jsonl
 ```
+
+## Bot start notifications
+
+Каждый `/start` отправляет админу отдельное уведомление с username/именем/id и
+deep-link payload (`/start <payload>`). Это отдельно от общего analytics stream.
+
+Отключить только эти уведомления:
+
+```bash
+cd /srv/web/app/certified-loverboy/app
+sudo sed -i 's/^BOT_START_NOTIFY_ENABLED=.*/BOT_START_NOTIFY_ENABLED="0"/' .env
+sudo systemctl restart certified-loverboy.service
+```

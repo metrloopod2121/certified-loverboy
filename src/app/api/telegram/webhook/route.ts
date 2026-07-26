@@ -37,7 +37,7 @@ type TelegramMessageEntity = { type: string; offset: number; length: number; url
 type TelegramMessage = {
   message_id: number;
   chat: { id: number };
-  from?: { id: number; username?: string };
+  from?: { id: number; username?: string; first_name?: string; last_name?: string; language_code?: string };
   text?: string;
   caption?: string;
   // Formatting entities for text/caption respectively. Post links are almost always styled as
@@ -75,6 +75,19 @@ function textWithHiddenLinks(text: string, links: string[]): string {
  *  guards against accidental LLM calls on short one-off chat messages. */
 const PASTED_POST_MIN_LENGTH = 40;
 
+function envFlag(name: string, defaultValue: boolean): boolean {
+  const value = process.env[name];
+  if (value === undefined || value === "") return defaultValue;
+  return !["0", "false", "off", "no"].includes(value.toLowerCase());
+}
+
+function escapeHtml(value: unknown): string {
+  return String(value)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;");
+}
+
 function urlHost(raw: string): string | null {
   try {
     return new URL(raw).hostname.replace(/^www\./, "");
@@ -87,10 +100,40 @@ function messageTelemetry(message: TelegramMessage) {
   return {
     chatId: String(message.chat.id),
     username: message.from?.username ? `@${message.from.username}` : null,
+    firstName: message.from?.first_name ?? null,
+    lastName: message.from?.last_name ?? null,
+    languageCode: message.from?.language_code ?? null,
     textLength: (message.text ?? message.caption ?? "").length,
     hasCaption: Boolean(message.caption),
     mediaGroup: Boolean(message.media_group_id),
   };
+}
+
+function startPayload(message: TelegramMessage): string {
+  return (message.text ?? "").replace(/^\/start(@\w+)?/i, "").trim();
+}
+
+async function notifyAdminBotStart(message: TelegramMessage) {
+  if (!envFlag("BOT_START_NOTIFY_ENABLED", true)) return;
+
+  const adminId = process.env.ADMIN_TG_ID;
+  if (!adminId || !message.from) return;
+
+  const username = message.from.username ? `@${message.from.username}` : null;
+  const fullName = [message.from.first_name, message.from.last_name].filter(Boolean).join(" ").trim();
+  const payload = startPayload(message);
+  const profileUrl = username ? `https://t.me/${message.from.username}` : null;
+  const lines = [
+    "<b>Новый /start в боте</b>",
+    username ? `Ник: <b>${escapeHtml(username)}</b>` : "Ник: <i>нет username</i>",
+    fullName ? `Имя: <code>${escapeHtml(fullName)}</code>` : null,
+    `ID: <code>${message.from.id}</code>`,
+    message.from.language_code ? `Язык Telegram: <code>${escapeHtml(message.from.language_code)}</code>` : null,
+    payload ? `Источник: <code>${escapeHtml(payload)}</code>` : "Источник: <i>нет start payload</i>",
+    profileUrl ? `Профиль: ${escapeHtml(profileUrl)}` : null,
+  ].filter(Boolean);
+
+  await sendTelegramMessage(adminId, lines.join("\n"), { parseMode: "HTML", disableWebPagePreview: true });
 }
 
 /** Only channel posts count as "posts" for this flow — forwarded messages from a group or a
@@ -364,7 +407,12 @@ async function handlePastedPostText(message: TelegramMessage) {
 async function handleStartCommand(message: TelegramMessage) {
   const chatId = String(message.chat.id);
   const lang = await getUserLanguage(chatId);
-  await trackEvent("bot_start", chatId, messageTelemetry(message));
+  await trackEvent("bot_start", chatId, { ...messageTelemetry(message), startPayload: startPayload(message) || null });
+  try {
+    await notifyAdminBotStart(message);
+  } catch (err) {
+    console.log(`[bot] failed to notify admin about /start: ${err instanceof Error ? err.message : err}`);
+  }
   await sendTelegramMessage(chatId, t(lang, "start"));
 }
 

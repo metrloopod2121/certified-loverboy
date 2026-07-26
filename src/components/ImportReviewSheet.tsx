@@ -84,6 +84,14 @@ export default function ImportReviewSheet({
                   </div>
                 )}
                 <div className="flex gap-2 pt-1">
+                  <button type="button" onClick={() => onSkip(item.id)} className={buttonGhost}>
+                    <Trash2 size={16} />
+                    Delete
+                  </button>
+                  <button type="button" onClick={() => setEditingId(item.id)} className={buttonSecondary}>
+                    <Pencil size={16} />
+                    Edit
+                  </button>
                   <button
                     type="button"
                     onClick={() => quickAdd(item)}
@@ -92,14 +100,6 @@ export default function ImportReviewSheet({
                   >
                     <Plus size={16} />
                     {savingId === item.id ? "Adding…" : "Add"}
-                  </button>
-                  <button type="button" onClick={() => setEditingId(item.id)} className={buttonSecondary}>
-                    <Pencil size={16} />
-                    Edit
-                  </button>
-                  <button type="button" onClick={() => onSkip(item.id)} className={buttonGhost}>
-                    <Trash2 size={16} />
-                    Delete
                   </button>
                 </div>
               </div>

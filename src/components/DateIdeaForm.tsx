@@ -123,8 +123,9 @@ export default function DateIdeaForm({
    *  -- typing/pasting used to trigger an immediate, confusing "invalid link" error before the
    *  user even finished pasting. A share link to an org page (.../org/<slug>/<id>?si=...) --
    *  the common case when copying straight from the Yandex Maps app -- carries no lat/lng in its
-   *  own URL, only the page itself has the pin, so a local-only regex parse can't resolve it;
-   *  this falls back to a server fetch of the actual page when that happens. */
+   *  own URL, only the page itself has the pin (and the address/metro text), so a local-only
+   *  regex parse can't resolve any of it; this falls back to a server fetch + AI read of the
+   *  actual page when that happens, filling in address/metro too if they're still blank. */
   async function applyMapsLink(index: number) {
     const current = locations[index];
     const afterLocalCheck = resolveMapsLink(current);
@@ -147,15 +148,25 @@ export default function DateIdeaForm({
         method: "POST",
         body: JSON.stringify({ url: current.mapsLink.trim() }),
       });
+
+      const patch: Partial<LocationForm> = {};
       if (typeof resolved?.lat === "number" && typeof resolved?.lng === "number") {
-        updateLocation(index, { lat: resolved.lat, lng: resolved.lng });
-        trackClientEvent("place_form_maps_link_applied", { mode: formMode, index, result: "server_coords" });
-      } else {
-        updateLocation(index, { mapsLinkHint: t("noCoordsHint") });
-        trackClientEvent("place_form_maps_link_applied", { mode: formMode, index, result: "no_coords" });
+        patch.lat = resolved.lat;
+        patch.lng = resolved.lng;
       }
-    } catch {
-      updateLocation(index, { mapsLinkHint: t("noCoordsHint") });
+      // Only fills in what the user hasn't already typed themselves -- never overwrites.
+      if (resolved?.address && !current.address.trim()) patch.address = resolved.address;
+      if (resolved?.metro && !current.metro.trim()) patch.metro = resolved.metro;
+
+      if (Object.keys(patch).length === 0) {
+        updateLocation(index, { mapsLinkHint: t("noCoordsHint") });
+        trackClientEvent("place_form_maps_link_applied", { mode: formMode, index, result: "no_data" });
+      } else {
+        updateLocation(index, patch);
+        trackClientEvent("place_form_maps_link_applied", { mode: formMode, index, result: "server_data" });
+      }
+    } catch (err) {
+      updateLocation(index, { mapsLinkHint: err instanceof Error ? err.message : t("noCoordsHint") });
       trackClientEvent("place_form_maps_link_applied", { mode: formMode, index, result: "fetch_failed" });
     } finally {
       setResolvingIndex(null);

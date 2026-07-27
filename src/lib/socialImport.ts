@@ -152,16 +152,6 @@ async function fetchYandexPage(url: string): Promise<YandexPage | null> {
   }
 }
 
-/** Resolves just the coordinates for a Yandex Maps link -- no LLM call, no Brave fallback, no
- *  import quota. A share link to an org page (.../org/<slug>/<id>?si=...) is the common case
- *  and carries no lat/lng in its own query params (only @lat,lng / ?ll= / ?pt= shaped links do),
- *  so the page's own embedded pin is what actually has it. Used by the manual place-form's
- *  "Get location from link" button, which otherwise only had the URL string to go on. */
-export async function resolveYandexMapsCoordinates(url: string): Promise<Coordinates | null> {
-  const page = await fetchYandexPage(url);
-  return page?.coordinates ?? parseMapsLink(url);
-}
-
 /** Fetches a Yandex Maps venue page, structures it via the LLM, and falls back to a Brave
  *  search pass if the address or price is still missing. Coordinates prefer the page's own
  *  embedded pin, falling back to whatever's encoded in the URL. */

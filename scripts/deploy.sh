@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
-# Smart deploy for certified-loverboy on the Latvia server.
+# Smart deploy for certified-loverboy (VPS 2.26.91.146 -- the old Latvia VPN
+# server, 31.76.0.133, is deprecated for this project as of 2026-07-27; do not
+# deploy there).
 # Run as root: sudo bash scripts/deploy.sh
 #
 # Pulls latest main, then only runs the steps the actual diff needs:
@@ -58,4 +60,4 @@ systemctl restart "$SERVICE"
 sleep 2
 systemctl is-active "$SERVICE"
 
-curl -sk -o /dev/null -w 'https check: %{http_code}\n' https://127.0.0.1:8443/
+curl -sk -o /dev/null -w 'https check: %{http_code}\n' https://127.0.0.1:443/

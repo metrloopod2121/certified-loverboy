@@ -11,15 +11,21 @@
 Парная swipe/match-механика удалена; текущий продукт — одиночная база мест.
 
 Продакшен:
-- VPS: `31.76.0.133`
+- VPS: `2.26.91.146` (мигрировали с `31.76.0.133` 2026-07-27 — старый сервер держал VPN-стек
+  на порту 443, из-за чего Mini App работал только на нестандартном 8443, что часть
+  пользователей не могла открыть; новый сервер чистый, только это приложение)
 - systemd service: `certified-loverboy.service`
 - app path: `/srv/web/app/certified-loverboy/app`
 - app user: `loverboy`
 - port: `3101`
-- HTTPS: `https://vacanator.xyz:8443/`
-- порт `443` не трогать, там VPN-стек сервера
+- HTTPS: `https://vacanator.xyz/` (порт 443 напрямую, без `:8443` — сервер свободен от VPN)
 - bot: `@certified7overBot`
-- latest deployed commit: `4e7afcd Notify admin on bot starts`
+- latest deployed commit: `33bf1ea Add start mini app button`
+
+**Старый сервер `31.76.0.133` больше не используется для этого проекта — НЕ деплоить туда.**
+Сервис там пока оставлен выключенным/остановленным как временный откат, домен на него больше
+не резолвится. На нём по-прежнему живёт VPN-стек и отдельный проект `moPlaces`
+(`moplaces.vacanator.xyz`) — их не трогать.
 
 Локально рабочее дерево после последнего деплоя чистое, кроме untracked
 `pre fill data .zip`; этот zip не относится к текущим изменениям и не трогался.
@@ -83,7 +89,7 @@ sudo systemctl restart certified-loverboy.service
 ```
 
 Пользовательский ответ на `/start` содержит inline web_app-кнопку `Открыть приложение`.
-URL берётся из `TELEGRAM_WEB_APP_URL`, fallback: `https://vacanator.xyz:8443/`.
+URL берётся из `TELEGRAM_WEB_APP_URL`, fallback: `https://vacanator.xyz/`.
 
 ## Данные и модель
 
@@ -124,7 +130,7 @@ ANALYTICS_FILE_ENABLED="1"
 ANALYTICS_LOG_PATH="./data/analytics-events.jsonl"
 ANALYTICS_TELEGRAM_ENABLED="1"
 BOT_START_NOTIFY_ENABLED="1"
-TELEGRAM_WEB_APP_URL="https://vacanator.xyz:8443/"
+TELEGRAM_WEB_APP_URL="https://vacanator.xyz/"
 ```
 
 Файл на сервере:
@@ -240,7 +246,7 @@ Analytics logs:
 Normal deploy:
 
 ```bash
-ssh -o BatchMode=yes root@31.76.0.133
+ssh -o BatchMode=yes root@2.26.91.146
 sudo bash /srv/web/app/certified-loverboy/app/scripts/deploy.sh
 ```
 
@@ -280,9 +286,9 @@ Restore procedure is in `docs/RESTORE.md`.
 
 ## Known Operational Notes
 
-- `prisma migrate dev` can fail on shadow DB replay because of historical migration ordering; prefer hand-written migration + `prisma migrate deploy`.
+- `prisma migrate dev` can fail on shadow DB replay because of historical migration ordering; prefer hand-written migration + `prisma migrate deploy`. Confirmed again during the 2026-07-27 migration: a fresh `prisma migrate deploy` from an empty DB fails on `20260721032000_add_swipe_description` (duplicate column) because an earlier migration (`20260721003832_deck_default_visible`) already redefines the table with that column baked in. Fix: `npx prisma migrate resolve --applied 20260721032000_add_swipe_description`, then re-run `migrate deploy`.
 - `npm run build` may fail if an interrupted build left `.next/turbopack`; remove that directory and rebuild.
-- Port `443` belongs to VPN stack; do not reconfigure it for this app.
+- New server has no VPN stack — port `443` is free and used directly by nginx for this app (no more `:8443` workaround).
 - `pre fill data .zip` is local untracked data and should not be accidentally committed.
 - Telegram BotFather command menu should include:
   - `start - Что я умею`

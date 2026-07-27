@@ -75,7 +75,7 @@ function textWithHiddenLinks(text: string, links: string[]): string {
 /** Minimum length before a plain (non-forwarded) text message is treated as a pasted post --
  *  guards against accidental LLM calls on short one-off chat messages. */
 const PASTED_POST_MIN_LENGTH = 40;
-const DEFAULT_WEB_APP_URL = "https://vacanator.xyz:8443/";
+const DEFAULT_WEB_APP_URL = "https://vacanator.xyz/";
 
 function envFlag(name: string, defaultValue: boolean): boolean {
   const value = process.env[name];

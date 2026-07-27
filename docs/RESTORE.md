@@ -26,7 +26,7 @@ ls -lt data/backups/ | head                                          # выбр�
 cp data/backups/app-<TIMESTAMP>.db data/app.db
 
 sudo systemctl start certified-loverboy
-curl -sk -o /dev/null -w 'https check: %{http_code}\n' https://127.0.0.1:8443/
+curl -sk -o /dev/null -w 'https check: %{http_code}\n' https://127.0.0.1:443/
 ```
 
 ## Разовая установка таймеров на сервере
@@ -68,7 +68,7 @@ ANALYTICS_FILE_ENABLED="1"        # JSONL
 ANALYTICS_LOG_PATH="./data/analytics-events.jsonl"
 ANALYTICS_TELEGRAM_ENABLED="1"    # каждое событие в личку ADMIN_TG_ID
 BOT_START_NOTIFY_ENABLED="1"      # отдельные human-readable уведомления о /start
-TELEGRAM_WEB_APP_URL="https://vacanator.xyz:8443/"
+TELEGRAM_WEB_APP_URL="https://vacanator.xyz/"
 ```
 
 Выключить всё без деплоя:

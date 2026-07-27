@@ -5,6 +5,7 @@ import dynamic from "next/dynamic";
 import { MapPin, Plus, X, Link as LinkIcon, Check } from "lucide-react";
 import type { DateIdeaInput, LocationInput, PlaceLinkInput } from "@/lib/types";
 import { parseMapsLink, isYandexMapsUrl, findYandexMapsLink } from "@/lib/coords";
+import { apiFetch } from "@/lib/apiClient";
 import { input, label as labelClass, buttonPrimary, buttonSecondary, buttonGhost, iconButton } from "@/lib/ui";
 import { trackClientEvent } from "@/lib/clientAnalytics";
 import { useLang, useT } from "@/hooks/useLang";
@@ -81,6 +82,7 @@ export default function DateIdeaForm({
   );
   const [links, setLinks] = useState<PlaceLinkInput[]>(initial?.links ?? []);
   const [pickerFor, setPickerFor] = useState<number | null>(null);
+  const [resolvingIndex, setResolvingIndex] = useState<number | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const formMode = initial ? "edit" : "create";
@@ -119,10 +121,45 @@ export default function DateIdeaForm({
 
   /** Parsing the link is now an explicit action (a button) instead of firing on every keystroke
    *  -- typing/pasting used to trigger an immediate, confusing "invalid link" error before the
-   *  user even finished pasting. */
-  function applyMapsLink(index: number) {
-    setLocations((prev) => prev.map((loc, i) => (i === index ? resolveMapsLink(loc) : loc)));
-    trackClientEvent("place_form_maps_link_applied", { mode: formMode, index });
+   *  user even finished pasting. A share link to an org page (.../org/<slug>/<id>?si=...) --
+   *  the common case when copying straight from the Yandex Maps app -- carries no lat/lng in its
+   *  own URL, only the page itself has the pin, so a local-only regex parse can't resolve it;
+   *  this falls back to a server fetch of the actual page when that happens. */
+  async function applyMapsLink(index: number) {
+    const current = locations[index];
+    const afterLocalCheck = resolveMapsLink(current);
+
+    if (afterLocalCheck.mapsLinkError || !afterLocalCheck.mapsLinkHint) {
+      // Invalid domain, empty field, or the URL itself already carried the coordinates.
+      updateLocation(index, afterLocalCheck);
+      trackClientEvent("place_form_maps_link_applied", {
+        mode: formMode,
+        index,
+        result: afterLocalCheck.mapsLinkError ? "invalid_domain" : "local_coords",
+      });
+      return;
+    }
+
+    updateLocation(index, { mapsLinkError: null, mapsLinkHint: null });
+    setResolvingIndex(index);
+    try {
+      const resolved = await apiFetch("/api/date-ideas/resolve-map-link", {
+        method: "POST",
+        body: JSON.stringify({ url: current.mapsLink.trim() }),
+      });
+      if (typeof resolved?.lat === "number" && typeof resolved?.lng === "number") {
+        updateLocation(index, { lat: resolved.lat, lng: resolved.lng });
+        trackClientEvent("place_form_maps_link_applied", { mode: formMode, index, result: "server_coords" });
+      } else {
+        updateLocation(index, { mapsLinkHint: t("noCoordsHint") });
+        trackClientEvent("place_form_maps_link_applied", { mode: formMode, index, result: "no_coords" });
+      }
+    } catch {
+      updateLocation(index, { mapsLinkHint: t("noCoordsHint") });
+      trackClientEvent("place_form_maps_link_applied", { mode: formMode, index, result: "fetch_failed" });
+    } finally {
+      setResolvingIndex(null);
+    }
   }
 
   function pickOnMap(index: number, lat: number, lng: number) {
@@ -279,11 +316,11 @@ export default function DateIdeaForm({
                 <button
                   type="button"
                   onClick={() => applyMapsLink(index)}
-                  disabled={!loc.mapsLink.trim()}
+                  disabled={!loc.mapsLink.trim() || resolvingIndex === index}
                   className={`${buttonGhost} disabled:opacity-50`}
                 >
                   <LinkIcon size={16} />
-                  {t("getLocationFromLink")}
+                  {resolvingIndex === index ? t("reading") : t("getLocationFromLink")}
                 </button>
                 <button
                   type="button"

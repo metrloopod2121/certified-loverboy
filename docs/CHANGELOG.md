@@ -4,6 +4,10 @@
 
 ## 2026-07-27
 
+**Уточнён источник `/start` и убран шум аналитики в личку**
+- В admin-уведомлении `/start` больше не пишется мутное `нет start payload`: пустой payload теперь явно объясняется как прямой заход, поиск Telegram, профиль бота, кнопка Start или обычная ссылка без `?start=...`.
+- Продовая схема зафиксирована как `ANALYTICS_TELEGRAM_ENABLED=0` + `BOT_START_NOTIFY_ENABLED=1`: human-readable start-уведомления остаются, а полный поток аналитики продолжает жить в SQLite/JSONL без лишних JSON-сообщений в личку.
+
 **Уведомление админу о каждом `/start`**
 - `/start` теперь отдельно отправляет `ADMIN_TG_ID` human-readable уведомление с username, именем, Telegram id, language_code и deep-link payload (`/start <payload>`).
 - Для источников трафика можно использовать ссылки вида `https://t.me/certified7overBot?start=ads_instagram`; payload попадёт в уведомление и в `bot_start` analytics properties.

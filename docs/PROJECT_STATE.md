@@ -67,7 +67,9 @@ sudo systemctl restart certified-loverboy.service
 - каждый draft подтверждается inline-кнопками approve/reject.
 
 `/start` отдельно уведомляет админа (`ADMIN_TG_ID`) с username/именем/id, языком Telegram
-и deep-link payload. Для рекламных источников можно использовать ссылки вида:
+и deep-link payload. Если payload нет, это прямой заход: поиск Telegram, профиль бота,
+кнопка Start или обычная ссылка без `?start=...`. Для рекламных источников нужно
+использовать ссылки вида:
 
 ```text
 https://t.me/certified7overBot?start=ads_instagram
@@ -117,7 +119,8 @@ ANALYTICS_ENABLED="1"
 ANALYTICS_DB_ENABLED="1"
 ANALYTICS_FILE_ENABLED="1"
 ANALYTICS_LOG_PATH="./data/analytics-events.jsonl"
-ANALYTICS_TELEGRAM_ENABLED="1"
+ANALYTICS_TELEGRAM_ENABLED="0"
+BOT_START_NOTIFY_ENABLED="1"
 ```
 
 Файл на сервере:
@@ -284,7 +287,8 @@ Restore procedure is in `docs/RESTORE.md`.
 
 ## Open Risks / Follow-Ups
 
-- Telegram analytics stream is intentionally noisy while user count is low. If it gets too noisy, disable `ANALYTICS_TELEGRAM_ENABLED` and rely on SQLite/JSONL.
+- Telegram analytics stream should stay off on prod unless explicitly needed; rely on SQLite/JSONL for full event history.
+- Start notifications stay separate from analytics stream, so `BOT_START_NOTIFY_ENABLED=1` can remain on while `ANALYTICS_TELEGRAM_ENABLED=0`.
 - JSONL is local to the VPS. If long-term retention matters, add rotation/offsite upload later.
 - Backups are local to the same VPS. Offsite backups are still not implemented.
 - Import limit is currently unlimited. Flip `LINK_IMPORT_LIMIT` when the product should enforce a cap.

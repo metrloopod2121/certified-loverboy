@@ -31,7 +31,9 @@ AI-парсинг ссылки/поста сейчас без лимита. Сч
 telegram-пост, или просто вставленный текст поста. `/support <текст>` — сообщение уходит
 и в БД (`SupportMessage`), и админу в личку (`ADMIN_TG_ID`), чтобы ничего не потерялось.
 Каждый `/start` отдельно уведомляет `ADMIN_TG_ID` с ником/именем/id пользователя и
-deep-link payload (`?start=...`), если `BOT_START_NOTIFY_ENABLED` не выключен.
+deep-link payload (`?start=...`), если `BOT_START_NOTIFY_ENABLED` не выключен. Если payload
+пустой, это прямой заход: поиск Telegram, профиль бота, кнопка Start или обычная ссылка
+без `?start=...`.
 
 ## Аналитика
 
@@ -40,8 +42,9 @@ deep-link payload (`?start=...`), если `BOT_START_NOTIFY_ENABLED` не вы�
 `ANALYTICS_ENABLED=0` ставит всё на паузу. По умолчанию включена SQLite-запись
 (`ANALYTICS_DB_ENABLED=1`); JSONL-файл для выгрузки в LLM включается через
 `ANALYTICS_FILE_ENABLED=1` и лежит в `ANALYTICS_LOG_PATH` (default:
-`./data/analytics-events.jsonl`). Личные Telegram-сообщения по каждому событию включаются
-отдельно: `ANALYTICS_TELEGRAM_ENABLED=1`.
+`./data/analytics-events.jsonl`). Личные Telegram-сообщения по каждому analytics-событию
+оставляем выключенными на проде, чтобы не шуметь; включаются отдельно флагом
+`ANALYTICS_TELEGRAM_ENABLED=1`.
 
 ## Публичный бот в BotFather
 

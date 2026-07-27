@@ -129,7 +129,9 @@ async function notifyAdminBotStart(message: TelegramMessage) {
     fullName ? `Имя: <code>${escapeHtml(fullName)}</code>` : null,
     `ID: <code>${message.from.id}</code>`,
     message.from.language_code ? `Язык Telegram: <code>${escapeHtml(message.from.language_code)}</code>` : null,
-    payload ? `Источник: <code>${escapeHtml(payload)}</code>` : "Источник: <i>нет start payload</i>",
+    payload
+      ? `Источник: <code>${escapeHtml(payload)}</code>`
+      : "Источник: <i>прямой заход / поиск / профиль / обычная ссылка без ?start=...</i>",
     profileUrl ? `Профиль: ${escapeHtml(profileUrl)}` : null,
   ].filter(Boolean);
 

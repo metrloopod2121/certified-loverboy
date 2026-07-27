@@ -4,7 +4,7 @@ import { useState } from "react";
 import dynamic from "next/dynamic";
 import { MapPin, Plus, X, Link as LinkIcon, Check } from "lucide-react";
 import type { DateIdeaInput, LocationInput, PlaceLinkInput } from "@/lib/types";
-import { parseMapsLink, isYandexMapsUrl } from "@/lib/coords";
+import { parseMapsLink, isYandexMapsUrl, findYandexMapsLink } from "@/lib/coords";
 import { input, label as labelClass, buttonPrimary, buttonSecondary, buttonGhost, iconButton } from "@/lib/ui";
 import { trackClientEvent } from "@/lib/clientAnalytics";
 import { useLang, useT } from "@/hooks/useLang";
@@ -89,27 +89,40 @@ export default function DateIdeaForm({
     setLocations((prev) => prev.map((loc, i) => (i === index ? { ...loc, ...patch } : loc)));
   }
 
-  function handleMapsLinkChange(index: number, value: string) {
-    // Preserves any already-known lat/lng when the new link doesn't itself carry coordinates,
-    // rather than blanking out a good pin just because a link couldn't be read.
-    setLocations((prev) =>
-      prev.map((loc, i) => {
-        if (i !== index) return loc;
-        if (!value.trim()) return { ...loc, mapsLink: "", mapsLinkError: null, mapsLinkHint: null };
-        if (!isYandexMapsUrl(value)) {
-          return { ...loc, mapsLink: value, mapsLinkError: t("onlyYandexError"), mapsLinkHint: null };
-        }
-        const coords = parseMapsLink(value);
-        return {
-          ...loc,
-          mapsLink: value,
-          mapsLinkError: null,
-          mapsLinkHint: coords ? null : t("noCoordsHint"),
-          lat: coords?.lat ?? loc.lat,
-          lng: coords?.lng ?? loc.lng,
-        };
-      })
-    );
+  // A shared Yandex Maps link often carries "Title\nAddress\nhttps://..." as one block, not a
+  // bare URL -- collapse it down to just the link the moment one is found, instead of leaving
+  // the extra words sitting in the field (same fix as the Storage screen's link-import box).
+  function handleMapsLinkTextChange(index: number, value: string) {
+    const extracted = findYandexMapsLink(value);
+    const cleaned = extracted && extracted !== value.trim() ? extracted : value;
+    updateLocation(index, { mapsLink: cleaned, mapsLinkError: null, mapsLinkHint: null });
+  }
+
+  /** Validates the current maps-link text and derives lat/lng from it -- preserves any
+   *  already-known lat/lng when the link doesn't itself carry coordinates, rather than blanking
+   *  out a good pin just because a link couldn't be read. */
+  function resolveMapsLink(loc: LocationForm): LocationForm {
+    const value = loc.mapsLink.trim();
+    if (!value) return { ...loc, mapsLinkError: null, mapsLinkHint: null };
+    if (!isYandexMapsUrl(value)) {
+      return { ...loc, mapsLinkError: t("onlyYandexError"), mapsLinkHint: null };
+    }
+    const coords = parseMapsLink(value);
+    return {
+      ...loc,
+      mapsLinkError: null,
+      mapsLinkHint: coords ? null : t("noCoordsHint"),
+      lat: coords?.lat ?? loc.lat,
+      lng: coords?.lng ?? loc.lng,
+    };
+  }
+
+  /** Parsing the link is now an explicit action (a button) instead of firing on every keystroke
+   *  -- typing/pasting used to trigger an immediate, confusing "invalid link" error before the
+   *  user even finished pasting. */
+  function applyMapsLink(index: number) {
+    setLocations((prev) => prev.map((loc, i) => (i === index ? resolveMapsLink(loc) : loc)));
+    trackClientEvent("place_form_maps_link_applied", { mode: formMode, index });
   }
 
   function pickOnMap(index: number, lat: number, lng: number) {
@@ -152,8 +165,13 @@ export default function DateIdeaForm({
     setError(null);
     trackClientEvent("place_form_submit_attempted", { mode: formMode });
 
-    const blockingError = locations.find((loc) => loc.mapsLinkError)?.mapsLinkError;
+    // Re-resolves every maps link at submit time too (idempotent if "Get location from link"
+    // was already clicked) so a pasted-but-never-applied link still gets validated instead of
+    // silently saving whatever text is sitting in the field.
+    const checkedLocations = locations.map(resolveMapsLink);
+    const blockingError = checkedLocations.find((loc) => loc.mapsLinkError)?.mapsLinkError;
     if (blockingError) {
+      setLocations(checkedLocations);
       setError(blockingError);
       trackClientEvent("place_form_validation_failed", { mode: formMode, reason: "maps_link" });
       return;
@@ -163,7 +181,7 @@ export default function DateIdeaForm({
     // Carries a non-map `url` inherited from an older record over to the idea-level links list
     // instead of dropping it, since it's no longer allowed to live in location.url.
     const migratedLinks: PlaceLinkInput[] = [];
-    for (const loc of locations) {
+    for (const loc of checkedLocations) {
       const isEmpty = !loc.address.trim() && !loc.metro.trim() && !loc.mapsLink.trim() && loc.lat == null && loc.lng == null && !loc.staleUrl;
       if (isEmpty) continue;
 
@@ -250,14 +268,23 @@ export default function DateIdeaForm({
               />
             </div>
 
-            <div className="flex flex-col gap-1">
+            <div className="flex flex-col gap-1.5">
+              <input
+                placeholder={t("mapsLinkPlaceholder")}
+                value={loc.mapsLink}
+                onChange={(e) => handleMapsLinkTextChange(index, e.target.value)}
+                className={input}
+              />
               <div className="flex gap-2">
-                <input
-                  placeholder={t("mapsLinkPlaceholder")}
-                  value={loc.mapsLink}
-                  onChange={(e) => handleMapsLinkChange(index, e.target.value)}
-                  className={input}
-                />
+                <button
+                  type="button"
+                  onClick={() => applyMapsLink(index)}
+                  disabled={!loc.mapsLink.trim()}
+                  className={`${buttonGhost} disabled:opacity-50`}
+                >
+                  <LinkIcon size={16} />
+                  {t("getLocationFromLink")}
+                </button>
                 <button
                   type="button"
                   onClick={() => {
@@ -265,7 +292,7 @@ export default function DateIdeaForm({
                     setPickerFor(next);
                     trackClientEvent("place_form_map_picker_toggled", { mode: formMode, index, open: next === index });
                   }}
-                  className={`${buttonGhost} shrink-0`}
+                  className={buttonGhost}
                 >
                   <MapPin size={16} />
                   {t("chooseOnMap")}

@@ -43,47 +43,63 @@ export async function POST(request: Request) {
   const body = await request.json();
   const raw = typeof body?.url === "string" ? body.url.trim() : "";
   if (!raw) {
-    await trackEvent("link_import_failed", auth.telegramId, { surface: "app", reason: "empty" });
+    await trackEvent("link_import_failed", auth.telegramId, { surface: "app", reason: "empty" }, auth.user.username);
     return NextResponse.json({ error: "Link is required" }, { status: 400 });
   }
 
-  await trackEvent("link_import_started", auth.telegramId, {
-    surface: "app",
-    rawLength: raw.length,
-    host: urlHost(raw),
-  });
+  await trackEvent(
+    "link_import_started",
+    auth.telegramId,
+    { surface: "app", rawLength: raw.length, host: urlHost(raw) },
+    auth.user.username
+  );
 
   const url = findYandexMapsLink(raw);
   if (!url) {
-    await trackEvent("link_import_failed", auth.telegramId, {
-      surface: "app",
-      reason: "unsupported_link",
-      rawLength: raw.length,
-      host: urlHost(raw),
-    });
+    await trackEvent(
+      "link_import_failed",
+      auth.telegramId,
+      { surface: "app", reason: "unsupported_link", rawLength: raw.length, host: urlHost(raw) },
+      auth.user.username
+    );
     return NextResponse.json({ error: "Only Yandex Maps links are supported right now" }, { status: 400 });
   }
 
   const quota = await tryConsumeImportQuota(auth.telegramId);
   if (!quota.ok) {
-    await trackEvent("link_import_failed", auth.telegramId, { surface: "app", reason: "quota_exhausted", host: urlHost(url) });
+    await trackEvent(
+      "link_import_failed",
+      auth.telegramId,
+      { surface: "app", reason: "quota_exhausted", host: urlHost(url) },
+      auth.user.username
+    );
     return NextResponse.json({ error: quotaExhaustedMessage() }, { status: 429 });
   }
 
   const parsed = await parseYandexMapsLink(url);
   if (!parsed) {
-    await trackEvent("link_import_failed", auth.telegramId, { surface: "app", reason: "parse_failed", host: urlHost(url) });
+    await trackEvent(
+      "link_import_failed",
+      auth.telegramId,
+      { surface: "app", reason: "parse_failed", host: urlHost(url) },
+      auth.user.username
+    );
     return NextResponse.json({ error: "Couldn't parse this link. Try another one or add it manually." }, { status: 422 });
   }
 
-  await trackEvent("link_import_parsed", auth.telegramId, {
-    surface: "app",
-    host: urlHost(url),
-    tagsCount: parsed.tags.length,
-    linksCount: parsed.links.length,
-    hasCoordinates: parsed.lat != null && parsed.lng != null,
-    remaining: quota.remaining,
-  });
+  await trackEvent(
+    "link_import_parsed",
+    auth.telegramId,
+    {
+      surface: "app",
+      host: urlHost(url),
+      tagsCount: parsed.tags.length,
+      linksCount: parsed.links.length,
+      hasCoordinates: parsed.lat != null && parsed.lng != null,
+      remaining: quota.remaining,
+    },
+    auth.user.username
+  );
 
   return NextResponse.json(toDraft(parsed, url));
 }

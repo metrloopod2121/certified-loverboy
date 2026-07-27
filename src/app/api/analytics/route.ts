@@ -53,6 +53,6 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Unknown analytics event" }, { status: 400 });
   }
 
-  await trackEvent(name, auth.telegramId, isProperties(body?.properties) ? body.properties : undefined);
+  await trackEvent(name, auth.telegramId, isProperties(body?.properties) ? body.properties : undefined, auth.user.username);
   return NextResponse.json({ ok: true });
 }

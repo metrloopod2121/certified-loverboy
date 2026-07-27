@@ -22,6 +22,6 @@ export async function PATCH(request: Request) {
   }
 
   await setUserLanguage(auth.telegramId, body.language);
-  await trackEvent("language_changed", auth.telegramId, { language: body.language });
+  await trackEvent("language_changed", auth.telegramId, { language: body.language }, auth.user.username);
   return NextResponse.json({ language: body.language });
 }

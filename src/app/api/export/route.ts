@@ -13,10 +13,12 @@ export async function GET(request: Request) {
   const tokenTelegramId = verifyExportToken(token);
 
   let telegramId = tokenTelegramId;
+  let username: string | null | undefined;
   if (!telegramId) {
     const auth = requireAuth(request);
     if (!isAuthUser(auth)) return auth;
     telegramId = auth.telegramId;
+    username = auth.user.username;
   }
 
   const ideas = await prisma.dateIdea.findMany({
@@ -28,11 +30,12 @@ export async function GET(request: Request) {
   const names = exportFilenames(ideas);
   const zip = createZip(ideas.map((idea, i) => ({ name: names[i], content: serializeDateIdeaMarkdown(idea) })));
 
-  await trackEvent("export_downloaded", telegramId, {
-    tokenAuth: Boolean(tokenTelegramId),
-    placesCount: ideas.length,
-    bytes: zip.length,
-  });
+  await trackEvent(
+    "export_downloaded",
+    telegramId,
+    { tokenAuth: Boolean(tokenTelegramId), placesCount: ideas.length, bytes: zip.length },
+    username
+  );
 
   return new NextResponse(new Uint8Array(zip), {
     headers: {

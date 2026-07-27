@@ -22,7 +22,7 @@ export async function GET(
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
-  await trackEvent("place_viewed", auth.telegramId, { placeId: id });
+  await trackEvent("place_viewed", auth.telegramId, { placeId: id }, auth.user.username);
 
   return NextResponse.json(idea);
 }
@@ -89,18 +89,23 @@ export async function PATCH(
     data,
     include: { tags: { include: { tag: true } }, locations: true, links: { orderBy: { position: "asc" } } },
   });
-  await trackEvent("place_updated", auth.telegramId, {
-    placeId: id,
-    changedFields: [
-      ...["title", "description", "priceNote"].filter((key) => key in body),
-      ...(Array.isArray(body.tags) ? ["tags"] : []),
-      ...(locations ? ["locations"] : []),
-      ...(Array.isArray(body.links) ? ["links"] : []),
-    ],
-    tagsCount: idea.tags.length,
-    locationsCount: idea.locations.length,
-    linksCount: idea.links.length,
-  });
+  await trackEvent(
+    "place_updated",
+    auth.telegramId,
+    {
+      placeId: id,
+      changedFields: [
+        ...["title", "description", "priceNote"].filter((key) => key in body),
+        ...(Array.isArray(body.tags) ? ["tags"] : []),
+        ...(locations ? ["locations"] : []),
+        ...(Array.isArray(body.links) ? ["links"] : []),
+      ],
+      tagsCount: idea.tags.length,
+      locationsCount: idea.locations.length,
+      linksCount: idea.links.length,
+    },
+    auth.user.username
+  );
   return NextResponse.json(idea);
 }
 
@@ -118,6 +123,6 @@ export async function DELETE(
   }
 
   await prisma.dateIdea.delete({ where: { id } });
-  await trackEvent("place_deleted", auth.telegramId, { placeId: id });
+  await trackEvent("place_deleted", auth.telegramId, { placeId: id }, auth.user.username);
   return NextResponse.json({ ok: true });
 }

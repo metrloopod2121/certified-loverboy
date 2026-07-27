@@ -67,6 +67,7 @@ async function appendAnalyticsFile(event: {
   ts: string;
   name: string;
   telegramUserId: string | null;
+  username: string | null;
   properties?: AnalyticsProperties;
 }) {
   const filePath = analyticsFilePath();
@@ -78,18 +79,22 @@ async function notifyAnalyticsTelegram(event: {
   ts: string;
   name: string;
   telegramUserId: string | null;
+  username: string | null;
   properties?: AnalyticsProperties;
 }) {
   const adminId = process.env.ADMIN_TG_ID;
   if (!adminId) return;
 
+  const who = event.username
+    ? `@${escapeHtml(event.username)} (${escapeHtml(event.telegramUserId ?? "?")})`
+    : escapeHtml(event.telegramUserId ?? "anonymous");
   const properties = event.properties ? `\n<pre>${escapeHtml(JSON.stringify(event.properties, null, 2))}</pre>` : "";
   await sendTelegramMessage(
     adminId,
     [
       "<b>analytics</b>",
       `<code>${escapeHtml(event.name)}</code>`,
-      `user: <code>${escapeHtml(event.telegramUserId ?? "anonymous")}</code>`,
+      `user: ${who}`,
       `<i>${escapeHtml(event.ts)}</i>${properties}`,
     ].join("\n"),
     { parseMode: "HTML", disableWebPagePreview: true }
@@ -105,11 +110,14 @@ async function runSink(name: string, eventName: string, callback: () => Promise<
 }
 
 /** Minimal self-hosted event log -- one row per call. Never throws: a hiccup writing an
- *  analytics row must not fail the real user-facing action it's attached to. */
+ *  analytics row must not fail the real user-facing action it's attached to.
+ *  `username` is the Telegram @handle (without @), when known at the call site -- denormalized
+ *  onto the row so "who did this" is readable without joining against live user state. */
 export async function trackEvent(
   name: string,
   telegramUserId: string | null,
-  properties?: AnalyticsProperties
+  properties?: AnalyticsProperties,
+  username?: string | null
 ): Promise<void> {
   if (!analyticsEnabled()) return;
 
@@ -118,6 +126,7 @@ export async function trackEvent(
     ts: new Date().toISOString(),
     name,
     telegramUserId,
+    username: username ?? null,
     properties: safeProperties,
   };
 
@@ -127,6 +136,7 @@ export async function trackEvent(
         data: {
           name,
           telegramUserId,
+          username: username ?? null,
           properties: safeProperties ? JSON.stringify(safeProperties) : null,
         },
       });

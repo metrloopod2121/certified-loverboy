@@ -8,6 +8,11 @@ export async function GET(request: Request) {
   if (!isAuthUser(auth)) return auth;
 
   const quota = await getImportQuotaStatus(auth.telegramId);
-  await trackEvent("import_quota_viewed", auth.telegramId, { remaining: quota.remaining, limit: quota.limit });
+  await trackEvent(
+    "import_quota_viewed",
+    auth.telegramId,
+    { remaining: quota.remaining, limit: quota.limit },
+    auth.user.username
+  );
   return NextResponse.json({ remaining: quota.remaining });
 }

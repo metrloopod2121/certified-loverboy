@@ -17,11 +17,12 @@ export async function POST(request: Request) {
 
   const username = auth.user.username ? `@${auth.user.username}` : null;
   await submitSupportMessage(auth.telegramId, username, text);
-  await trackEvent("support_submitted", auth.telegramId, {
-    surface: "app",
-    username: username ?? null,
-    textLength: text.length,
-  });
+  await trackEvent(
+    "support_submitted",
+    auth.telegramId,
+    { surface: "app", username: username ?? null, textLength: text.length },
+    auth.user.username
+  );
 
   return NextResponse.json({ ok: true });
 }

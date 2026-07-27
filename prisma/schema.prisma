@@ -114,6 +114,9 @@ model AnalyticsEvent {
   id             String   @id @default(cuid())
   name           String
   telegramUserId String?
+  /// Telegram @username at the time of the event, without the @ -- denormalized here (not
+  /// joined from a users table) so historical rows stay accurate even if someone renames.
+  username       String?
   properties     String?
   createdAt      DateTime @default(now())
 

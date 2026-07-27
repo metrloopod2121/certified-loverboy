@@ -27,6 +27,7 @@ const strings = {
       "Found a problem? Write /support and describe it.",
     ].join("\n"),
   },
+  openAppButton: { ru: "Открыть приложение", en: "Open the app" },
   supportUsage: {
     ru: "Опиши проблему одним сообщением, начиная с /support — например:\n/support не открывается карта",
     en: "Describe the problem in one message, starting with /support — for example:\n/support the map won't open",

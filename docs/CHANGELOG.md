@@ -4,9 +4,14 @@
 
 ## 2026-07-27
 
+**`/start` теперь сразу даёт кнопку Mini App, analytics stream вернули в личку**
+- Пользовательский ответ на `/start` теперь содержит inline web_app-кнопку `Открыть приложение`, поэтому новым людям не нужно искать нижнюю menu button в Telegram.
+- Telegram helper теперь проверяет HTTP-ответ Bot API и бросает явную ошибку, если Telegram не принял сообщение, вместо молчаливого игнорирования.
+- Продовый режим снова фиксируется как `ANALYTICS_TELEGRAM_ENABLED=1`: analytics продолжает писаться в SQLite/JSONL и дополнительно дублируется админу в личку; kill-switch `ANALYTICS_TELEGRAM_ENABLED=0` остаётся.
+
 **Уточнён источник `/start` и убран шум аналитики в личку**
 - В admin-уведомлении `/start` больше не пишется мутное `нет start payload`: пустой payload теперь явно объясняется как прямой заход, поиск Telegram, профиль бота, кнопка Start или обычная ссылка без `?start=...`.
-- Продовая схема зафиксирована как `ANALYTICS_TELEGRAM_ENABLED=0` + `BOT_START_NOTIFY_ENABLED=1`: human-readable start-уведомления остаются, а полный поток аналитики продолжает жить в SQLite/JSONL без лишних JSON-сообщений в личку.
+- Временный режим без сырых JSON-сообщений в личку отменён; полная аналитика снова дублируется в Telegram при `ANALYTICS_TELEGRAM_ENABLED=1`.
 
 **Уведомление админу о каждом `/start`**
 - `/start` теперь отдельно отправляет `ADMIN_TG_ID` human-readable уведомление с username, именем, Telegram id, language_code и deep-link payload (`/start <payload>`).

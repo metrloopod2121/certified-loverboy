@@ -82,6 +82,9 @@ BOT_START_NOTIFY_ENABLED="0"
 sudo systemctl restart certified-loverboy.service
 ```
 
+Пользовательский ответ на `/start` содержит inline web_app-кнопку `Открыть приложение`.
+URL берётся из `TELEGRAM_WEB_APP_URL`, fallback: `https://vacanator.xyz:8443/`.
+
 ## Данные и модель
 
 Основные таблицы:
@@ -119,8 +122,9 @@ ANALYTICS_ENABLED="1"
 ANALYTICS_DB_ENABLED="1"
 ANALYTICS_FILE_ENABLED="1"
 ANALYTICS_LOG_PATH="./data/analytics-events.jsonl"
-ANALYTICS_TELEGRAM_ENABLED="0"
+ANALYTICS_TELEGRAM_ENABLED="1"
 BOT_START_NOTIFY_ENABLED="1"
+TELEGRAM_WEB_APP_URL="https://vacanator.xyz:8443/"
 ```
 
 Файл на сервере:
@@ -287,8 +291,8 @@ Restore procedure is in `docs/RESTORE.md`.
 
 ## Open Risks / Follow-Ups
 
-- Telegram analytics stream should stay off on prod unless explicitly needed; rely on SQLite/JSONL for full event history.
-- Start notifications stay separate from analytics stream, so `BOT_START_NOTIFY_ENABLED=1` can remain on while `ANALYTICS_TELEGRAM_ENABLED=0`.
+- Telegram analytics stream is intentionally noisy while user count is low. If it gets too noisy, disable `ANALYTICS_TELEGRAM_ENABLED` and rely on SQLite/JSONL.
+- Start notifications stay separate from analytics stream, so `BOT_START_NOTIFY_ENABLED=1` can remain on even if `ANALYTICS_TELEGRAM_ENABLED=0`.
 - JSONL is local to the VPS. If long-term retention matters, add rotation/offsite upload later.
 - Backups are local to the same VPS. Offsite backups are still not implemented.
 - Import limit is currently unlimited. Flip `LINK_IMPORT_LIMIT` when the product should enforce a cap.

@@ -12,6 +12,7 @@ import { t, addedEditText, type Lang } from "@/lib/i18n";
 import {
   sendTelegramMessage,
   sendTelegramMessageWithButtons,
+  sendTelegramMessageWithWebAppButton,
   editTelegramMessageText,
   answerCallbackQuery,
 } from "@/lib/telegram";
@@ -74,6 +75,7 @@ function textWithHiddenLinks(text: string, links: string[]): string {
 /** Minimum length before a plain (non-forwarded) text message is treated as a pasted post --
  *  guards against accidental LLM calls on short one-off chat messages. */
 const PASTED_POST_MIN_LENGTH = 40;
+const DEFAULT_WEB_APP_URL = "https://vacanator.xyz:8443/";
 
 function envFlag(name: string, defaultValue: boolean): boolean {
   const value = process.env[name];
@@ -111,6 +113,10 @@ function messageTelemetry(message: TelegramMessage) {
 
 function startPayload(message: TelegramMessage): string {
   return (message.text ?? "").replace(/^\/start(@\w+)?/i, "").trim();
+}
+
+function webAppUrl(): string {
+  return process.env.TELEGRAM_WEB_APP_URL || process.env.NEXT_PUBLIC_APP_URL || DEFAULT_WEB_APP_URL;
 }
 
 async function notifyAdminBotStart(message: TelegramMessage) {
@@ -415,7 +421,7 @@ async function handleStartCommand(message: TelegramMessage) {
   } catch (err) {
     console.log(`[bot] failed to notify admin about /start: ${err instanceof Error ? err.message : err}`);
   }
-  await sendTelegramMessage(chatId, t(lang, "start"));
+  await sendTelegramMessageWithWebAppButton(chatId, t(lang, "start"), t(lang, "openAppButton"), webAppUrl());
 }
 
 /** Logs the message to SupportMessage (durable copy) and forwards it to ADMIN_TG_ID, so

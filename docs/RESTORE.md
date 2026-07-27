@@ -66,8 +66,9 @@ ANALYTICS_ENABLED="1"             # общий kill-switch
 ANALYTICS_DB_ENABLED="1"          # SQLite AnalyticsEvent
 ANALYTICS_FILE_ENABLED="1"        # JSONL
 ANALYTICS_LOG_PATH="./data/analytics-events.jsonl"
-ANALYTICS_TELEGRAM_ENABLED="0"    # не шумим каждым событием в личку ADMIN_TG_ID
+ANALYTICS_TELEGRAM_ENABLED="1"    # каждое событие в личку ADMIN_TG_ID
 BOT_START_NOTIFY_ENABLED="1"      # отдельные human-readable уведомления о /start
+TELEGRAM_WEB_APP_URL="https://vacanator.xyz:8443/"
 ```
 
 Выключить всё без деплоя:
@@ -97,7 +98,8 @@ tail -n 50 /srv/web/app/certified-loverboy/app/data/analytics-events.jsonl
 Каждый `/start` отправляет админу отдельное уведомление с username/именем/id и
 deep-link payload (`/start <payload>`). Если payload пустой, это прямой заход: поиск
 Telegram, профиль бота, кнопка Start или обычная ссылка без `?start=...`. Это отдельно
-от общего analytics stream.
+от общего analytics stream. Пользователю `/start` отвечает сообщением с inline-кнопкой
+Mini App из `TELEGRAM_WEB_APP_URL`.
 
 Отключить только эти уведомления:
 

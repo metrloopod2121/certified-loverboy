@@ -33,7 +33,8 @@ telegram-пост, или просто вставленный текст пос�
 Каждый `/start` отдельно уведомляет `ADMIN_TG_ID` с ником/именем/id пользователя и
 deep-link payload (`?start=...`), если `BOT_START_NOTIFY_ENABLED` не выключен. Если payload
 пустой, это прямой заход: поиск Telegram, профиль бота, кнопка Start или обычная ссылка
-без `?start=...`.
+без `?start=...`. Ответ на `/start` содержит inline-кнопку Mini App, чтобы пользователь
+мог открыть приложение прямо из сообщения.
 
 ## Аналитика
 
@@ -43,8 +44,8 @@ deep-link payload (`?start=...`), если `BOT_START_NOTIFY_ENABLED` не вы�
 (`ANALYTICS_DB_ENABLED=1`); JSONL-файл для выгрузки в LLM включается через
 `ANALYTICS_FILE_ENABLED=1` и лежит в `ANALYTICS_LOG_PATH` (default:
 `./data/analytics-events.jsonl`). Личные Telegram-сообщения по каждому analytics-событию
-оставляем выключенными на проде, чтобы не шуметь; включаются отдельно флагом
-`ANALYTICS_TELEGRAM_ENABLED=1`.
+включаются отдельным флагом `ANALYTICS_TELEGRAM_ENABLED=1`; на проде этот stream включён,
+пока объём пользователей небольшой.
 
 ## Публичный бот в BotFather
 

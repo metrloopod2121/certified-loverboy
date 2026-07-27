@@ -161,6 +161,7 @@ const strings = {
   addressPlaceholder: { ru: "Улица, дом", en: "Street, building" },
   metroPlaceholder: { ru: "Метро", en: "Metro" },
   mapsLinkPlaceholder: { ru: "https://yandex.ru/maps/...", en: "https://yandex.ru/maps/..." },
+  getLocationFromLink: { ru: "Получить локацию по ссылке", en: "Get location from link" },
   chooseOnMap: { ru: "Выбрать на карте", en: "Choose on map" },
   onlyYandexError: { ru: "Поддерживаются только ссылки на Яндекс.Карты", en: "Only Yandex Maps links are supported" },
   noCoordsHint: {

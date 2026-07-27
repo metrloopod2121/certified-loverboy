@@ -40,6 +40,10 @@ const strings = {
   lookingAtPostLink: { ru: "Смотрю пост по ссылке, секунду…", en: "Looking at the post, one sec…" },
   lookingAtForwardedPost: { ru: "Смотрю пересланный пост, секунду…", en: "Looking at the forwarded post, one sec…" },
   lookingAtPastedText: { ru: "Смотрю текст, секунду…", en: "Looking at the text, one sec…" },
+  lookingAtInstagramLink: {
+    ru: "Смотрю рилс, расшифровываю звук — может занять до минуты…",
+    en: "Looking at the reel, transcribing the audio — this can take up to a minute…",
+  },
   linkParseFailed: {
     ru: "Не смог разобрать эту ссылку. Попробуй другую или добавь вручную в приложении.",
     en: "Couldn't parse this link. Try another one or add it manually in the app.",
@@ -64,10 +68,19 @@ const strings = {
     ru: "Не смог разобрать текст. Добавь вручную в приложении.",
     en: "Couldn't parse the text. Add it manually in the app.",
   },
+  instagramParseFailed: {
+    ru: "Не смог разобрать этот рилс/пост. Попробуй другой или добавь вручную в приложении.",
+    en: "Couldn't parse this reel/post. Try another one or add it manually in the app.",
+  },
+  instagramImportUnavailable: {
+    ru: "Импорт из Instagram пока тестируется и недоступен всем. Кинь ссылку на Яндекс.Карты, перешли пост из канала или добавь место вручную в приложении.",
+    en: "Instagram import is still being piloted and isn't open to everyone yet. Send a Yandex Maps link, forward a channel post, or add the place manually in the app.",
+  },
   headerYandexLink: { ru: "📍 Новое место с Яндекс.Карт:", en: "📍 New place from Yandex Maps:" },
   headerPostLink: { ru: "📩 Пост по ссылке:", en: "📩 Post from a link:" },
   headerChannelForward: { ru: "📩 Пост из канала:", en: "📩 Post from a channel:" },
   headerPastedText: { ru: "📋 Вставленный текст:", en: "📋 Pasted text:" },
+  headerInstagramLink: { ru: "🎬 Место из Instagram:", en: "🎬 Place from Instagram:" },
   yesButton: { ru: "✅ Да", en: "✅ Yes" },
   noButton: { ru: "❌ Нет", en: "❌ No" },
   callbackStale: { ru: "Уже обработано или устарело", en: "Already handled or expired" },

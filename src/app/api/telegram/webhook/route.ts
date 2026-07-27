@@ -19,8 +19,10 @@ import {
 import {
   findYandexMapsLink,
   findTelegramPostLink,
+  findInstagramLink,
   parseYandexMapsLink,
   parsePostTextMulti,
+  parseInstagramLink,
   fetchTelegramPostText,
   formatIdeaPreview,
   isMapsProviderLink,
@@ -155,6 +157,16 @@ function forwardedChannelSourceUrl(message: TelegramMessage): string {
 
 function isChannelForward(message: TelegramMessage): boolean {
   return (message.forward_origin?.chat ?? message.forward_from_chat)?.type === "channel";
+}
+
+/** Pilot gate: always on for the admin's own account (that's the point of testing it there
+ *  first), otherwise behind an explicit flag flipped once the pilot looks good. Instagram
+ *  scraping is inherently less reliable than the Yandex/Telegram sources (login walls, silent
+ *  reels have no transcript at all), so this ships gated rather than open to everyone. */
+function instagramImportAllowed(chatId: string): boolean {
+  const adminId = process.env.ADMIN_TG_ID;
+  if (adminId && chatId === adminId) return true;
+  return envFlag("INSTAGRAM_IMPORT_ENABLED", false);
 }
 
 type TelegramCallbackQuery = {
@@ -339,6 +351,62 @@ async function handleTelegramPostLink(message: TelegramMessage, url: string) {
   );
 
   await sendDraftsForApproval(chatId, drafts, t(lang, "headerPostLink"), () => url, "bot_telegram_post_link", lang, username);
+}
+
+/** Reel/post link, pilot-gated (see instagramImportAllowed). Downloads the audio, transcribes
+ *  it, and runs the transcript through the same multi-place extraction as any other post text. */
+async function handleInstagramLink(message: TelegramMessage, url: string) {
+  const chatId = String(message.chat.id);
+  const username = message.from?.username ?? null;
+  const lang = await getUserLanguage(chatId);
+
+  if (!instagramImportAllowed(chatId)) {
+    await trackEvent("instagram_import_gated", chatId, { host: urlHost(url), ...messageTelemetry(message) }, username);
+    await sendTelegramMessage(chatId, t(lang, "instagramImportUnavailable"));
+    return;
+  }
+
+  await trackEvent(
+    "link_import_started",
+    chatId,
+    { surface: "bot", source: "bot_instagram_link", host: urlHost(url), ...messageTelemetry(message) },
+    username
+  );
+  const quota = await tryConsumeImportQuota(chatId);
+  if (!quota.ok) {
+    await trackEvent(
+      "link_import_failed",
+      chatId,
+      { surface: "bot", source: "bot_instagram_link", reason: "quota_exhausted", host: urlHost(url) },
+      username
+    );
+    await sendTelegramMessage(chatId, quotaExhaustedMessage(lang));
+    return;
+  }
+
+  await sendTelegramMessage(chatId, t(lang, "lookingAtInstagramLink"));
+
+  const drafts = await parseInstagramLink(url);
+  if (drafts.length === 0) {
+    console.log(`[import] instagram link parse failed chatId=${chatId} url=${url}`);
+    await trackEvent(
+      "link_import_failed",
+      chatId,
+      { surface: "bot", source: "bot_instagram_link", reason: "parse_failed", host: urlHost(url) },
+      username
+    );
+    await sendTelegramMessage(chatId, t(lang, "instagramParseFailed"));
+    return;
+  }
+
+  await trackEvent(
+    "link_import_parsed",
+    chatId,
+    { surface: "bot", source: "bot_instagram_link", host: urlHost(url), draftsCount: drafts.length, remaining: quota.remaining },
+    username
+  );
+
+  await sendDraftsForApproval(chatId, drafts, t(lang, "headerInstagramLink"), () => url, "bot_instagram_link", lang, username);
 }
 
 /** A channel post forwarded straight into the chat — post text already has address/price/
@@ -683,14 +751,18 @@ export async function POST(request: Request) {
 
   const trimmed = text.trim();
   const yandexLink = findYandexMapsLink(text);
+  const instagramLink = findInstagramLink(text);
   const telegramLink = findTelegramPostLink(text);
   // Only treat it as "just a link" when the whole message IS the link — a link mentioned
   // somewhere inside a full pasted post (e.g. a channel self-promo footer) should still go
   // through the pasted-post-text path below, not be re-fetched as if it were the post itself.
+  const isBareInstagramLink = instagramLink !== null && trimmed === instagramLink;
   const isBareTelegramLink = telegramLink !== null && trimmed === telegramLink;
 
   if (yandexLink) {
     await handleYandexLink(message);
+  } else if (isBareInstagramLink) {
+    await handleInstagramLink(message, instagramLink);
   } else if (isBareTelegramLink) {
     await handleTelegramPostLink(message, telegramLink);
   } else if (trimmed.length >= PASTED_POST_MIN_LENGTH) {

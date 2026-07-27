@@ -108,3 +108,29 @@ cd /srv/web/app/certified-loverboy/app
 sudo sed -i 's/^BOT_START_NOTIFY_ENABLED=.*/BOT_START_NOTIFY_ENABLED="0"/' .env
 sudo systemctl restart certified-loverboy.service
 ```
+
+## Instagram-импорт (пилот): системная зависимость yt-dlp + ffmpeg
+
+Импорт места по ссылке на рилс/пост скачивает аудио-дорожку через `yt-dlp` и транскрибирует
+её Workers AI Whisper — `yt-dlp` и `ffmpeg` это НЕ npm-пакеты, а системные бинарники, разовая
+установка на сервере (иначе фича будет всегда падать в "не смог разобрать"):
+
+```bash
+sudo apt update && sudo apt install -y ffmpeg
+sudo python3 -m pip install -U yt-dlp --break-system-packages   # или: sudo pipx install yt-dlp
+yt-dlp --version   # проверить, что бинарник действительно на PATH
+```
+
+Пока это пилот: фича всегда доступна `ADMIN_TG_ID` (для тестирования), остальным — только
+если явно включено:
+
+```bash
+cd /srv/web/app/certified-loverboy/app
+sudo sed -i 's/^INSTAGRAM_IMPORT_ENABLED=.*/INSTAGRAM_IMPORT_ENABLED="1"/' .env
+sudo systemctl restart certified-loverboy.service
+```
+
+Известный риск, не лечится кодом: Instagram активно борется со скрейпингом (login-стены,
+рейт-лимиты на аноним. запросы) — процент успешных скачиваний непредсказуем и может со
+временем ухудшаться независимо от изменений в этом репозитории. Также транскрипция ловит
+только рилсы с речью за кадром — текст, вшитый в кадр как оверлей, ей не виден.

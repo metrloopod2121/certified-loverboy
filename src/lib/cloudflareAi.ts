@@ -197,3 +197,32 @@ export async function extractIdeasFromText(pageText: string): Promise<ExtractedI
   }
   return ideas;
 }
+
+/** Sends raw audio bytes to the configured Workers AI Whisper model and returns the transcribed
+ *  text, or null if not configured / the call failed. Payload shape (`{ audio: [...bytes] }`)
+ *  matches Cloudflare's documented Workers-binding contract for this model family, translated
+ *  to the plain REST API used everywhere else in this file. */
+export async function transcribeAudio(audio: Buffer): Promise<string | null> {
+  const accountId = process.env.CLOUDFLARE_ACCOUNT_ID;
+  const token = process.env.CLOUDFLARE_API_TOKEN;
+  const model = process.env.CLOUDFLARE_WHISPER_MODEL || "@cf/openai/whisper-large-v3-turbo";
+  if (!accountId || !token) return null;
+
+  const res = await fetch(`https://api.cloudflare.com/client/v4/accounts/${accountId}/ai/run/${model}`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ audio: Array.from(audio) }),
+  });
+
+  if (!res.ok) {
+    console.log(`[usage] cloudflare-whisper request failed status=${res.status}`);
+    return null;
+  }
+  const data = await res.json();
+
+  const neurons = data?.result?.usage?.neurons;
+  console.log(`[usage] cloudflare-whisper neurons=${neurons ?? "?"} model=${model}`);
+
+  const text = data?.result?.text;
+  return typeof text === "string" && text.trim() ? text.trim() : null;
+}

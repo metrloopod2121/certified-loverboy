@@ -295,6 +295,22 @@ Restore procedure is in `docs/RESTORE.md`.
   - `support - Написать в поддержку`
   - `usage - Usage-отчёт (admin)`
 
+## Instagram import (pilot)
+
+Bot understands a bare reel/post link (`instagram.com/reel|reels|p|tv/...`) as its own import
+source, alongside Yandex Maps / Telegram post links:
+- downloads the audio track via `yt-dlp` (system binary, not npm — see docs/RESTORE.md), best-
+  effort scrapes the caption too, transcribes the audio with Workers AI Whisper
+  (`CLOUDFLARE_WHISPER_MODEL`), then feeds transcript+caption through the same multi-place
+  extraction pipeline as Telegram posts (`parsePostTextMulti`);
+- gated by `instagramImportAllowed()`: always on for `ADMIN_TG_ID`, everyone else needs
+  `INSTAGRAM_IMPORT_ENABLED="1"`;
+- shares the same `ImportQuota`/`LINK_IMPORT_LIMIT` as other bot imports;
+- `instagram_import_gated` analytics event fires when a non-pilot user tries it, to gauge demand
+  before flipping the flag;
+- known limitation: catches spoken narration only, not text burned into the video frame; success
+  rate against Instagram's anti-scraping measures is unverified until tested live on the server.
+
 ## Open Risks / Follow-Ups
 
 - Telegram analytics stream is intentionally noisy while user count is low. If it gets too noisy, disable `ANALYTICS_TELEGRAM_ENABLED` and rely on SQLite/JSONL.
@@ -304,3 +320,5 @@ Restore procedure is in `docs/RESTORE.md`.
 - Import limit is currently unlimited. Flip `LINK_IMPORT_LIMIT` when the product should enforce a cap.
 - File import UI is hidden by `SHOW_FILE_IMPORT=false`, but code path remains.
 - Monetization/subscription via Telegram Stars is not implemented yet.
+- Instagram import is a pilot behind `INSTAGRAM_IMPORT_ENABLED` — needs live testing on the
+  server (yt-dlp/ffmpeg installed, real reel links) before opening it up beyond `ADMIN_TG_ID`.

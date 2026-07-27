@@ -1,7 +1,14 @@
-import { extractIdeaFromText, extractIdeasFromText, type ExtractedIdea } from "@/lib/cloudflareAi";
+import { execFile as execFileCallback } from "node:child_process";
+import { promisify } from "node:util";
+import { mkdtemp, readFile, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import path from "node:path";
+import { extractIdeaFromText, extractIdeasFromText, transcribeAudio, type ExtractedIdea } from "@/lib/cloudflareAi";
 import { braveSearchSnippets } from "@/lib/braveSearch";
 import { parseMapsLink, findYandexMapsLink, stripTrailingPunctuation } from "@/lib/coords";
 import { DEFAULT_LANG, t, type Lang } from "@/lib/i18n";
+
+const execFile = promisify(execFileCallback);
 
 export type ParsedFromLink = Omit<ExtractedIdea, "otherLinks"> & {
   lat: number | null;
@@ -245,6 +252,85 @@ export async function fetchTelegramPostText(url: string): Promise<string | null>
   } catch {
     return null;
   }
+}
+
+const INSTAGRAM_URL = /https?:\/\/(www\.)?instagram\.com\/(reel|reels|p|tv)\/[^\s]+/iu;
+
+export function findInstagramLink(text: string): string | null {
+  const match = text.match(INSTAGRAM_URL);
+  return match ? stripTrailingPunctuation(match[0]) : null;
+}
+
+/** Best-effort scrape of an Instagram post/reel's caption from its public page -- frequently
+ *  thin or missing entirely for an unauthenticated request (Instagram gates most of the page
+ *  behind a login wall), so this only ever adds context to the transcript, never replaces it. */
+async function fetchInstagramCaption(url: string): Promise<string | null> {
+  try {
+    const res = await fetch(url, {
+      headers: {
+        "User-Agent":
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36",
+        "Accept-Language": "ru-RU,ru;q=0.9",
+      },
+    });
+    if (!res.ok) return null;
+    const html = await res.text();
+    return metaContent(html, "property", "og:description");
+  } catch {
+    return null;
+  }
+}
+
+const YT_DLP_TIMEOUT_MS = 60_000;
+
+/** Downloads a reel/post's audio track via yt-dlp -- a system binary, not an npm dependency,
+ *  see docs/RESTORE.md for the one-time server setup -- and transcribes it with the configured
+ *  Workers AI Whisper model. Most place-focused reels are someone talking over the shot
+ *  ("зашли, взяли вот это...") rather than relying on on-screen text, so spoken audio is usually
+ *  the richest signal available here. Low mp3 bitrate keeps the file (and the JSON payload to
+ *  Whisper, which sends raw bytes as a JSON number array) small for a typical <90s reel. */
+async function fetchInstagramTranscript(url: string): Promise<string | null> {
+  const dir = await mkdtemp(path.join(tmpdir(), "ig-"));
+  try {
+    await execFile(
+      "yt-dlp",
+      [
+        "--no-playlist",
+        "--no-warnings",
+        "-x",
+        "--audio-format",
+        "mp3",
+        "--audio-quality",
+        "5",
+        "--max-filesize",
+        "20M",
+        "--socket-timeout",
+        "15",
+        "-o",
+        path.join(dir, "audio.%(ext)s"),
+        url,
+      ],
+      { timeout: YT_DLP_TIMEOUT_MS, maxBuffer: 10 * 1024 * 1024 }
+    );
+
+    const audio = await readFile(path.join(dir, "audio.mp3"));
+    return await transcribeAudio(audio);
+  } catch (err) {
+    console.log(`[import] instagram audio download/transcribe failed url=${url} error=${err instanceof Error ? err.message : err}`);
+    return null;
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+}
+
+/** Reels/posts get no dedicated LLM prompt of their own -- the transcript (plus whatever caption
+ *  text is scrapable) is just fed through the same multi-place post-text pipeline already used
+ *  for Telegram posts, since the extraction task is identical: pull place(s) out of free text. */
+export async function parseInstagramLink(url: string): Promise<ParsedFromLink[]> {
+  const [caption, transcript] = await Promise.all([fetchInstagramCaption(url), fetchInstagramTranscript(url)]);
+  const text = [caption, transcript].filter(Boolean).join("\n\n");
+  if (!text.trim()) return [];
+  return parsePostTextMulti(text);
 }
 
 export function formatIdeaPreview(

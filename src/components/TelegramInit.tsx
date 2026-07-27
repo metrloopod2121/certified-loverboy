@@ -24,8 +24,11 @@ export default function TelegramInit() {
       // Some iOS Main Mini Apps briefly report a zero content inset even though
       // Telegram's back/menu controls overlay the top edge. Keep a fallback
       // only while the sheet is expanded, then remove it when Telegram reports
-      // a sufficient content-safe inset itself.
-      const needsTopFallback = webApp.isExpanded && content.top < FULL_HEIGHT_TOP_FALLBACK;
+      // a sufficient content-safe inset itself. iOS-only: on desktop clients
+      // (macos/tdesktop/web) there's no overlay to compensate for, and
+      // contentSafeAreaInset.top genuinely is 0 -- applying this fallback there
+      // just adds a huge empty gap above the content.
+      const needsTopFallback = webApp.platform === "ios" && webApp.isExpanded && content.top < FULL_HEIGHT_TOP_FALLBACK;
       root.setProperty("--tg-expanded-top-fallback", needsTopFallback ? `${FULL_HEIGHT_TOP_FALLBACK}px` : "0px");
     }
 

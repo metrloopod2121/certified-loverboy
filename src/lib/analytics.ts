@@ -35,6 +35,14 @@ function analyticsFilePath() {
   return process.env.ANALYTICS_LOG_PATH || path.join(process.cwd(), "data/analytics-events.jsonl");
 }
 
+/** The admin's own actions (testing, poking around) shouldn't show up as analytics or trigger
+ *  a Telegram DM to themselves about themselves -- analytics exists to watch what *other* users
+ *  do. */
+function isOwnAccount(telegramUserId: string | null): boolean {
+  const adminId = process.env.ADMIN_TG_ID;
+  return Boolean(adminId) && telegramUserId === adminId;
+}
+
 function sanitizeValue(value: unknown, depth = 0): unknown {
   if (value === null || value === undefined) return value;
   if (typeof value === "string") return value.length > MAX_STRING_LENGTH ? `${value.slice(0, MAX_STRING_LENGTH)}...` : value;
@@ -120,6 +128,7 @@ export async function trackEvent(
   username?: string | null
 ): Promise<void> {
   if (!analyticsEnabled()) return;
+  if (isOwnAccount(telegramUserId)) return;
 
   const safeProperties = sanitizeProperties(properties);
   const event = {

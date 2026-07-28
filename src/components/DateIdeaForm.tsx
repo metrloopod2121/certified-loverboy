@@ -342,18 +342,24 @@ export default function DateIdeaForm({
           <div className="flex flex-col gap-1">
             <span className={labelClass}>{t("eventStartLabel")}</span>
             <div className="grid grid-cols-2 gap-2">
-              <input
-                type="date"
-                value={eventStartDate}
-                onChange={(e) => setEventStartDate(e.target.value)}
-                className={`${input} min-w-0`}
-              />
-              <input
-                type="time"
-                value={eventStartTime}
-                onChange={(e) => setEventStartTime(e.target.value)}
-                className={`${input} min-w-0`}
-              />
+              <div className="flex flex-col gap-1">
+                <span className="text-[11px] font-medium text-[var(--app-muted)]">{t("eventDateFieldLabel")}</span>
+                <input
+                  type="date"
+                  value={eventStartDate}
+                  onChange={(e) => setEventStartDate(e.target.value)}
+                  className={`${input} min-w-0`}
+                />
+              </div>
+              <div className="flex flex-col gap-1">
+                <span className="text-[11px] font-medium text-[var(--app-muted)]">{t("eventTimeFieldLabel")}</span>
+                <input
+                  type="time"
+                  value={eventStartTime}
+                  onChange={(e) => setEventStartTime(e.target.value)}
+                  className={`${input} min-w-0`}
+                />
+              </div>
             </div>
           </div>
 
@@ -361,18 +367,24 @@ export default function DateIdeaForm({
             <div className="flex flex-col gap-1">
               <span className={labelClass}>{t("eventEndLabel")}</span>
               <div className="grid grid-cols-2 gap-2">
-                <input
-                  type="date"
-                  value={eventEndDate}
-                  onChange={(e) => setEventEndDate(e.target.value)}
-                  className={`${input} min-w-0`}
-                />
-                <input
-                  type="time"
-                  value={eventEndTime}
-                  onChange={(e) => setEventEndTime(e.target.value)}
-                  className={`${input} min-w-0`}
-                />
+                <div className="flex flex-col gap-1">
+                  <span className="text-[11px] font-medium text-[var(--app-muted)]">{t("eventDateFieldLabel")}</span>
+                  <input
+                    type="date"
+                    value={eventEndDate}
+                    onChange={(e) => setEventEndDate(e.target.value)}
+                    className={`${input} min-w-0`}
+                  />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <span className="text-[11px] font-medium text-[var(--app-muted)]">{t("eventTimeFieldLabel")}</span>
+                  <input
+                    type="time"
+                    value={eventEndTime}
+                    onChange={(e) => setEventEndTime(e.target.value)}
+                    className={`${input} min-w-0`}
+                  />
+                </div>
               </div>
             </div>
           )}

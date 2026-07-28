@@ -172,6 +172,8 @@ const strings = {
   },
   eventStartLabel: { ru: "Начало", en: "Starts" },
   eventEndLabel: { ru: "Окончание", en: "Ends" },
+  eventDateFieldLabel: { ru: "Дата", en: "Date" },
+  eventTimeFieldLabel: { ru: "Время", en: "Time" },
   eventClearBtn: { ru: "Убрать дату события", en: "Remove event date" },
   eventToday: { ru: "Сегодня", en: "Today" },
   eventTomorrow: { ru: "Завтра", en: "Tomorrow" },

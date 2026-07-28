@@ -44,7 +44,8 @@
 Актуальная палитра: тёплые акценты выровнены по насыщенности — `--app-yellow: #efd47c`
 приглушён относительно старого кислотного жёлтого, `--app-coral: #f0a477` стал плотнее и
 оранжевее. Event-карточки используют ту же coral/gold логику во внутреннем radial-gradient:
-без teal/rainbow/holo, просто тёплый deadline-акцент.
+без teal/rainbow/holo, просто тёплый deadline-акцент. Для event-тегов используется более
+заметный, но прозрачный neon-blue `pillBlue`.
 
 Текущий профиль:
 - выбор языка через нативный `<select>`, не через две большие панели;
@@ -383,7 +384,9 @@ plain evergreen place -- no separate entity, just two nullable columns on `DateI
   same as a plain place. Card and place-detail screen show a "When" badge
   (`CalendarClock` icon + `formatEventWhen()`) when set. Storage event cards use a translucent
   glass surface with an internal centered radial-gradient light source clipped inside the rounded
-  card; there is no left-side event stripe or external glow bleeding outside the card.
+  card; there is no left-side event stripe or external glow bleeding outside the card. Future
+  event cards also show a compact countdown to the right of the date badge: more than 24 hours
+  uses days+hours, less than 24 hours uses hours+minutes.
 - Prod verified 2026-07-28: `EVENTS_FEATURE_ENABLED` is absent/false in `.env`; DB rows with
   `eventStartsAt is not null` belong only to `ADMIN_TG_ID=504196424` (1 row at verification).
 

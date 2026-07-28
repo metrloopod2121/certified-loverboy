@@ -353,3 +353,23 @@ export function formatEventWhen(lang: Lang, startsAtIso: string, endsAtIso: stri
   const endTime = end && !isMidnight(end) ? formatEventTimePart(end) : null;
   return endTime ? `${datePart}, ${startTime}–${endTime}` : `${datePart}, ${startTime}`;
 }
+
+export function formatEventCountdown(lang: Lang, startsAtIso: string, nowMs: number): string | null {
+  if (nowMs <= 0) return null;
+  const startMs = new Date(startsAtIso).getTime();
+  if (!Number.isFinite(startMs)) return null;
+
+  const diffMs = startMs - nowMs;
+  if (diffMs <= 0) return null;
+
+  const totalMinutes = Math.max(1, Math.ceil(diffMs / 60_000));
+  if (totalMinutes > 24 * 60) {
+    const days = Math.floor(totalMinutes / (24 * 60));
+    const hours = Math.floor((totalMinutes % (24 * 60)) / 60);
+    return lang === "ru" ? `${days} д ${hours} ч` : `${days}d ${hours}h`;
+  }
+
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  return lang === "ru" ? `${hours} ч ${minutes} мин` : `${hours}h ${minutes}m`;
+}

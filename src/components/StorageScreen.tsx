@@ -19,6 +19,7 @@ import {
   pill,
   pillBlue,
   eventBadgeColors,
+  eventCountdownBadge,
   eventCardGlow,
   iconButton,
   pageHeading,
@@ -34,7 +35,7 @@ import {
 import { metroPastelTone, metroStations, metroLineTone, sortStationsByLine } from "@/lib/metro";
 import { useLang, useT } from "@/hooks/useLang";
 import { trackClientEvent } from "@/lib/clientAnalytics";
-import { awayText, formatEventWhen, type StringKey } from "@/lib/i18n";
+import { awayText, formatEventCountdown, formatEventWhen, type StringKey } from "@/lib/i18n";
 
 type Sort = "newest" | "title" | "nearby";
 
@@ -548,8 +549,10 @@ export default function StorageScreen() {
       {!ideas && <p className={mutedText}>{t("loadingEllipsis")}</p>}
 
       <div className="flex flex-col gap-3">
-        {filtered.map((idea) =>
-          editing?.id === idea.id ? (
+        {filtered.map((idea) => {
+          const eventCountdown = idea.eventStartsAt ? formatEventCountdown(lang, idea.eventStartsAt, currentTimeMs) : null;
+
+          return editing?.id === idea.id ? (
             <DateIdeaForm
               key={idea.id}
               initial={dateIdeaToInput(idea)}
@@ -572,9 +575,12 @@ export default function StorageScreen() {
               } flex cursor-pointer flex-col gap-2.5 transition active:scale-[0.99]`}
             >
               {idea.eventStartsAt && (
-                <div className={`inline-flex w-fit items-center gap-1.5 rounded-full px-2.5 py-1 text-[12px] font-bold ${eventBadgeColors}`}>
-                  <CalendarClock size={13} />
-                  {formatEventWhen(lang, idea.eventStartsAt, idea.eventEndsAt)}
+                <div className="flex min-w-0 items-start justify-between gap-2">
+                  <div className={`inline-flex min-w-0 items-center gap-1.5 rounded-full px-2.5 py-1 text-[12px] font-bold ${eventBadgeColors}`}>
+                    <CalendarClock className="shrink-0" size={13} />
+                    <span className="truncate">{formatEventWhen(lang, idea.eventStartsAt, idea.eventEndsAt)}</span>
+                  </div>
+                  {eventCountdown && <div className={eventCountdownBadge}>{eventCountdown}</div>}
                 </div>
               )}
               <div className="flex justify-between items-center gap-2">
@@ -669,8 +675,8 @@ export default function StorageScreen() {
                 </div>
               )}
             </div>
-          )
-        )}
+          );
+        })}
         {ideas && filtered.length === 0 && (
           <p className={`${card} ${mutedText}`}>{t("nothingYet")}</p>
         )}

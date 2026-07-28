@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ChevronDown, Pencil, Trash2, Plus, X, Link as LinkIcon, Upload, PencilLine, FileUp, Navigation, MapPin, CalendarClock } from "lucide-react";
+import { ChevronDown, Pencil, Trash2, Plus, X, Link as LinkIcon, Upload, PencilLine, FileUp, Navigation, MapPin, CalendarClock, Map as MapIcon } from "lucide-react";
 import { apiFetch } from "@/lib/apiClient";
 import { dateIdeaToInput, type DateIdea, type DateIdeaInput } from "@/lib/types";
 import DateIdeaForm from "@/components/DateIdeaForm";
@@ -188,6 +188,15 @@ export default function StorageScreen() {
   function openPlace(id: string) {
     trackClientEvent("storage_place_opened", { placeId: id });
     router.push(`/place/${id}`);
+  }
+
+  // A place can have several locations -- just pick the first with a pin, same "good enough"
+  // choice the Map tab itself makes no attempt to disambiguate further.
+  function showOnMap(idea: DateIdea) {
+    const location = idea.locations.find((loc) => loc.lat != null && loc.lng != null);
+    if (!location) return;
+    trackClientEvent("storage_place_map_opened", { placeId: idea.id });
+    router.push(`/map?focus=${encodeURIComponent(location.id)}`);
   }
 
   function saveLocation(loc: LatLng, source: "browser" | "manual") {
@@ -556,6 +565,18 @@ export default function StorageScreen() {
                   <span>{idea.title}</span>
                 </h2>
                 <div className="flex gap-1 shrink-0">
+                  {idea.locations.some((loc) => loc.lat != null && loc.lng != null) && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        showOnMap(idea);
+                      }}
+                      aria-label={t("showOnMapAria")}
+                      className={`${iconButton} bg-[var(--app-overlay)] text-[var(--app-ink)] ring-1 ring-[var(--app-outline)]/10`}
+                    >
+                      <MapIcon size={16} />
+                    </button>
+                  )}
                   <button
                     onClick={(e) => {
                       e.stopPropagation();

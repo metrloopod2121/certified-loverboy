@@ -151,6 +151,7 @@ const strings = {
   loadingEllipsis: { ru: "Загрузка…", en: "Loading…" },
   editAria: { ru: "Редактировать", en: "Edit" },
   deleteAria: { ru: "Удалить", en: "Delete" },
+  showOnMapAria: { ru: "Показать на карте", en: "Show on map" },
   noAddress: { ru: "Без адреса", en: "No address" },
   away: { ru: "от вас", en: "away" },
   noCoordinates: { ru: "Нет координат", en: "No coordinates" },

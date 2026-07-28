@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useMap } from "react-leaflet";
 import L from "leaflet";
 
@@ -56,5 +56,37 @@ export function InvalidateSizeOnMount() {
       window.removeEventListener("resize", invalidate);
     };
   }, [map]);
+  return null;
+}
+
+export const FOCUS_ZOOM = 16;
+
+/** Flies the map to a specific marker once it shows up in `markers` -- used when arriving from
+ *  the Storage screen's "show on map" button, where the marker list loads asynchronously (own
+ *  /api/date-ideas fetch) after this component has already mounted. Only fires once per
+ *  `focusMarkerId` so panning/zooming manually afterwards doesn't keep getting overridden. */
+export function FocusMarker({
+  markers,
+  focusMarkerId,
+  markerRefs,
+}: {
+  markers: { id: string; lat: number; lng: number }[];
+  focusMarkerId: string | null;
+  markerRefs: React.MutableRefObject<Record<string, L.Marker>>;
+}) {
+  const map = useMap();
+  const focusedIdRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (!focusMarkerId || focusedIdRef.current === focusMarkerId) return;
+    const marker = markers.find((m) => m.id === focusMarkerId);
+    if (!marker) return;
+
+    focusedIdRef.current = focusMarkerId;
+    map.flyTo([marker.lat, marker.lng], FOCUS_ZOOM, { animate: true });
+    const timeout = setTimeout(() => markerRefs.current[focusMarkerId]?.openPopup(), 400);
+    return () => clearTimeout(timeout);
+  }, [markers, focusMarkerId, map, markerRefs]);
+
   return null;
 }

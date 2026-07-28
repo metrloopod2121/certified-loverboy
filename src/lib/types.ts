@@ -31,6 +31,10 @@ export type DateIdea = {
   title: string;
   description: string | null;
   priceNote: string | null;
+  /// One-time dated event window (concert, show, tournament...) -- both null for an ordinary
+  /// evergreen place. ISO strings, like createdAt/updatedAt.
+  eventStartsAt: string | null;
+  eventEndsAt: string | null;
   tags: { tag: { id: string; name: string } }[];
   locations: Location[];
   links: PlaceLink[];
@@ -42,6 +46,8 @@ export type DateIdeaInput = {
   title: string;
   description: string;
   priceNote: string;
+  eventStartsAt: string | null;
+  eventEndsAt: string | null;
   tags: string[];
   locations: LocationInput[];
   links: PlaceLinkInput[];
@@ -66,6 +72,8 @@ export function dateIdeaToInput(idea: DateIdea): DateIdeaInput {
     title: idea.title,
     description: idea.description ?? "",
     priceNote: idea.priceNote ?? "",
+    eventStartsAt: idea.eventStartsAt,
+    eventEndsAt: idea.eventEndsAt,
     tags: idea.tags.map((t) => t.tag.name),
     locations: idea.locations.map(locationToInput),
     links: idea.links.map(linkToInput),

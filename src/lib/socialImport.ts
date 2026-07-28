@@ -6,15 +6,31 @@ import path from "node:path";
 import { extractIdeaFromText, extractIdeasFromText, transcribeAudio, type ExtractedIdea } from "@/lib/cloudflareAi";
 import { braveSearchSnippets } from "@/lib/braveSearch";
 import { parseMapsLink, findYandexMapsLink, stripTrailingPunctuation } from "@/lib/coords";
-import { DEFAULT_LANG, t, type Lang } from "@/lib/i18n";
+import { DEFAULT_LANG, t, formatEventWhen, type Lang } from "@/lib/i18n";
 
 const execFile = promisify(execFileCallback);
 
-export type ParsedFromLink = Omit<ExtractedIdea, "otherLinks"> & {
+export type ParsedFromLink = Omit<
+  ExtractedIdea,
+  "otherLinks" | "eventStartDate" | "eventStartTime" | "eventEndDate" | "eventEndTime"
+> & {
   lat: number | null;
   lng: number | null;
   links: { label: string | null; url: string }[];
+  eventStartsAt: string | null;
+  eventEndsAt: string | null;
 };
+
+/** Combines a model-extracted "YYYY-MM-DD" date and optional "HH:MM" time into a single ISO
+ *  instant -- a missing time defaults to midnight, matching the manual place-form's convention
+ *  for "time unknown" (see docs/PROJECT_STATE.md). */
+function combineEventDateTime(date: string | null, time: string | null): string | null {
+  if (!date) return null;
+  const [year, month, day] = date.split("-").map(Number);
+  const [hours, minutes] = time ? time.split(":").map(Number) : [0, 0];
+  const parsed = new Date(year, month - 1, day, hours || 0, minutes || 0);
+  return Number.isNaN(parsed.getTime()) ? null : parsed.toISOString();
+}
 
 // Re-exported for existing callers (webhook route, from-link API route) -- the extraction
 // logic itself lives in coords.ts so the client-side link-import field can also import it
@@ -63,7 +79,9 @@ function dedupeLinks(rawLinks: string[], exclude: string | null): { label: strin
   return links;
 }
 
-function withoutOtherLinks(idea: ExtractedIdea): Omit<ExtractedIdea, "otherLinks"> {
+function withoutOtherLinks(
+  idea: ExtractedIdea
+): Omit<ExtractedIdea, "otherLinks" | "eventStartDate" | "eventStartTime" | "eventEndDate" | "eventEndTime"> {
   return {
     title: idea.title,
     address: idea.address,
@@ -177,6 +195,10 @@ export async function parseYandexMapsLink(url: string): Promise<ParsedFromLink |
     links: dedupeLinks(idea.otherLinks, idea.mapUrl),
     lat: coords?.lat ?? null,
     lng: coords?.lng ?? null,
+    // Yandex org pages describe permanent venues, not one-time events -- the prompt never asks
+    // for these fields on this path.
+    eventStartsAt: null,
+    eventEndsAt: null,
   };
 }
 
@@ -186,8 +208,8 @@ export async function parseYandexMapsLink(url: string): Promise<ParsedFromLink |
  *  single post can list several venues, each with its own link. Coordinates for each place come
  *  from its own `mapUrl` when the model found one, otherwise from the first maps link anywhere
  *  in the text. */
-export async function parsePostTextMulti(text: string): Promise<ParsedFromLink[]> {
-  const ideas = await extractIdeasFromText(text);
+export async function parsePostTextMulti(text: string, includeEventFields = false): Promise<ParsedFromLink[]> {
+  const ideas = await extractIdeasFromText(text, includeEventFields);
   const textCoords = parseMapsLink(text);
   return ideas.map((idea) => {
     const mapUrl = idea.mapUrl && isMapsProviderLink(idea.mapUrl) ? idea.mapUrl : null;
@@ -196,7 +218,17 @@ export async function parsePostTextMulti(text: string): Promise<ParsedFromLink[]
     // being silently dropped, same as one it correctly filed under otherLinks to begin with.
     const rejectedMapUrl = idea.mapUrl && !mapUrl ? idea.mapUrl : null;
     const links = dedupeLinks(rejectedMapUrl ? [...idea.otherLinks, rejectedMapUrl] : idea.otherLinks, mapUrl);
-    return { ...withoutOtherLinks(idea), mapUrl, links, lat: coords?.lat ?? null, lng: coords?.lng ?? null };
+    // An end time given without an end date assumes the same calendar day as the start.
+    const eventEndDate = idea.eventEndDate ?? (idea.eventEndTime ? idea.eventStartDate : null);
+    return {
+      ...withoutOtherLinks(idea),
+      mapUrl,
+      links,
+      lat: coords?.lat ?? null,
+      lng: coords?.lng ?? null,
+      eventStartsAt: combineEventDateTime(idea.eventStartDate, idea.eventStartTime),
+      eventEndsAt: combineEventDateTime(eventEndDate, idea.eventEndTime),
+    };
   });
 }
 
@@ -326,11 +358,11 @@ async function fetchInstagramTranscript(url: string): Promise<string | null> {
 /** Reels/posts get no dedicated LLM prompt of their own -- the transcript (plus whatever caption
  *  text is scrapable) is just fed through the same multi-place post-text pipeline already used
  *  for Telegram posts, since the extraction task is identical: pull place(s) out of free text. */
-export async function parseInstagramLink(url: string): Promise<ParsedFromLink[]> {
+export async function parseInstagramLink(url: string, includeEventFields = false): Promise<ParsedFromLink[]> {
   const [caption, transcript] = await Promise.all([fetchInstagramCaption(url), fetchInstagramTranscript(url)]);
   const text = [caption, transcript].filter(Boolean).join("\n\n");
   if (!text.trim()) return [];
-  return parsePostTextMulti(text);
+  return parsePostTextMulti(text, includeEventFields);
 }
 
 export function formatIdeaPreview(
@@ -344,6 +376,7 @@ export function formatIdeaPreview(
   if (idea.priceNote) lines.push(`${t(lang, "previewPrice")}: ${idea.priceNote}`);
   if (idea.tags.length > 0) lines.push(`${t(lang, "previewTags")}: ${idea.tags.join(", ")}`);
   if (idea.links.length > 0) lines.push(`${t(lang, "previewLinks")}: ${idea.links.map((l) => l.url).join(", ")}`);
+  if (idea.eventStartsAt) lines.push(`${t(lang, "previewWhen")}: ${formatEventWhen(lang, idea.eventStartsAt, idea.eventEndsAt)}`);
   if (idea.description) lines.push("", idea.description);
   lines.push("", t(lang, "previewAddToBase"));
   return lines.join("\n");

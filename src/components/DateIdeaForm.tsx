@@ -2,14 +2,38 @@
 
 import { useState } from "react";
 import dynamic from "next/dynamic";
-import { MapPin, Plus, X, Link as LinkIcon, Check } from "lucide-react";
+import { MapPin, Plus, X, Link as LinkIcon, Check, CalendarClock } from "lucide-react";
 import type { DateIdeaInput, LocationInput, PlaceLinkInput } from "@/lib/types";
 import { parseMapsLink, isYandexMapsUrl, findYandexMapsLink } from "@/lib/coords";
 import { apiFetch } from "@/lib/apiClient";
 import { input, label as labelClass, buttonPrimary, buttonSecondary, buttonGhost, iconButton } from "@/lib/ui";
 import { trackClientEvent } from "@/lib/clientAnalytics";
 import { useLang, useT } from "@/hooks/useLang";
+import { useAuth } from "@/hooks/useAuth";
 import { locationsCountLabel, locationOrdinalLabel } from "@/lib/i18n";
+
+/** Splits an ISO instant into the local "yyyy-mm-dd" / "HH:mm" strings the native date/time
+ *  inputs want. A time of exactly midnight is treated as "no time entered" (matches the
+ *  create-side convention: unknown time is stored as midnight). */
+function splitEventIso(iso: string | null): { date: string; time: string } {
+  if (!iso) return { date: "", time: "" };
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return { date: "", time: "" };
+  const pad = (n: number) => String(n).padStart(2, "0");
+  const date = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  const time = d.getHours() === 0 && d.getMinutes() === 0 ? "" : `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  return { date, time };
+}
+
+/** Combines the local date/time inputs back into a single ISO instant -- no date means no
+ *  event at all; a date with no time defaults to midnight (unknown time, not literal midnight). */
+function combineEventIso(date: string, time: string): string | null {
+  if (!date) return null;
+  const [year, month, day] = date.split("-").map(Number);
+  const [hours, minutes] = time ? time.split(":").map(Number) : [0, 0];
+  const d = new Date(year, month - 1, day, hours || 0, minutes || 0);
+  return Number.isNaN(d.getTime()) ? null : d.toISOString();
+}
 
 const LocationPicker = dynamic(() => import("@/components/LocationPicker"), { ssr: false });
 
@@ -73,10 +97,18 @@ export default function DateIdeaForm({
 }) {
   const { lang } = useLang();
   const t = useT();
+  const auth = useAuth();
+  const eventsEnabled = auth.status === "authorized" && auth.features.events;
   const [title, setTitle] = useState(initial?.title ?? "");
   const [description, setDescription] = useState(initial?.description ?? "");
   const [priceNote, setPriceNote] = useState(initial?.priceNote ?? "");
   const [tags, setTags] = useState(initial?.tags?.join(", ") ?? "");
+  const initialEventStart = splitEventIso(initial?.eventStartsAt ?? null);
+  const initialEventEnd = splitEventIso(initial?.eventEndsAt ?? null);
+  const [eventStartDate, setEventStartDate] = useState(initialEventStart.date);
+  const [eventStartTime, setEventStartTime] = useState(initialEventStart.time);
+  const [eventEndDate, setEventEndDate] = useState(initialEventEnd.date);
+  const [eventEndTime, setEventEndTime] = useState(initialEventEnd.time);
   const [locations, setLocations] = useState<LocationForm[]>(
     initial?.locations?.length ? initial.locations.map(toLocationForm) : [EMPTY_LOCATION]
   );
@@ -89,6 +121,14 @@ export default function DateIdeaForm({
 
   function updateLocation(index: number, patch: Partial<LocationForm>) {
     setLocations((prev) => prev.map((loc, i) => (i === index ? { ...loc, ...patch } : loc)));
+  }
+
+  function clearEventFields() {
+    setEventStartDate("");
+    setEventStartTime("");
+    setEventEndDate("");
+    setEventEndTime("");
+    trackClientEvent("place_form_event_cleared", { mode: formMode });
   }
 
   // A shared Yandex Maps link often carries "Title\nAddress\nhttps://..." as one block, not a
@@ -252,16 +292,24 @@ export default function DateIdeaForm({
       return true;
     });
 
+    // An end time with no end date given assumes the same calendar day as the start.
+    const effectiveEndDate = eventEndDate || (eventEndTime ? eventStartDate : "");
+    const eventStartsAt = combineEventIso(eventStartDate, eventStartTime);
+    const eventEndsAt = combineEventIso(effectiveEndDate, eventEndTime);
+
     setSaving(true);
     try {
       await onSubmit({
         title,
         description,
         priceNote,
+        eventStartsAt,
+        eventEndsAt,
         tags: tags.split(",").map((t) => t.trim()).filter(Boolean),
         locations: resolvedLocations,
         links: dedupedLinks,
       });
+      trackClientEvent("place_form_submitted", { mode: formMode, hasEvent: eventStartsAt != null });
     } catch (err) {
       setError(err instanceof Error ? err.message : t("couldntSave"));
       trackClientEvent("place_form_submit_failed", { mode: formMode, reason: err instanceof Error ? err.message : "unknown" });
@@ -282,6 +330,61 @@ export default function DateIdeaForm({
         <span className={labelClass}>{t("titleLabel")}</span>
         <input required placeholder={t("titlePlaceholder")} value={title} onChange={(e) => setTitle(e.target.value)} className={input} />
       </div>
+
+      {eventsEnabled && (
+        <div className="flex flex-col gap-2 rounded-2xl bg-[var(--app-subtle-overlay)] p-3">
+          <span className="inline-flex items-center gap-1.5 text-[12px] font-semibold uppercase tracking-[0.06em] text-[var(--app-muted)]">
+            <CalendarClock size={14} />
+            {t("eventSectionLabel")}
+          </span>
+          <span className="text-[12px] leading-snug text-[var(--app-muted)]">{t("eventSectionHint")}</span>
+
+          <div className="flex flex-col gap-1">
+            <span className={labelClass}>{t("eventStartLabel")}</span>
+            <div className="grid grid-cols-2 gap-2">
+              <input
+                type="date"
+                value={eventStartDate}
+                onChange={(e) => setEventStartDate(e.target.value)}
+                className={input}
+              />
+              <input
+                type="time"
+                value={eventStartTime}
+                onChange={(e) => setEventStartTime(e.target.value)}
+                className={input}
+              />
+            </div>
+          </div>
+
+          {eventStartDate && (
+            <div className="flex flex-col gap-1">
+              <span className={labelClass}>{t("eventEndLabel")}</span>
+              <div className="grid grid-cols-2 gap-2">
+                <input
+                  type="date"
+                  value={eventEndDate}
+                  onChange={(e) => setEventEndDate(e.target.value)}
+                  className={input}
+                />
+                <input
+                  type="time"
+                  value={eventEndTime}
+                  onChange={(e) => setEventEndTime(e.target.value)}
+                  className={input}
+                />
+              </div>
+            </div>
+          )}
+
+          {(eventStartDate || eventEndDate) && (
+            <button type="button" onClick={clearEventFields} className={`${buttonGhost} self-start`}>
+              <X size={14} />
+              {t("eventClearBtn")}
+            </button>
+          )}
+        </div>
+      )}
 
       <div className="flex flex-col gap-3">
         <span className={labelClass}>{locationsCountLabel(lang, locations.length)}</span>

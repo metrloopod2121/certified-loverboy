@@ -96,6 +96,7 @@ const strings = {
   previewPrice: { ru: "Цена", en: "Price" },
   previewTags: { ru: "Теги", en: "Tags" },
   previewLinks: { ru: "Ссылки", en: "Links" },
+  previewWhen: { ru: "Когда", en: "When" },
   previewAddToBase: { ru: "Добавить в базу?", en: "Add to your base?" },
 
   // Mini App UI
@@ -157,6 +158,16 @@ const strings = {
     ru: "Пикник в парке, уютное кафе рядом…",
     en: "Picnic in the park, cozy café nearby…",
   },
+  eventSectionLabel: { ru: "Событие (необязательно)", en: "Event (optional)" },
+  eventSectionHint: {
+    ru: "Заполни, если это разовое мероприятие с конкретной датой — концерт, спектакль, турнир и т.п.",
+    en: "Fill in if this is a one-time event with a specific date — a concert, show, tournament...",
+  },
+  eventStartLabel: { ru: "Начало", en: "Starts" },
+  eventEndLabel: { ru: "Окончание", en: "Ends" },
+  eventClearBtn: { ru: "Убрать дату события", en: "Remove event date" },
+  eventToday: { ru: "Сегодня", en: "Today" },
+  eventTomorrow: { ru: "Завтра", en: "Tomorrow" },
   removeLocationAria: { ru: "Удалить локацию", en: "Remove location" },
   addressPlaceholder: { ru: "Улица, дом", en: "Street, building" },
   metroPlaceholder: { ru: "Метро", en: "Metro" },
@@ -282,4 +293,53 @@ export function locationsHeading(lang: Lang, count: number): string {
 
 export function awayText(lang: Lang, distance: string): string {
   return `${distance} ${t(lang, "away")}`;
+}
+
+const RU_MONTHS_SHORT = ["янв", "фев", "мар", "апр", "мая", "июн", "июл", "авг", "сен", "окт", "ноя", "дек"];
+const EN_MONTHS_SHORT = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+function isMidnight(date: Date): boolean {
+  return date.getHours() === 0 && date.getMinutes() === 0;
+}
+
+function isSameDay(a: Date, b: Date): boolean {
+  return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+}
+
+function formatEventDatePart(lang: Lang, date: Date): string {
+  const day = date.getDate();
+  const month = lang === "ru" ? RU_MONTHS_SHORT[date.getMonth()] : EN_MONTHS_SHORT[date.getMonth()];
+  return lang === "ru" ? `${day} ${month}` : `${month} ${day}`;
+}
+
+function formatEventTimePart(date: Date): string {
+  return `${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
+}
+
+/** Formats an event's date/time for the card badge and preview text -- "Today"/"Tomorrow" for
+ *  the near term, otherwise a short date, plus a time or time range when known. A start/end
+ *  stored exactly at midnight is treated as "no time known" (an acceptable simplification for a
+ *  personal date-ideas tracker -- see docs/PROJECT_STATE.md). */
+export function formatEventWhen(lang: Lang, startsAtIso: string, endsAtIso: string | null): string {
+  const start = new Date(startsAtIso);
+  const now = new Date();
+  const tomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+
+  const startTime = isMidnight(start) ? null : formatEventTimePart(start);
+  const end = endsAtIso ? new Date(endsAtIso) : null;
+
+  if (end && !isSameDay(start, end)) {
+    const range = `${formatEventDatePart(lang, start)} – ${formatEventDatePart(lang, end)}`;
+    return startTime ? `${range}, ${startTime}` : range;
+  }
+
+  const datePart = isSameDay(start, now)
+    ? t(lang, "eventToday")
+    : isSameDay(start, tomorrow)
+    ? t(lang, "eventTomorrow")
+    : formatEventDatePart(lang, start);
+
+  if (!startTime) return datePart;
+  const endTime = end && !isMidnight(end) ? formatEventTimePart(end) : null;
+  return endTime ? `${datePart}, ${startTime}–${endTime}` : `${datePart}, ${startTime}`;
 }

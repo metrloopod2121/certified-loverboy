@@ -8,6 +8,7 @@ import { tryConsumeImportQuota, quotaExhaustedMessage } from "@/lib/importQuota"
 import { trackEvent } from "@/lib/analytics";
 import { submitSupportMessage } from "@/lib/support";
 import { getUserLanguage } from "@/lib/userSettings";
+import { eventsFeatureEnabled } from "@/lib/eventsFeature";
 import { t, addedEditText, type Lang } from "@/lib/i18n";
 import {
   sendTelegramMessage,
@@ -330,7 +331,7 @@ async function handleTelegramPostLink(message: TelegramMessage, url: string) {
     return;
   }
 
-  const drafts = await parsePostTextMulti(postText);
+  const drafts = await parsePostTextMulti(postText, eventsFeatureEnabled(chatId));
   if (drafts.length === 0) {
     console.log(`[import] telegram post link parse failed chatId=${chatId} url=${url}`);
     await trackEvent(
@@ -386,7 +387,7 @@ async function handleInstagramLink(message: TelegramMessage, url: string) {
 
   await sendTelegramMessage(chatId, t(lang, "lookingAtInstagramLink"));
 
-  const drafts = await parseInstagramLink(url);
+  const drafts = await parseInstagramLink(url, eventsFeatureEnabled(chatId));
   if (drafts.length === 0) {
     console.log(`[import] instagram link parse failed chatId=${chatId} url=${url}`);
     await trackEvent(
@@ -463,7 +464,7 @@ async function handleChannelForwardPost(message: TelegramMessage) {
   await sendTelegramMessage(chatId, t(lang, "lookingAtForwardedPost"));
 
   const hiddenLinks = hiddenLinksFromMessage(message);
-  const drafts = await parsePostTextMulti(textWithHiddenLinks(text, hiddenLinks));
+  const drafts = await parsePostTextMulti(textWithHiddenLinks(text, hiddenLinks), eventsFeatureEnabled(chatId));
   if (drafts.length === 0) {
     console.log(`[import] channel forward parse failed chatId=${chatId}`);
     await trackEvent(
@@ -519,7 +520,7 @@ async function handlePastedPostText(message: TelegramMessage) {
   await sendTelegramMessage(chatId, t(lang, "lookingAtPastedText"));
 
   const hiddenLinks = hiddenLinksFromMessage(message);
-  const drafts = await parsePostTextMulti(textWithHiddenLinks(text, hiddenLinks));
+  const drafts = await parsePostTextMulti(textWithHiddenLinks(text, hiddenLinks), eventsFeatureEnabled(chatId));
   if (drafts.length === 0) {
     console.log(`[import] pasted text parse failed chatId=${chatId}`);
     await trackEvent(
@@ -651,6 +652,7 @@ async function handleCallbackQuery(callbackQuery: TelegramCallbackQuery) {
 
   const idea = JSON.parse(pending.payload) as ParsedFromLink;
   const tagIds = await resolveTagIds(withoutMetroTags(idea.tags, [idea.metro]));
+  const eventsAllowed = eventsFeatureEnabled(pending.chatId);
 
   const created = await prisma.dateIdea.create({
     data: {
@@ -658,6 +660,8 @@ async function handleCallbackQuery(callbackQuery: TelegramCallbackQuery) {
       title: idea.title,
       description: idea.description,
       priceNote: idea.priceNote,
+      eventStartsAt: eventsAllowed && idea.eventStartsAt ? new Date(idea.eventStartsAt) : null,
+      eventEndsAt: eventsAllowed && idea.eventEndsAt ? new Date(idea.eventEndsAt) : null,
       tags: { create: tagIds.map((tagId) => ({ tagId })) },
       locations: {
         create: [
@@ -692,6 +696,7 @@ async function handleCallbackQuery(callbackQuery: TelegramCallbackQuery) {
       tagsCount: idea.tags.length,
       locationsCount: 1,
       linksCount: idea.links.length,
+      hasEvent: created.eventStartsAt != null,
     },
     username
   );

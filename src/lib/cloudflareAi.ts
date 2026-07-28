@@ -10,6 +10,13 @@ export type ExtractedIdea = {
   /** Любые другие ссылки на это место (Instagram, сайт, бронирование, пост), не являющиеся
    *  ссылкой на карту -- сохраняются отдельно, а не отбрасываются и не путаются с mapUrl. */
   otherLinks: string[];
+  /** Заполняются только когда пост описывает разовое мероприятие с конкретной датой (а не
+   *  постоянное заведение) -- см. multiSystemPrompt(). Всегда null для одиночного
+   *  (Яндекс.Карты) промпта, который об этих полях не спрашивает. */
+  eventStartDate: string | null; // YYYY-MM-DD
+  eventStartTime: string | null; // HH:MM, 24h
+  eventEndDate: string | null;
+  eventEndTime: string | null;
 };
 
 const SYSTEM_PROMPT = `Ты помощник, который вытаскивает структурированные данные о месте (кафе, музей, парк и т.п.) из текста страницы Яндекс.Карт (и, возможно, пары строк из поиска).
@@ -23,9 +30,21 @@ const SYSTEM_PROMPT = `Ты помощник, который вытаскива�
 - description: 1-2 предложения о месте своими словами, по-русски
 Если поле не найдено в тексте — используй null (для address/metro/priceNote/description) или [] (для tags). Не выдумывай данные, которых нет в тексте.`;
 
-const MULTI_SYSTEM_PROMPT = `Ты помощник, который вытаскивает ОДНО ИЛИ НЕСКОЛЬКО мест (кафе, музей, парк, ресторан и т.п.) из текста поста Telegram-канала. В одном посте часто перечислено несколько мест — у каждого своё название, описание, адрес, цена и, возможно, ссылка на карту.
+/** Built fresh per call (not a static const) because the event-fields rules need today's actual
+ *  date injected, so the model can resolve relative dates ("завтра", "в эту пятницу") instead of
+ *  guessing -- and because whether to ask for them at all is a per-call decision (events are a
+ *  gated pilot; a non-pilot user's posts shouldn't even offer the model that schema). */
+function multiSystemPrompt(includeEvents: boolean): string {
+  const eventSchemaFields = includeEvents
+    ? `, "eventStartDate": string|null, "eventStartTime": string|null, "eventEndDate": string|null, "eventEndTime": string|null`
+    : "";
+  const eventRules = includeEvents
+    ? `\n- eventStartDate/eventStartTime/eventEndDate/eventEndTime: заполняй ТОЛЬКО если пост описывает конкретное разовое мероприятие с датой (концерт, спектакль, мастер-класс, турнир, вечеринка на одну дату и т.п.) — НЕ для обычного поста про постоянно работающее заведение, даже если там мимоходом упомянута дата (акция «до 5 марта», часы работы, «открылись в 2015»). eventStartDate — дата в формате YYYY-MM-DD, eventStartTime — время в формате HH:MM (24-часовой), можно оставить время пустым (null), если оно не указано в тексте. eventEndDate/eventEndTime — аналогично, если известно окончание мероприятия. Сегодняшняя дата: ${new Date().toISOString().slice(0, 10)}. Относительные даты («сегодня», «завтра», «в эту пятницу», «15 марта») считай от сегодняшней даты. Если дата события не указана явно и однозначно — оставь все четыре поля null, не угадывай.`
+    : "";
+
+  return `Ты помощник, который вытаскивает ОДНО ИЛИ НЕСКОЛЬКО мест (кафе, музей, парк, ресторан и т.п.) из текста поста Telegram-канала. В одном посте часто перечислено несколько мест — у каждого своё название, описание, адрес, цена и, возможно, ссылка на карту.
 Отвечай ТОЛЬКО валидным JSON без пояснений и без markdown-разметки, в формате:
-{"places": [{"title": string, "address": string|null, "metro": string|null, "priceNote": string|null, "tags": string[], "description": string|null, "mapUrl": string|null, "otherLinks": string[]}]}
+{"places": [{"title": string, "address": string|null, "metro": string|null, "priceNote": string|null, "tags": string[], "description": string|null, "mapUrl": string|null, "otherLinks": string[]${eventSchemaFields}}]}
 - Каждый элемент массива places — отдельное место. Если в тексте одно место — верни массив из одного элемента.
 - Не объединяй разные места в одно и не дроби одно место на несколько.
 - mapUrl: ссылка именно на карту (Яндекс.Карты / 2ГИС / Google Maps / goo.gl), которая явно ведёт на страницу этого места на карте. НИКОГДА не подставляй сюда ссылку на Instagram, сайт заведения, бронирование, телеграм-канал/пост или любую другую не-картографическую ссылку, даже если это единственная ссылка в посте — в таком случае верни null. Не угадывай.
@@ -35,8 +54,9 @@ const MULTI_SYSTEM_PROMPT = `Ты помощник, который вытаск�
 - metro: ближайшая станция метро, если упомянута (без слова "метро"/"м.")
 - priceNote: диапазон цен, если есть (например "500–1000 ₽")
 - tags: 2-3 коротких тега-категории на русском (одно слово каждый), например "кофе", "искусство", "природа", "еда" — НЕ описательные прилагательные вроде "уютный"
-- description: 1-2 предложения о месте своими словами, по-русски
+- description: 1-2 предложения о месте своими словами, по-русски${eventRules}
 Если поле не найдено в тексте — используй null (или [] для tags/otherLinks). Не выдумывай данные, которых нет в тексте.`;
+}
 
 function extractJsonBlock(text: string): unknown {
   const trimmed = text.trim();
@@ -64,6 +84,17 @@ function extractJsonBlock(text: string): unknown {
   return null;
 }
 
+const DATE_ONLY = /^\d{4}-\d{2}-\d{2}$/;
+const TIME_ONLY = /^\d{2}:\d{2}$/;
+
+function toDateOnly(value: unknown): string | null {
+  return typeof value === "string" && DATE_ONLY.test(value.trim()) ? value.trim() : null;
+}
+
+function toTimeOnly(value: unknown): string | null {
+  return typeof value === "string" && TIME_ONLY.test(value.trim()) ? value.trim() : null;
+}
+
 function toExtractedIdea(value: unknown): ExtractedIdea | null {
   if (!value || typeof value !== "object") return null;
   const obj = value as Record<string, unknown>;
@@ -80,6 +111,10 @@ function toExtractedIdea(value: unknown): ExtractedIdea | null {
     otherLinks: Array.isArray(obj.otherLinks)
       ? obj.otherLinks.filter((l): l is string => typeof l === "string" && l.trim().length > 0).map((l) => l.trim())
       : [],
+    eventStartDate: toDateOnly(obj.eventStartDate),
+    eventStartTime: toTimeOnly(obj.eventStartTime),
+    eventEndDate: toDateOnly(obj.eventEndDate),
+    eventEndTime: toTimeOnly(obj.eventEndTime),
   };
 }
 
@@ -176,9 +211,11 @@ export async function extractIdeaFromText(pageText: string): Promise<ExtractedId
 
 /** Structures one OR several places out of a post's text. Accepts a bare array, a `{ places: [...] }`
  *  wrapper, or a single object; if the model truncated its JSON, salvages whatever whole place
- *  objects it managed to emit. Drops any element without a title. */
-export async function extractIdeasFromText(pageText: string): Promise<ExtractedIdea[]> {
-  const raw = await runAiRaw(MULTI_SYSTEM_PROMPT, pageText);
+ *  objects it managed to emit. Drops any element without a title. `includeEventFields` gates
+ *  whether the prompt even offers the model the event schema -- off for users the events pilot
+ *  isn't enabled for, so their extracted fields are always null rather than just discarded later. */
+export async function extractIdeasFromText(pageText: string, includeEventFields = false): Promise<ExtractedIdea[]> {
+  const raw = await runAiRaw(multiSystemPrompt(includeEventFields), pageText);
   if (!raw) return [];
 
   // Обычный путь — целиком валидный JSON.

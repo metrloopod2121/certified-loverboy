@@ -16,6 +16,11 @@ model DateIdea {
   title            String
   description      String?
   priceNote        String?
+  /// When set, this is a one-time dated event (concert, show, tournament...) rather than a
+  /// plain evergreen place -- both nullable so an ordinary place has neither. No separate
+  /// "is this an event" flag: presence of eventStartsAt alone is the signal.
+  eventStartsAt    DateTime?
+  eventEndsAt      DateTime?
   tags             TagsOnDateIdeas[]
   locations        Location[]
   links            PlaceLink[]

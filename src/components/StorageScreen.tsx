@@ -551,8 +551,8 @@ export default function StorageScreen() {
                   {formatEventWhen(lang, idea.eventStartsAt, idea.eventEndsAt)}
                 </div>
               )}
-              <div className="flex justify-between items-start gap-2">
-                <h2 className="flex items-start gap-1.5 text-[19px] font-semibold leading-[1.05]">
+              <div className="flex justify-between items-center gap-2">
+                <h2 className="flex items-center gap-1.5 text-[19px] font-semibold leading-[1.05]">
                   <span>{idea.title}</span>
                 </h2>
                 <div className="flex gap-1 shrink-0">

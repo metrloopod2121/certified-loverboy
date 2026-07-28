@@ -346,13 +346,13 @@ export default function DateIdeaForm({
                 type="date"
                 value={eventStartDate}
                 onChange={(e) => setEventStartDate(e.target.value)}
-                className={input}
+                className={`${input} min-w-0`}
               />
               <input
                 type="time"
                 value={eventStartTime}
                 onChange={(e) => setEventStartTime(e.target.value)}
-                className={input}
+                className={`${input} min-w-0`}
               />
             </div>
           </div>
@@ -365,13 +365,13 @@ export default function DateIdeaForm({
                   type="date"
                   value={eventEndDate}
                   onChange={(e) => setEventEndDate(e.target.value)}
-                  className={input}
+                  className={`${input} min-w-0`}
                 />
                 <input
                   type="time"
                   value={eventEndTime}
                   onChange={(e) => setEventEndTime(e.target.value)}
-                  className={input}
+                  className={`${input} min-w-0`}
                 />
               </div>
             </div>

@@ -108,6 +108,10 @@ sudo systemctl restart certified-loverboy.service
 - Yandex всегда даёт один draft, Instagram/Telegram — может дать несколько (один пост/рилс
   может упоминать несколько мест) — ответ `{ items: DateIdeaInput[] }`, отрисовывается через
   тот же review sheet, что и file-import;
+- review sheet после импорта: на карточке draft'а actions не должны переполнять экран — delete
+  и edit это круглые icon-only кнопки слева, Add остаётся единственной текстовой кнопкой справа.
+  Ссылки в draft'е рисуются full-width rows с одинаковой круглой link-иконкой, title и
+  обрезанным URL/subtitle, а не сырым inline URL-текстом;
 - source URL социмпорта сохраняется в `PlaceLink`: Telegram post link / публичный channel forward
   добавляют link с label `Telegram`, Instagram reel/post добавляет link с label `Instagram`.
   Это происходит независимо от того, нашлась ли отдельная map-ссылка внутри поста;

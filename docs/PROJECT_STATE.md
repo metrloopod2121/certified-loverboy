@@ -37,7 +37,8 @@
 ## Текущий UI
 
 В Mini App три основных таба:
-- Ideas Storage (`/`) — список мест, фильтры tags/metro, сортировки, добавление места вручную или через ссылку (Yandex Maps / Instagram reel-post / Telegram post); у карточки с координатами есть кнопка "показать на карте" — переход на `/map?focus=<locationId>`.
+- Ideas Storage (`/`) — список мест, фильтры tags/metro, сортировки, добавление места вручную или через ссылку (Yandex Maps / Instagram reel-post / Telegram post); карточки открывают `/place/[id]`, а у карточки с координатами есть только быстрый переход на карту `/map?focus=<locationId>` — edit/delete на карточке не показываются.
+- Place detail (`/place/[id]`) — описание места, ссылки/локации, action row "Редактировать" / "Удалить"; редактирование открывает `DateIdeaForm` прямо на экране деталей, удаление возвращает на Ideas Storage.
 - Map (`/map`) — карта мест с координатами, фильтры tags/metro; при `?focus=<locationId>` в query карта долетает (`flyTo`) до этого пина и открывает его попап, как только маркеры подгрузятся (свой отдельный `/api/date-ideas` fetch, независимый от Storage).
 - Profile (`/profile`) — язык, инфо о боте, счетчик импортов по ссылке, support, export.
 

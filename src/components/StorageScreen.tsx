@@ -2,9 +2,9 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ChevronDown, Pencil, Trash2, Plus, X, Link as LinkIcon, Upload, PencilLine, FileUp, Navigation, MapPin, CalendarClock, Map as MapIcon } from "lucide-react";
+import { ChevronDown, Plus, X, Link as LinkIcon, Upload, PencilLine, FileUp, Navigation, MapPin, CalendarClock, Map as MapIcon } from "lucide-react";
 import { apiFetch } from "@/lib/apiClient";
-import { dateIdeaToInput, type DateIdea, type DateIdeaInput } from "@/lib/types";
+import { type DateIdea, type DateIdeaInput } from "@/lib/types";
 import DateIdeaForm from "@/components/DateIdeaForm";
 import ImportReviewSheet, { type ReviewItem } from "@/components/ImportReviewSheet";
 import MultiSelectFilter from "@/components/MultiSelectFilter";
@@ -88,7 +88,6 @@ export default function StorageScreen() {
   const [linkInput, setLinkInput] = useState("");
   const [linkImporting, setLinkImporting] = useState(false);
   const [linkError, setLinkError] = useState<string | null>(null);
-  const [editing, setEditing] = useState<DateIdea | null>(null);
   const [openFilter, setOpenFilter] = useState<"tags" | "metro" | "sort" | null>(null);
   const sortRef = useRef<HTMLDivElement>(null);
   const sortLabel = t(sortOptions.find((option) => option.value === sort)?.labelKey ?? "sortDefaultLabel");
@@ -272,17 +271,6 @@ export default function StorageScreen() {
   async function createIdea(input: DateIdeaInput) {
     await apiFetch("/api/date-ideas", { method: "POST", body: JSON.stringify({ ...input, source: "manual" }) });
     setAddMode("none");
-    await reload();
-  }
-
-  async function updateIdea(id: string, input: DateIdeaInput) {
-    await apiFetch(`/api/date-ideas/${id}`, { method: "PATCH", body: JSON.stringify(input) });
-    setEditing(null);
-    await reload();
-  }
-
-  async function remove(id: string) {
-    await apiFetch(`/api/date-ideas/${id}`, { method: "DELETE" });
     await reload();
   }
 
@@ -552,14 +540,7 @@ export default function StorageScreen() {
         {filtered.map((idea) => {
           const eventCountdown = idea.eventStartsAt ? formatEventCountdown(lang, idea.eventStartsAt, currentTimeMs) : null;
 
-          return editing?.id === idea.id ? (
-            <DateIdeaForm
-              key={idea.id}
-              initial={dateIdeaToInput(idea)}
-              onSubmit={(input) => updateIdea(idea.id, input)}
-              onCancel={() => setEditing(null)}
-            />
-          ) : (
+          return (
             <div
               key={idea.id}
               role="button"
@@ -587,42 +568,18 @@ export default function StorageScreen() {
                 <h2 className="flex items-center gap-1.5 text-[19px] font-semibold leading-[1.05]">
                   <span>{idea.title}</span>
                 </h2>
-                <div className="flex gap-1 shrink-0">
-                  {idea.locations.some((loc) => loc.lat != null && loc.lng != null) && (
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        showOnMap(idea);
-                      }}
-                      aria-label={t("showOnMapAria")}
-                      className={`${iconButton} bg-[var(--app-overlay)] text-[var(--app-ink)] ring-1 ring-[var(--app-outline)]/10`}
-                    >
-                      <MapIcon size={16} />
-                    </button>
-                  )}
+                {idea.locations.some((loc) => loc.lat != null && loc.lng != null) && (
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
-                      trackClientEvent("storage_place_edit_opened", { placeId: idea.id });
-                      setEditing(idea);
+                      showOnMap(idea);
                     }}
-                    aria-label={t("editAria")}
+                    aria-label={t("showOnMapAria")}
                     className={`${iconButton} bg-[var(--app-overlay)] text-[var(--app-ink)] ring-1 ring-[var(--app-outline)]/10`}
                   >
-                    <Pencil size={16} />
+                    <MapIcon size={16} />
                   </button>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      trackClientEvent("storage_place_delete_clicked", { placeId: idea.id });
-                      remove(idea.id);
-                    }}
-                    aria-label={t("deleteAria")}
-                    className={`${iconButton} bg-[var(--app-overlay)] text-red-500 ring-1 ring-[var(--app-outline)]/10`}
-                  >
-                    <Trash2 size={16} />
-                  </button>
-                </div>
+                )}
               </div>
               {idea.locations.length > 0 && (
                 <div className="flex flex-col gap-1">

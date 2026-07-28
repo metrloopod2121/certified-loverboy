@@ -211,6 +211,8 @@ const strings = {
   savingBtn: { ru: "Сохраняю…", en: "Saving…" },
   cancelBtn: { ru: "Отмена", en: "Cancel" },
   couldntSave: { ru: "Не удалось сохранить", en: "Couldn't save" },
+  deletingBtn: { ru: "Удаляю…", en: "Deleting…" },
+  couldntDelete: { ru: "Не удалось удалить", en: "Couldn't delete" },
 
   closeAria: { ru: "Закрыть", en: "Close" },
   untitled: { ru: "Без названия", en: "Untitled" },

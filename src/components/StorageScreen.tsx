@@ -198,6 +198,12 @@ export default function StorageScreen() {
     trackClientEvent("storage_add_mode_selected", { mode });
   }
 
+  function collapseAddFlow() {
+    setAddMode("none");
+    setLinkInput("");
+    setLinkError(null);
+  }
+
   function openPlace(id: string) {
     trackClientEvent("storage_place_opened", { placeId: id });
     router.push(`/place/${id}`);
@@ -266,11 +272,13 @@ export default function StorageScreen() {
       return next;
     });
     setImportItems([]);
+    setLinkInput("");
+    setLinkError(null);
   }
 
   async function createIdea(input: DateIdeaInput) {
     await apiFetch("/api/date-ideas", { method: "POST", body: JSON.stringify({ ...input, source: "manual" }) });
-    setAddMode("none");
+    collapseAddFlow();
     await reload();
   }
 
@@ -289,13 +297,21 @@ export default function StorageScreen() {
     );
     trackClientEvent("storage_file_import_selected", { filesCount: newItems.length });
     setImportItems((prev) => [...prev, ...newItems]);
+    collapseAddFlow();
     e.target.value = "";
   }
 
   function dismissImportItem(id: string) {
     const item = importItems.find((candidate) => candidate.id === id);
     trackClientEvent("storage_import_draft_removed", { origin: item?.origin ?? "unknown" });
-    setImportItems((prev) => prev.filter((i) => i.id !== id));
+    const nextItems = importItems.filter((i) => i.id !== id);
+    setImportItems(nextItems);
+    if (nextItems.length === 0) collapseAddFlow();
+  }
+
+  function closeImportReview() {
+    setImportItems([]);
+    collapseAddFlow();
   }
 
   // A share action (Yandex Maps, Instagram, Telegram) often copies a title/caption alongside the
@@ -327,7 +343,7 @@ export default function StorageScreen() {
         parsed,
       }));
       setImportItems((prev) => [...prev, ...newItems]);
-      setLinkInput("");
+      collapseAddFlow();
     } catch (err) {
       setLinkError(err instanceof Error ? err.message : t("couldntParseLink"));
     } finally {
@@ -339,6 +355,7 @@ export default function StorageScreen() {
     const origin = importItems.find((item) => item.id === id)?.origin ?? "link_in_app";
     await apiFetch("/api/date-ideas", { method: "POST", body: JSON.stringify({ ...input, source: origin }) });
     dismissImportItem(id);
+    collapseAddFlow();
     await reload();
   }
 
@@ -481,7 +498,7 @@ export default function StorageScreen() {
             )}
           </div>
 
-          {addMode === "manual" && <DateIdeaForm onSubmit={createIdea} onCancel={() => setAddMode("none")} />}
+          {addMode === "manual" && <DateIdeaForm onSubmit={createIdea} onCancel={collapseAddFlow} />}
 
           {addMode === "link" && (
             <div className="flex flex-col gap-2 rounded-[22px] border border-[var(--app-outline)]/10 bg-[var(--app-yellow)] p-4 shadow-[0_2px_0_rgba(28,26,23,0.08)]">
@@ -651,7 +668,7 @@ export default function StorageScreen() {
         items={importItems}
         onAdd={saveImportItem}
         onSkip={dismissImportItem}
-        onClose={() => setImportItems([])}
+        onClose={closeImportReview}
       />
     </div>
   );

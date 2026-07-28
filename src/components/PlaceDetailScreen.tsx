@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, MapPin, Link as LinkIcon, CalendarClock, Pencil, Trash2 } from "lucide-react";
+import { ArrowLeft, MapPin, Link as LinkIcon, CalendarClock, Pencil, Trash2, ArrowUpRight } from "lucide-react";
 import { apiFetch } from "@/lib/apiClient";
 import { dateIdeaToInput, type DateIdea, type DateIdeaInput } from "@/lib/types";
 import DateIdeaForm from "@/components/DateIdeaForm";
@@ -104,31 +104,6 @@ export default function PlaceDetailScreen({ id }: { id: string }) {
               <>
                 <h1 className="text-[26px] font-semibold leading-[1.1]">{idea.title}</h1>
 
-                <div className="grid grid-cols-2 gap-2">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setActionError(null);
-                      trackClientEvent("place_detail_edit_opened", { placeId: id });
-                      setEditing(true);
-                    }}
-                    className={`${buttonSecondary} min-w-0 px-3`}
-                  >
-                    <Pencil size={16} />
-                    <span className="truncate">{t("editAria")}</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={deleteIdea}
-                    disabled={deleting}
-                    className="inline-flex min-h-11 min-w-0 items-center justify-center gap-1.5 rounded-full border border-red-500/20 bg-red-500/10 px-3 py-2.5 text-[15px] font-semibold text-red-600 transition active:scale-[0.98] disabled:opacity-50"
-                  >
-                    <Trash2 size={16} />
-                    <span className="truncate">{deleting ? t("deletingBtn") : t("deleteAria")}</span>
-                  </button>
-                </div>
-                {actionError && <p className={mutedText}>{actionError}</p>}
-
                 {idea.eventStartsAt && (
                   <div className={`inline-flex w-fit items-center gap-1.5 rounded-full px-3 py-1.5 text-[14px] font-bold ${eventBadgeColors}`}>
                     <CalendarClock size={15} />
@@ -156,30 +131,36 @@ export default function PlaceDetailScreen({ id }: { id: string }) {
                   <div className="flex flex-col gap-2.5 pt-2">
                     <h2 className={mutedText}>{locationsHeading(lang, idea.locations.length)}</h2>
                     {idea.locations.map((loc) => (
-                      <div
-                        key={loc.id}
-                        className="flex flex-col gap-1.5 rounded-[18px] border border-[var(--app-outline)]/10 bg-[var(--app-overlay)] p-3.5"
-                      >
-                        <div className="flex items-start gap-2">
+                      loc.url ? (
+                        <a
+                          key={loc.id}
+                          href={loc.url}
+                          target="_blank"
+                          rel="noreferrer"
+                          onClick={() => trackClientEvent("place_external_link_opened", { placeId: id, type: "map", host: linkHostname(loc.url!) })}
+                          className="group flex items-start justify-between gap-3 rounded-[18px] border border-[var(--app-outline)]/10 bg-[var(--app-overlay)] p-3.5 text-[var(--app-ink)] transition active:scale-[0.99] active:bg-[var(--app-surface)]"
+                        >
+                          <span className="flex min-w-0 items-start gap-2">
+                            <MapPin size={16} className="mt-0.5 shrink-0" />
+                            <span className="flex min-w-0 flex-col gap-0.5">
+                              <span className="text-[14px] font-medium">{loc.address || t("noAddress")}</span>
+                              {loc.metro && <span className={mutedText}>M {loc.metro}</span>}
+                            </span>
+                          </span>
+                          <ArrowUpRight size={16} className="mt-0.5 shrink-0 text-[var(--app-muted)] transition group-active:translate-x-0.5 group-active:-translate-y-0.5" />
+                        </a>
+                      ) : (
+                        <div
+                          key={loc.id}
+                          className="flex items-start gap-2 rounded-[18px] border border-[var(--app-outline)]/10 bg-[var(--app-overlay)] p-3.5"
+                        >
                           <MapPin size={16} className="mt-0.5 shrink-0" />
-                          <div className="flex flex-col gap-0.5">
+                          <div className="flex min-w-0 flex-col gap-0.5">
                             <span className="text-[14px] font-medium">{loc.address || t("noAddress")}</span>
                             {loc.metro && <span className={mutedText}>M {loc.metro}</span>}
                           </div>
                         </div>
-                        {loc.url && (
-                          <a
-                            href={loc.url}
-                            target="_blank"
-                            rel="noreferrer"
-                            onClick={() => trackClientEvent("place_external_link_opened", { placeId: id, type: "map", host: linkHostname(loc.url!) })}
-                            className="inline-flex w-fit items-center gap-1 text-[13px] font-semibold text-[var(--app-ink)] active:opacity-60"
-                          >
-                            <LinkIcon size={13} />
-                            {t("openLink")}
-                          </a>
-                        )}
-                      </div>
+                      )
                     ))}
                   </div>
                 )}
@@ -187,21 +168,25 @@ export default function PlaceDetailScreen({ id }: { id: string }) {
                 {idea.links.length > 0 && (
                   <div className="flex flex-col gap-2.5 pt-2">
                     <h2 className={mutedText}>{t("linksLabel")}</h2>
-                    <div className="flex flex-col gap-1.5 rounded-[18px] border border-[var(--app-outline)]/10 bg-[var(--app-overlay)] p-3.5">
-                      {idea.links.map((link) => (
-                        <a
-                          key={link.id}
-                          href={link.url}
-                          target="_blank"
-                          rel="noreferrer"
-                          onClick={() => trackClientEvent("place_external_link_opened", { placeId: id, type: "link", host: linkHostname(link.url) })}
-                          className="inline-flex w-fit items-center gap-1.5 text-[14px] font-medium text-[var(--app-ink)] active:opacity-60"
-                        >
-                          <LinkIcon size={14} />
-                          {link.label || linkHostname(link.url)}
-                        </a>
-                      ))}
-                    </div>
+                    {idea.links.map((link) => (
+                      <a
+                        key={link.id}
+                        href={link.url}
+                        target="_blank"
+                        rel="noreferrer"
+                        onClick={() => trackClientEvent("place_external_link_opened", { placeId: id, type: "link", host: linkHostname(link.url) })}
+                        className="group flex items-center justify-between gap-3 rounded-[18px] border border-[var(--app-outline)]/10 bg-[var(--app-overlay)] p-3.5 text-[var(--app-ink)] transition active:scale-[0.99] active:bg-[var(--app-surface)]"
+                      >
+                        <span className="flex min-w-0 items-center gap-2">
+                          <LinkIcon size={15} className="shrink-0" />
+                          <span className="flex min-w-0 flex-col gap-0.5">
+                            <span className="truncate text-[14px] font-medium">{link.label || linkHostname(link.url)}</span>
+                            {link.label && <span className="truncate text-[12px] text-[var(--app-muted)]">{linkHostname(link.url)}</span>}
+                          </span>
+                        </span>
+                        <ArrowUpRight size={16} className="shrink-0 text-[var(--app-muted)] transition group-active:translate-x-0.5 group-active:-translate-y-0.5" />
+                      </a>
+                    ))}
                   </div>
                 )}
               </>
@@ -209,6 +194,37 @@ export default function PlaceDetailScreen({ id }: { id: string }) {
           </div>
         )}
       </div>
+
+      {idea !== "loading" && idea !== "error" && !editing && (
+        <div className="border-t border-[var(--app-outline)]/10 bg-[var(--app-canvas)]/88 px-4 pt-2 shadow-[0_-10px_24px_rgba(28,26,23,0.08)] backdrop-blur-xl" style={{ paddingBottom: "calc(var(--safe-bottom) + 12px)" }}>
+          <div className="mx-auto flex max-w-2xl flex-col gap-2">
+            {actionError && <p className={mutedText}>{actionError}</p>}
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={deleteIdea}
+                disabled={deleting}
+                className="inline-flex min-h-11 min-w-0 items-center justify-center gap-1.5 rounded-full border border-red-500/20 bg-red-500/10 px-3 py-2.5 text-[15px] font-semibold text-red-600 transition active:scale-[0.98] disabled:opacity-50"
+              >
+                <Trash2 size={16} />
+                <span className="truncate">{deleting ? t("deletingBtn") : t("deleteAria")}</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setActionError(null);
+                  trackClientEvent("place_detail_edit_opened", { placeId: id });
+                  setEditing(true);
+                }}
+                className={`${buttonSecondary} min-w-0 px-3`}
+              >
+                <Pencil size={16} />
+                <span className="truncate">{t("editAria")}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

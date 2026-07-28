@@ -10,7 +10,7 @@ import { input, label as labelClass, buttonPrimary, buttonSecondary, buttonGhost
 import { trackClientEvent } from "@/lib/clientAnalytics";
 import { useLang, useT } from "@/hooks/useLang";
 import { useAuth } from "@/hooks/useAuth";
-import { locationsCountLabel, locationOrdinalLabel } from "@/lib/i18n";
+import { locationOrdinalLabel } from "@/lib/i18n";
 
 /** Splits an ISO instant into the local "yyyy-mm-dd" / "HH:mm" strings the native date/time
  *  inputs want. A time of exactly midnight is treated as "no time entered" (matches the
@@ -38,10 +38,50 @@ function combineEventIso(date: string, time: string): string | null {
 const LocationPicker = dynamic(() => import("@/components/LocationPicker"), { ssr: false });
 
 const eventDateTimeGrid = "grid min-w-0 grid-cols-1 gap-2 min-[380px]:grid-cols-[minmax(0,1fr)_7.75rem]";
-const eventDateTimeField = "flex min-w-0 flex-col gap-1";
+const eventDateTimeField = "relative min-w-0";
 const eventNativeInput =
   "w-full min-w-0 max-w-full appearance-none rounded-xl border border-[var(--app-outline)]/15 bg-[var(--app-surface)] px-3 py-2 text-[14px] leading-tight text-[var(--app-ink)] outline-none transition [color-scheme:light] focus:border-[var(--app-ink)] focus:ring-2 focus:ring-[var(--app-yellow)]";
 const eventTimeInput = `${eventNativeInput} max-w-[7.75rem]`;
+
+function EventDateTimeInput({
+  type,
+  value,
+  onChange,
+  placeholder,
+  ariaLabel,
+  className,
+}: {
+  type: "date" | "time";
+  value: string;
+  onChange: (value: string) => void;
+  placeholder: string;
+  ariaLabel: string;
+  className: string;
+}) {
+  const [focused, setFocused] = useState(false);
+  const showPlaceholder = !value && !focused;
+
+  return (
+    <div className={eventDateTimeField}>
+      <input
+        type={type}
+        aria-label={ariaLabel}
+        placeholder={placeholder}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        onFocus={() => setFocused(true)}
+        onBlur={() => setFocused(false)}
+        className={className}
+        style={showPlaceholder ? { color: "transparent" } : undefined}
+      />
+      {showPlaceholder && (
+        <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[14px] leading-tight text-[var(--app-muted)]/55">
+          {placeholder}
+        </span>
+      )}
+    </div>
+  );
+}
 
 type LocationForm = {
   address: string;
@@ -343,29 +383,25 @@ export default function DateIdeaForm({
             <CalendarClock size={14} />
             {t("eventSectionLabel")}
           </span>
-          <span className="text-[12px] leading-snug text-[var(--app-muted)]">{t("eventSectionHint")}</span>
 
-          <div className="flex flex-col gap-1">
-            <span className={labelClass}>{t("eventStartLabel")}</span>
+          <div className="flex flex-col gap-1.5">
             <div className={eventDateTimeGrid}>
-              <div className={eventDateTimeField}>
-                <span className="text-[11px] font-medium text-[var(--app-muted)]">{t("eventDateFieldLabel")}</span>
-                <input
-                  type="date"
-                  value={eventStartDate}
-                  onChange={(e) => setEventStartDate(e.target.value)}
-                  className={eventNativeInput}
-                />
-              </div>
-              <div className={eventDateTimeField}>
-                <span className="text-[11px] font-medium text-[var(--app-muted)]">{t("eventTimeFieldLabel")}</span>
-                <input
-                  type="time"
-                  value={eventStartTime}
-                  onChange={(e) => setEventStartTime(e.target.value)}
-                  className={eventTimeInput}
-                />
-              </div>
+              <EventDateTimeInput
+                type="date"
+                ariaLabel={t("eventDateFieldLabel")}
+                placeholder={t("eventDatePlaceholder")}
+                value={eventStartDate}
+                onChange={setEventStartDate}
+                className={eventNativeInput}
+              />
+              <EventDateTimeInput
+                type="time"
+                ariaLabel={t("eventTimeFieldLabel")}
+                placeholder={t("eventTimePlaceholder")}
+                value={eventStartTime}
+                onChange={setEventStartTime}
+                className={eventTimeInput}
+              />
             </div>
           </div>
 
@@ -373,24 +409,22 @@ export default function DateIdeaForm({
             <div className="flex flex-col gap-1">
               <span className={labelClass}>{t("eventEndLabel")}</span>
               <div className={eventDateTimeGrid}>
-                <div className={eventDateTimeField}>
-                  <span className="text-[11px] font-medium text-[var(--app-muted)]">{t("eventDateFieldLabel")}</span>
-                  <input
-                    type="date"
-                    value={eventEndDate}
-                    onChange={(e) => setEventEndDate(e.target.value)}
-                    className={eventNativeInput}
-                  />
-                </div>
-                <div className={eventDateTimeField}>
-                  <span className="text-[11px] font-medium text-[var(--app-muted)]">{t("eventTimeFieldLabel")}</span>
-                  <input
-                    type="time"
-                    value={eventEndTime}
-                    onChange={(e) => setEventEndTime(e.target.value)}
-                    className={eventTimeInput}
-                  />
-                </div>
+                <EventDateTimeInput
+                  type="date"
+                  ariaLabel={t("eventDateFieldLabel")}
+                  placeholder={t("eventDatePlaceholder")}
+                  value={eventEndDate}
+                  onChange={setEventEndDate}
+                  className={eventNativeInput}
+                />
+                <EventDateTimeInput
+                  type="time"
+                  ariaLabel={t("eventTimeFieldLabel")}
+                  placeholder={t("eventTimePlaceholder")}
+                  value={eventEndTime}
+                  onChange={setEventEndTime}
+                  className={eventTimeInput}
+                />
               </div>
             </div>
           )}
@@ -405,7 +439,7 @@ export default function DateIdeaForm({
       )}
 
       <div className="flex flex-col gap-3">
-        <span className={labelClass}>{locationsCountLabel(lang, locations.length)}</span>
+        <span className={labelClass}>{t("locationsLabel")}</span>
         {locations.map((loc, index) => (
           <div key={index} className="flex flex-col gap-2 rounded-2xl bg-[var(--app-subtle-overlay)] p-3">
             <div className="flex items-center justify-between">
@@ -444,15 +478,17 @@ export default function DateIdeaForm({
                 onChange={(e) => handleMapsLinkTextChange(index, e.target.value)}
                 className={input}
               />
-              <div className="flex gap-2">
+              <div className="grid grid-cols-2 gap-2">
                 <button
                   type="button"
                   onClick={() => applyMapsLink(index)}
                   disabled={!loc.mapsLink.trim() || resolvingIndex === index}
-                  className={`${buttonGhost} disabled:opacity-50`}
+                  className={`${buttonSecondary} min-w-0 px-3 py-2 text-[13px] disabled:opacity-50`}
                 >
-                  <LinkIcon size={16} />
-                  {resolvingIndex === index ? t("reading") : t("getLocationFromLink")}
+                  <LinkIcon size={16} className="shrink-0" />
+                  <span className="min-w-0 truncate whitespace-nowrap">
+                    {resolvingIndex === index ? t("reading") : t("getLocationFromLink")}
+                  </span>
                 </button>
                 <button
                   type="button"
@@ -461,10 +497,10 @@ export default function DateIdeaForm({
                     setPickerFor(next);
                     trackClientEvent("place_form_map_picker_toggled", { mode: formMode, index, open: next === index });
                   }}
-                  className={buttonGhost}
+                  className={`${buttonSecondary} min-w-0 px-3 py-2 text-[13px]`}
                 >
-                  <MapPin size={16} />
-                  {t("chooseOnMap")}
+                  <MapPin size={16} className="shrink-0" />
+                  <span className="min-w-0 truncate whitespace-nowrap">{t("chooseOnMap")}</span>
                 </button>
               </div>
               {loc.mapsLinkError && <span className="text-[12px] font-medium text-red-500">{loc.mapsLinkError}</span>}
@@ -476,14 +512,18 @@ export default function DateIdeaForm({
             {pickerFor === index && <LocationPicker lat={loc.lat} lng={loc.lng} onPick={(lat, lng) => pickOnMap(index, lat, lng)} />}
 
             {loc.lat != null && loc.lng != null && (
-              <div className="flex items-center justify-between rounded-xl bg-[var(--app-mint)]/50 px-3 py-2">
+              <div className="flex items-center justify-between gap-2 rounded-xl bg-[var(--app-mint)]/45 px-3 py-2">
                 <span className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-[var(--app-ink)]">
                   <Check size={14} />
                   {t("locationSelected")}
                 </span>
-                <button type="button" onClick={() => clearLocationPin(index)} className={buttonGhost}>
+                <button
+                  type="button"
+                  onClick={() => clearLocationPin(index)}
+                  aria-label={t("clear")}
+                  className={`${iconButton} size-7 shrink-0 bg-white/60 text-[var(--app-ink)] ring-1 ring-[var(--app-outline)]/10 active:bg-white/80`}
+                >
                   <X size={14} />
-                  {t("clear")}
                 </button>
               </div>
             )}
@@ -532,7 +572,6 @@ export default function DateIdeaForm({
       <div className="flex flex-col gap-1">
         <span className={labelClass}>{t("tagsLabel")}</span>
         <input placeholder={t("tagsPlaceholder")} value={tags} onChange={(e) => setTags(e.target.value)} className={input} />
-        <span className="text-[12px] leading-snug text-[var(--app-muted)]">{t("tagsHint")}</span>
       </div>
 
       <div className="flex flex-col gap-1">

@@ -23,17 +23,17 @@ export const pill =
 export const pillBlue =
   "inline-flex items-center rounded-full bg-[var(--app-blue)]/55 px-2.5 py-1 text-[12px] font-bold text-[var(--app-ink)] ring-1 ring-[var(--app-outline)]/10";
 
-/** Shared "this is a one-time event" visual language -- a warm coral/gold/cool gradient with a
+/** Shared "this is a one-time event" visual language -- a restrained warm coral/gold gradient with a
  *  soft matching glow, used for the date badge (Storage card, place detail, import review) and
- *  the card's inner light. The yellow is muted and the orange is fuller so the three stops sit
- *  at roughly the same visual weight. Sizing/layout stays with each caller since it varies. */
+ *  the card's inner light. Keep it away from holo/rainbow treatment: dated events should read as
+ *  one warm accent, not a separate multicolor system. */
 export const eventBadgeColors =
-  "bg-gradient-to-r from-[#f0a477] via-[#efd47c] to-[#94d2ca] text-[var(--app-ink)] shadow-[0_4px_14px_rgba(240,164,119,0.28)] ring-1 ring-white/60";
+  "bg-gradient-to-r from-[#f0a477] to-[#efd47c] text-[var(--app-ink)] shadow-[0_4px_14px_rgba(240,164,119,0.26)] ring-1 ring-white/60";
 
 /** Event card surface in the Storage list -- translucent glass with the light source clipped
  *  inside the rounded card, so the glow spreads toward the edges without bleeding outside. */
 export const eventCardGlow =
-  "relative isolate overflow-hidden !border-white/55 !bg-[radial-gradient(ellipse_at_50%_46%,rgba(240,164,119,0.50)_0%,rgba(239,212,124,0.24)_34%,rgba(148,210,202,0.20)_64%,rgba(255,253,248,0.62)_100%)] backdrop-blur-md";
+  "relative isolate overflow-hidden !border-white/55 !bg-[radial-gradient(ellipse_at_50%_46%,rgba(240,164,119,0.48)_0%,rgba(239,212,124,0.28)_46%,rgba(255,253,248,0.66)_100%)] backdrop-blur-md";
 
 /** Prefixes a tag name with "#" (no-op if it already has one), and strips whitespace so it
  *  reads as a single hashtag word. */

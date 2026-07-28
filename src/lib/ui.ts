@@ -18,6 +18,32 @@ export const buttonGhost =
 export const pill =
   "inline-flex items-center rounded-full bg-[var(--app-pink)]/25 px-2.5 py-1 text-[12px] font-bold text-[var(--app-ink)] ring-1 ring-[var(--app-outline)]/10";
 
+/** Tag color for a one-time dated event -- blue instead of the default pink, so tags read as
+ *  "this one's an event" at a glance too, not just the date badge. */
+export const pillBlue =
+  "inline-flex items-center rounded-full bg-[var(--app-blue)]/55 px-2.5 py-1 text-[12px] font-bold text-[var(--app-ink)] ring-1 ring-[var(--app-outline)]/10";
+
+/** Shared "this is a one-time event" visual language -- a holo pink/violet/teal gradient with a
+ *  soft matching glow, used for the date badge (Storage card, place detail, import review) and
+ *  the card's own glow/stripe. Colors are pushed brighter than the rest of the pastel palette on
+ *  purpose: an event should read as brighter/louder than an evergreen place, not just differently
+ *  tinted. Sizing/layout (padding, text size, gap) stays with each caller since it varies. */
+export const eventBadgeColors =
+  "bg-gradient-to-r from-[#ff8fd6] via-[#a78bfa] to-[#5fd8c8] text-white shadow-[0_4px_14px_rgba(167,139,250,0.45)] ring-1 ring-white/40";
+
+/** Glow ring around an event card in the Storage list -- pairs with eventBadgeColors' palette so
+ *  the whole card reads as lit up, not just the badge. A single `shadow-[...]` utility bundling
+ *  all three layers (card's own flat "sticker" shadow + colored ring + blurred glow) -- box-shadow
+ *  is a single CSS property, so a second separate `shadow-[...]` class on the same element (e.g.
+ *  `card`'s own) would silently replace rather than combine with this one. */
+export const eventCardGlow =
+  "shadow-[0_2px_0_rgba(28,26,23,0.08),0_0_0_2px_rgba(255,143,214,0.55),0_10px_28px_-6px_rgba(167,139,250,0.55)]";
+
+/** Vertical accent stripe along an event card's left edge -- the "ribbon" cue that marks it as an
+ *  event even before reading any text. Card needs `relative overflow-hidden` for this to clip to
+ *  its rounded corners. */
+export const eventStripe = "absolute inset-y-0 left-0 w-2 bg-gradient-to-b from-[#ff8fd6] via-[#a78bfa] to-[#5fd8c8]";
+
 /** Prefixes a tag name with "#" (no-op if it already has one), and strips whitespace so it
  *  reads as a single hashtag word. */
 export function hashtag(name: string): string {

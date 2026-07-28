@@ -6,7 +6,7 @@ import { ArrowLeft, MapPin, Link as LinkIcon, CalendarClock } from "lucide-react
 import { apiFetch } from "@/lib/apiClient";
 import type { DateIdea } from "@/lib/types";
 import { priceTier } from "@/lib/priceTier";
-import { pill, mutedText, hashtag } from "@/lib/ui";
+import { pill, pillBlue, eventBadgeColors, mutedText, hashtag } from "@/lib/ui";
 import { trackClientEvent } from "@/lib/clientAnalytics";
 import { useLang, useT } from "@/hooks/useLang";
 import { locationsHeading, formatEventWhen } from "@/lib/i18n";
@@ -69,7 +69,7 @@ export default function PlaceDetailScreen({ id }: { id: string }) {
             <h1 className="text-[26px] font-semibold leading-[1.1]">{idea.title}</h1>
 
             {idea.eventStartsAt && (
-              <div className="inline-flex w-fit items-center gap-1.5 rounded-full bg-[var(--app-coral)] px-3 py-1.5 text-[14px] font-bold text-[var(--app-ink)]">
+              <div className={`inline-flex w-fit items-center gap-1.5 rounded-full px-3 py-1.5 text-[14px] font-bold ${eventBadgeColors}`}>
                 <CalendarClock size={15} />
                 {formatEventWhen(lang, idea.eventStartsAt, idea.eventEndsAt)}
               </div>
@@ -82,7 +82,7 @@ export default function PlaceDetailScreen({ id }: { id: string }) {
             {idea.tags.length > 0 && (
               <div className="flex flex-wrap gap-1.5">
                 {idea.tags.map((t) => (
-                  <span key={t.tag.id} className={pill}>
+                  <span key={t.tag.id} className={idea.eventStartsAt ? pillBlue : pill}>
                     {hashtag(t.tag.name)}
                   </span>
                 ))}

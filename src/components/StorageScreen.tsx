@@ -35,7 +35,9 @@ import {
 import { metroPastelTone, metroStations, metroLineTone, sortStationsByLine } from "@/lib/metro";
 import { useLang, useT } from "@/hooks/useLang";
 import { trackClientEvent } from "@/lib/clientAnalytics";
-import { awayText, formatEventCountdown, formatEventWhen, type StringKey } from "@/lib/i18n";
+import { awayText, formatEventCountdown, formatEventWhen, loadingPhrases, type StringKey } from "@/lib/i18n";
+import BlobLoader from "@/components/BlobLoader";
+import LoadingCaptions from "@/components/LoadingCaptions";
 
 type Sort = "newest" | "title" | "nearby";
 
@@ -658,9 +660,9 @@ export default function StorageScreen() {
 
       {linkImporting && (
         <div className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-3 bg-[var(--app-canvas)]/90 backdrop-blur-sm">
-          <div className="size-10 animate-spin rounded-full border-4 border-[var(--app-outline)]/15 border-t-[var(--app-ink)]" />
+          <BlobLoader size={104} />
           <p className="text-[15px] font-semibold text-[var(--app-ink)]">{t("readingLinkOverlay")}</p>
-          <p className={mutedText}>{t("aiLookingUp")}</p>
+          <LoadingCaptions phrases={loadingPhrases(lang)} />
         </div>
       )}
 

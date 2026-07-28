@@ -395,3 +395,32 @@ export function formatEventCountdown(lang: Lang, startsAtIso: string, nowMs: num
   const minutes = totalMinutes % 60;
   return lang === "ru" ? `${hours} ч ${minutes} мин` : `${hours}h ${minutes}m`;
 }
+
+/** Rotating captions shown under BlobLoader while the AI parses a link/post -- purely for
+ *  personality during the few-second wait, cycled by LoadingCaptions. */
+const LOADING_PHRASES: Record<Lang, string[]> = {
+  ru: [
+    "Читаю между строк…",
+    "Ищу адрес на карте…",
+    "Разбираюсь, что это за место…",
+    "Считываю цены и теги…",
+    "Проверяю, не рекламный ли это пост…",
+    "Почти нашёл нужную ссылку…",
+    "Спрашиваю у ИИ, что тут вообще происходит…",
+    "Собираю карточку места…",
+  ],
+  en: [
+    "Reading between the lines…",
+    "Looking up the address…",
+    "Figuring out what this place even is…",
+    "Picking out prices and tags…",
+    "Making sure this isn't just an ad…",
+    "Almost got the right link…",
+    "Asking the AI what's going on here…",
+    "Putting the place card together…",
+  ],
+};
+
+export function loadingPhrases(lang: Lang): string[] {
+  return LOADING_PHRASES[lang];
+}

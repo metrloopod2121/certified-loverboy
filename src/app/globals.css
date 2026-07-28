@@ -114,3 +114,61 @@ textarea {
 .panel-appear {
   animation: panel-appear 0.2s ease-out;
 }
+
+@keyframes blob-orbit {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes blob-orbit-reverse {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(-360deg);
+  }
+}
+
+@keyframes blob-breathe {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.08);
+  }
+}
+
+@keyframes blob-caption-swap {
+  0%,
+  8% {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  16%,
+  84% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  92%,
+  100% {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+
+.blob-loader-orbit {
+  animation: blob-orbit 7s linear infinite;
+}
+
+.blob-loader-orbit-reverse {
+  animation: blob-orbit-reverse 9s linear infinite;
+}
+
+.blob-loader-core {
+  animation: blob-breathe 2.6s ease-in-out infinite;
+}

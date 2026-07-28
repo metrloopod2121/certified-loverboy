@@ -284,7 +284,7 @@ export default function StorageScreen() {
         source: file.name,
         origin: "file_import" as const,
         // Markdown files never describe a one-time event -- only link imports do.
-        parsed: { ...parseDateMarkdown(await file.text()), eventStartsAt: null, eventEndsAt: null },
+        parsed: { ...parseDateMarkdown(await file.text()), eventStartsAt: null, eventEndsAt: null, reminderAt: null },
       }))
     );
     trackClientEvent("storage_file_import_selected", { filesCount: newItems.length });

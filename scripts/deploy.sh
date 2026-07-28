@@ -60,4 +60,9 @@ systemctl restart "$SERVICE"
 sleep 2
 systemctl is-active "$SERVICE"
 
+echo "-> installing reminders timer"
+cp deploy/certified-loverboy-reminders.service deploy/certified-loverboy-reminders.timer /etc/systemd/system/
+systemctl daemon-reload
+systemctl enable --now certified-loverboy-reminders.timer
+
 curl -sk -o /dev/null -w 'https check: %{http_code}\n' https://127.0.0.1:443/

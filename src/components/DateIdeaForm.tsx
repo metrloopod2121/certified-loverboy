@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import dynamic from "next/dynamic";
-import { MapPin, Plus, X, Link as LinkIcon, Check, CalendarClock } from "lucide-react";
+import { MapPin, Plus, X, Link as LinkIcon, Check, CalendarClock, Bell } from "lucide-react";
 import type { DateIdeaInput, LocationInput, PlaceLinkInput } from "@/lib/types";
 import { parseMapsLink, isYandexMapsUrl, findYandexMapsLink } from "@/lib/coords";
 import { apiFetch } from "@/lib/apiClient";
@@ -12,17 +12,25 @@ import { useLang, useT } from "@/hooks/useLang";
 import { useAuth } from "@/hooks/useAuth";
 import { locationOrdinalLabel } from "@/lib/i18n";
 
-/** Splits an ISO instant into the local "yyyy-mm-dd" / "HH:mm" strings the native date/time
- *  inputs want. A time of exactly midnight is treated as "no time entered" (matches the
- *  create-side convention: unknown time is stored as midnight). */
-function splitEventIso(iso: string | null): { date: string; time: string } {
+function splitIso(iso: string | null, midnightAsEmpty: boolean): { date: string; time: string } {
   if (!iso) return { date: "", time: "" };
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return { date: "", time: "" };
   const pad = (n: number) => String(n).padStart(2, "0");
   const date = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
-  const time = d.getHours() === 0 && d.getMinutes() === 0 ? "" : `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  const time = midnightAsEmpty && d.getHours() === 0 && d.getMinutes() === 0 ? "" : `${pad(d.getHours())}:${pad(d.getMinutes())}`;
   return { date, time };
+}
+
+/** Splits an ISO instant into the local "yyyy-mm-dd" / "HH:mm" strings the native date/time
+ *  inputs want. A time of exactly midnight is treated as "no time entered" (matches the
+ *  create-side convention: unknown time is stored as midnight). */
+function splitEventIso(iso: string | null): { date: string; time: string } {
+  return splitIso(iso, true);
+}
+
+function splitReminderIso(iso: string | null): { date: string; time: string } {
+  return splitIso(iso, false);
 }
 
 /** Combines the local date/time inputs back into a single ISO instant -- no date means no
@@ -32,6 +40,14 @@ function combineEventIso(date: string, time: string): string | null {
   const [year, month, day] = date.split("-").map(Number);
   const [hours, minutes] = time ? time.split(":").map(Number) : [0, 0];
   const d = new Date(year, month - 1, day, hours || 0, minutes || 0);
+  return Number.isNaN(d.getTime()) ? null : d.toISOString();
+}
+
+function combineReminderIso(date: string, time: string): string | null {
+  if (!date || !time) return null;
+  const [year, month, day] = date.split("-").map(Number);
+  const [hours, minutes] = time.split(":").map(Number);
+  const d = new Date(year, month - 1, day, hours, minutes);
   return Number.isNaN(d.getTime()) ? null : d.toISOString();
 }
 
@@ -151,10 +167,14 @@ export default function DateIdeaForm({
   const [tags, setTags] = useState(initial?.tags?.join(", ") ?? "");
   const initialEventStart = splitEventIso(initial?.eventStartsAt ?? null);
   const initialEventEnd = splitEventIso(initial?.eventEndsAt ?? null);
+  const initialReminder = splitReminderIso(initial?.reminderAt ?? null);
   const [eventStartDate, setEventStartDate] = useState(initialEventStart.date);
   const [eventStartTime, setEventStartTime] = useState(initialEventStart.time);
   const [eventEndDate, setEventEndDate] = useState(initialEventEnd.date);
   const [eventEndTime, setEventEndTime] = useState(initialEventEnd.time);
+  const [reminderEnabled, setReminderEnabled] = useState(Boolean(initial?.reminderAt));
+  const [reminderDate, setReminderDate] = useState(initialReminder.date);
+  const [reminderTime, setReminderTime] = useState(initialReminder.time);
   const [locations, setLocations] = useState<LocationForm[]>(
     initial?.locations?.length ? initial.locations.map(toLocationForm) : [EMPTY_LOCATION]
   );
@@ -174,7 +194,19 @@ export default function DateIdeaForm({
     setEventStartTime("");
     setEventEndDate("");
     setEventEndTime("");
+    setReminderEnabled(false);
+    setReminderDate("");
+    setReminderTime("");
     trackClientEvent("place_form_event_cleared", { mode: formMode });
+  }
+
+  function toggleReminder(enabled: boolean) {
+    setReminderEnabled(enabled);
+    if (!enabled) {
+      setReminderDate("");
+      setReminderTime("");
+    }
+    trackClientEvent("place_form_reminder_toggled", { mode: formMode, enabled });
   }
 
   // A shared Yandex Maps link often carries "Title\nAddress\nhttps://..." as one block, not a
@@ -342,6 +374,23 @@ export default function DateIdeaForm({
     const effectiveEndDate = eventEndDate || (eventEndTime ? eventStartDate : "");
     const eventStartsAt = combineEventIso(eventStartDate, eventStartTime);
     const eventEndsAt = combineEventIso(effectiveEndDate, eventEndTime);
+    const reminderAt = reminderEnabled ? combineReminderIso(reminderDate, reminderTime) : null;
+
+    if (reminderEnabled && !eventStartsAt) {
+      setError(t("reminderNeedsEventDate"));
+      trackClientEvent("place_form_validation_failed", { mode: formMode, reason: "reminder_event_date" });
+      return;
+    }
+    if (reminderEnabled && !reminderAt) {
+      setError(t("reminderDateTimeRequired"));
+      trackClientEvent("place_form_validation_failed", { mode: formMode, reason: "reminder_datetime" });
+      return;
+    }
+    if (reminderAt && new Date(reminderAt).getTime() <= Date.now()) {
+      setError(t("reminderMustBeFuture"));
+      trackClientEvent("place_form_validation_failed", { mode: formMode, reason: "reminder_past" });
+      return;
+    }
 
     setSaving(true);
     try {
@@ -351,11 +400,12 @@ export default function DateIdeaForm({
         priceNote,
         eventStartsAt,
         eventEndsAt,
+        reminderAt,
         tags: tags.split(",").map((t) => t.trim()).filter(Boolean),
         locations: resolvedLocations,
         links: dedupedLinks,
       });
-      trackClientEvent("place_form_submitted", { mode: formMode, hasEvent: eventStartsAt != null });
+      trackClientEvent("place_form_submitted", { mode: formMode, hasEvent: eventStartsAt != null, hasReminder: reminderAt != null });
     } catch (err) {
       setError(err instanceof Error ? err.message : t("couldntSave"));
       trackClientEvent("place_form_submit_failed", { mode: formMode, reason: err instanceof Error ? err.message : "unknown" });
@@ -403,6 +453,52 @@ export default function DateIdeaForm({
                 className={eventTimeInput}
               />
             </div>
+          </div>
+
+          <div className="rounded-2xl bg-[var(--app-surface)]/65 px-3 py-2.5 ring-1 ring-[var(--app-outline)]/10">
+            <label className="flex min-h-9 items-center justify-between gap-3">
+              <span className="inline-flex items-center gap-1.5 text-[14px] font-semibold text-[var(--app-ink)]">
+                <Bell size={15} />
+                {t("reminderLabel")}
+              </span>
+              <input
+                type="checkbox"
+                checked={reminderEnabled}
+                onChange={(e) => toggleReminder(e.target.checked)}
+                className="sr-only"
+              />
+              <span
+                className={`relative h-7 w-12 shrink-0 rounded-full transition ${
+                  reminderEnabled ? "bg-[var(--app-ink)]" : "bg-[var(--app-outline)]/18"
+                }`}
+              >
+                <span
+                  className={`absolute left-1 top-1 size-5 rounded-full bg-[var(--app-surface)] shadow-[0_1px_3px_rgba(28,26,23,0.22)] transition ${
+                    reminderEnabled ? "translate-x-5" : ""
+                  }`}
+                />
+              </span>
+            </label>
+            {reminderEnabled && (
+              <div className={`${eventDateTimeGrid} mt-2`}>
+                <EventDateTimeInput
+                  type="date"
+                  ariaLabel={t("reminderDateFieldLabel")}
+                  placeholder={t("eventDatePlaceholder")}
+                  value={reminderDate}
+                  onChange={setReminderDate}
+                  className={eventNativeInput}
+                />
+                <EventDateTimeInput
+                  type="time"
+                  ariaLabel={t("reminderTimeFieldLabel")}
+                  placeholder={t("eventTimePlaceholder")}
+                  value={reminderTime}
+                  onChange={setReminderTime}
+                  className={eventTimeInput}
+                />
+              </div>
+            )}
           </div>
 
           {eventStartDate && (

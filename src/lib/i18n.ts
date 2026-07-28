@@ -178,6 +178,21 @@ const strings = {
   eventDatePlaceholder: { ru: "2026-07-29", en: "2026-07-29" },
   eventTimePlaceholder: { ru: "19:30", en: "19:30" },
   eventClearBtn: { ru: "Убрать дату события", en: "Remove event date" },
+  reminderLabel: { ru: "Напоминание", en: "Reminder" },
+  reminderDateFieldLabel: { ru: "Дата напоминания", en: "Reminder date" },
+  reminderTimeFieldLabel: { ru: "Время напоминания", en: "Reminder time" },
+  reminderDateTimeRequired: {
+    ru: "Выбери дату и время напоминания",
+    en: "Choose reminder date and time",
+  },
+  reminderNeedsEventDate: {
+    ru: "Сначала укажи дату события",
+    en: "Set the event date first",
+  },
+  reminderMustBeFuture: {
+    ru: "Дата напоминания уже прошла",
+    en: "Reminder date has already passed",
+  },
   eventToday: { ru: "Сегодня", en: "Today" },
   eventTomorrow: { ru: "Завтра", en: "Tomorrow" },
   removeLocationAria: { ru: "Удалить локацию", en: "Remove location" },

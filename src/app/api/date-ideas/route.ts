@@ -52,6 +52,7 @@ export async function POST(request: Request) {
       priceNote: body.priceNote || null,
       eventStartsAt: eventsAllowed ? parseEventDate(body.eventStartsAt) : null,
       eventEndsAt: eventsAllowed ? parseEventDate(body.eventEndsAt) : null,
+      reminderAt: eventsAllowed ? parseEventDate(body.reminderAt) : null,
       tags: { create: tagIds.map((tagId) => ({ tagId })) },
       locations: {
         create: locations.map((loc) => ({
@@ -82,6 +83,7 @@ export async function POST(request: Request) {
       locationsCount: idea.locations.length,
       linksCount: idea.links.length,
       hasEvent: idea.eventStartsAt != null,
+      hasReminder: idea.reminderAt != null,
     },
     auth.user.username
   );

@@ -43,6 +43,7 @@ function toDraft(parsed: ParsedFromLink, sourceUrl: string, kind: LinkKind): Dat
     priceNote: parsed.priceNote ?? "",
     eventStartsAt: parsed.eventStartsAt,
     eventEndsAt: parsed.eventEndsAt,
+    reminderAt: null,
     tags: parsed.tags,
     locations: [
       {

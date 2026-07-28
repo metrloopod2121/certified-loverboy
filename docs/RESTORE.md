@@ -32,21 +32,27 @@ curl -sk -o /dev/null -w 'https check: %{http_code}\n' https://127.0.0.1:443/
 ## Разовая установка таймеров на сервере
 
 Юниты лежат в `deploy/`, но systemd не подхватывает их из репозитория сам —
-один раз скопировать и включить (бэкап + мониторинг расхода Cloudflare/Brave квоты):
+один раз скопировать и включить (бэкап + мониторинг расхода Cloudflare/Brave квоты +
+напоминания событий):
 
 ```bash
 sudo cp deploy/certified-loverboy-backup.service deploy/certified-loverboy-backup.timer \
         deploy/certified-loverboy-usage-monitor@.service \
         deploy/certified-loverboy-usage-monitor-hourly.timer \
         deploy/certified-loverboy-usage-monitor-daily.timer \
+        deploy/certified-loverboy-reminders.service \
+        deploy/certified-loverboy-reminders.timer \
         /etc/systemd/system/
 sudo systemctl daemon-reload
 sudo systemctl enable --now certified-loverboy-backup.timer
 sudo systemctl enable --now certified-loverboy-usage-monitor-hourly.timer
 sudo systemctl enable --now certified-loverboy-usage-monitor-daily.timer
+sudo systemctl enable --now certified-loverboy-reminders.timer
 ```
 
 Мониторингу нужен `ADMIN_TG_ID` в `.env` приложения — туда шлются алерты и суточный отчёт.
+Напоминаниям нужен `TELEGRAM_BOT_TOKEN`; срочно выключить отправку можно через
+`REMINDERS_ENABLED=0` в `.env` или остановкой таймера.
 
 Проверить, что таймеры встали: `systemctl list-timers | grep certified-loverboy`.
 

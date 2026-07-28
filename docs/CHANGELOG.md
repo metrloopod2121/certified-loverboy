@@ -2,6 +2,28 @@
 
 Для контекста между сессиями (Claude Code + Codex работают в одном репо параллельно). Пиши сюда, когда делаешь что-то нетривиальное — особенно смену модели данных или архитектурных решений.
 
+## 2026-07-28 (7)
+
+**Timed event reminders: UI + server delivery**
+- В `DateIdea` добавлены nullable `reminderAt` / `reminderSentAt` и индекс
+  `DateIdea_reminderSentAt_reminderAt_idx`; миграция `20260728170000_add_event_reminders`.
+- `DateIdeaForm` внутри секции "Дата (опционально)" получил блок "Напоминание": текст слева,
+  тумблер справа, при включении раскрываются compact native date/time поля. Сохранение требует
+  дату события, дату+время напоминания и не принимает напоминание в прошлом.
+- `POST /api/date-ideas` и `PATCH /api/date-ideas/[id]` сохраняют `reminderAt` только под тем же
+  events gate, что и `eventStartsAt/eventEndsAt`; при изменении времени напоминания
+  `reminderSentAt` сбрасывается, чтобы новое время могло отправиться.
+- Добавлен `scripts/sendReminders.mjs` и npm script `reminders:send`: разовый серверный проход
+  ищет due reminders, отправляет HTML-сообщение пользователю в Telegram с краткими деталями
+  события и Web App кнопкой на `/place/<id>`, затем пишет `reminderSentAt`.
+- Добавлены `deploy/certified-loverboy-reminders.service/.timer`; `scripts/deploy.sh` теперь
+  копирует их в `/etc/systemd/system/`, делает `daemon-reload` и включает timer после деплоя.
+  Emergency stop: `REMINDERS_ENABLED=0` или `systemctl disable --now certified-loverboy-reminders.timer`.
+- Client analytics allowlist расширен событием `place_form_reminder_toggled`; server reminder
+  script пишет `reminder_sent` / `reminder_failed` в SQLite analytics для не-admin пользователей.
+- Проверки: `npx prisma generate`, `npm run lint`, dry-run reminder script на временной SQLite
+  базе (`CLB_REMINDERS_DRY_RUN=1`), `npm run build`.
+
 ## 2026-07-28 (6)
 
 **Import source links: Telegram/Instagram source сохраняется в Links**

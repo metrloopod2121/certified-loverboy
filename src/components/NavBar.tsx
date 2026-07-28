@@ -25,7 +25,7 @@ export default function NavBar() {
 
   return (
     <nav
-      className="fixed bottom-0 left-1/2 z-20 grid w-[calc(100vw-24px)] max-w-[360px] -translate-x-1/2 grid-cols-3 gap-0.5 rounded-full border border-[var(--app-outline)]/10 bg-[#f8d9e8]/70 px-1 py-1 shadow-[0_8px_22px_rgba(28,26,23,0.12)] backdrop-blur-xl"
+      className="fixed bottom-0 left-1/2 z-20 grid w-[calc(100vw-56px)] max-w-[320px] -translate-x-1/2 grid-cols-3 gap-0.5 rounded-full border border-[var(--app-outline)]/10 bg-[#f8d9e8]/70 px-1 py-1 shadow-[0_8px_22px_rgba(28,26,23,0.12)] backdrop-blur-xl"
       style={{ marginBottom: "calc(var(--safe-bottom) + 12px)" }}
     >
       {LINKS.map((link) => {

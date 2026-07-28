@@ -18,6 +18,9 @@
 - app path: `/srv/web/app/certified-loverboy/app`
 - app user: `loverboy`
 - port: `3101`
+- reminders timer: `certified-loverboy-reminders.timer` runs `scripts/sendReminders.mjs` every
+  minute; emergency pause via `REMINDERS_ENABLED=0` in `.env` or
+  `systemctl disable --now certified-loverboy-reminders.timer`
 - HTTPS: `https://vacanator.xyz/` (порт 443 напрямую, без `:8443` — сервер свободен от VPN)
 - bot: `@certified7overBot`
 - Telegram webhook: `https://vacanator.xyz/api/telegram/webhook`, pinned with Bot API
@@ -45,6 +48,9 @@
 Текущая форма места (`DateIdeaForm`):
 - event-секция называется "Дата (опционально)" и без поясняющего текста; у start date/time нет видимых
   лейблов над полями, только нативные поля с compact placeholder/aria-label;
+- под датой события есть "Напоминание": строка с текстом слева и тумблером справа. При включении
+  раскрываются такие же compact native date/time поля; без даты события и без полной даты+времени
+  напоминание не сохраняется;
 - секция локаций называется просто "Локации", без счетчика в скобках;
 - кнопки получения пина компактные: "Из ссылки" и "На карте" в две равные колонки;
 - выбранный пин показывается status-плашкой "Пин выбран" и маленькой icon-кнопкой очистки.
@@ -390,10 +396,14 @@ source, alongside Yandex Maps / Telegram post links:
 ## Timed events (pilot)
 
 A place can optionally be a one-time dated event (concert, show, tournament...) instead of a
-plain evergreen place -- no separate entity, just two nullable columns on `DateIdea`:
+plain evergreen place -- no separate entity, just nullable columns on `DateIdea`:
 - `eventStartsAt` / `eventEndsAt` (`DateTime?`, both null for an ordinary place). A time of
   exactly midnight means "no time known" (not literally midnight) -- accepted simplification
   for a personal tracker, see `formatEventWhen()` in `src/lib/i18n.ts`.
+- `reminderAt` / `reminderSentAt` (`DateTime?`) power one-shot Telegram reminders for dated
+  events. `reminderAt` is user-selected, `reminderSentAt` is written by the server timer after
+  delivery so the same reminder does not repeat. Editing a reminder to a different instant resets
+  `reminderSentAt` to null.
 - gated by `eventsFeatureEnabled()` (`src/lib/eventsFeature.ts`): always on for `ADMIN_TG_ID`,
   everyone else needs `EVENTS_FEATURE_ENABLED="1"`. Gate is checked at every write path (manual
   form via `/api/date-ideas(/[id])`, bot approve-callback creation) and at parse time (the
@@ -402,7 +412,9 @@ plain evergreen place -- no separate entity, just two nullable columns on `DateI
 - manual entry: `DateIdeaForm` shows a "When" section (native date+time inputs, start required
   before end can be entered) only when `features.events` comes back true from `/api/me`. The
   date/time controls use a compact adaptive grid, not fixed `grid-cols-2`: they stack on narrow
-  edit forms and the time field stays fixed-width on wider phones.
+  edit forms and the time field stays fixed-width on wider phones. The optional reminder toggle
+  lives inside the same section and requires both reminder date and reminder time; past reminders
+  are rejected client-side.
 - import: `cloudflareAi.ts`'s multi-place prompt asks for `eventStartDate/Time` +
   `eventEndDate/Time` (separate YYYY-MM-DD / HH:MM strings, today's date injected so relative
   dates like "завтра"/"в эту пятницу" resolve correctly) only for a permanent-venue post is
@@ -418,6 +430,13 @@ plain evergreen place -- no separate entity, just two nullable columns on `DateI
   card; there is no left-side event stripe or external glow bleeding outside the card. Future
   event cards also show a compact countdown to the right of the date badge: more than 24 hours
   uses days+hours, less than 24 hours uses hours+minutes.
+- delivery: `scripts/sendReminders.mjs` reads due rows (`reminderAt <= now`,
+  `reminderSentAt is null`), sends an HTML Telegram message to `telegramUserId` with title,
+  event date, reminder time, first location, price and short description, plus an inline Web App
+  button to `/place/<id>`, then writes `reminderSentAt`. Systemd unit/timer live in `deploy/`;
+  `scripts/deploy.sh` installs/enables `certified-loverboy-reminders.timer` after a deploy.
+  `REMINDERS_ENABLED=0` disables sending without code changes; `REMINDERS_BATCH_LIMIT` defaults
+  to 50 due reminders per run.
 - Prod verified 2026-07-28: `EVENTS_FEATURE_ENABLED` is absent/false in `.env`; DB rows with
   `eventStartsAt is not null` belong only to `ADMIN_TG_ID=504196424` (1 row at verification).
 
@@ -433,4 +452,5 @@ plain evergreen place -- no separate entity, just two nullable columns on `DateI
 - Instagram import is a pilot behind `INSTAGRAM_IMPORT_ENABLED` — needs live testing on the
   server (yt-dlp/ffmpeg installed, real reel links) before opening it up beyond `ADMIN_TG_ID`.
 - Timed events is a pilot behind `EVENTS_FEATURE_ENABLED` — needs live testing (manual entry +
-  bot import against real event posts) before opening it up beyond `ADMIN_TG_ID`.
+  bot import against real event posts, plus reminder delivery from the systemd timer) before
+  opening it up beyond `ADMIN_TG_ID`.

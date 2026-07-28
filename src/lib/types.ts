@@ -35,6 +35,8 @@ export type DateIdea = {
   /// evergreen place. ISO strings, like createdAt/updatedAt.
   eventStartsAt: string | null;
   eventEndsAt: string | null;
+  reminderAt: string | null;
+  reminderSentAt: string | null;
   tags: { tag: { id: string; name: string } }[];
   locations: Location[];
   links: PlaceLink[];
@@ -48,6 +50,7 @@ export type DateIdeaInput = {
   priceNote: string;
   eventStartsAt: string | null;
   eventEndsAt: string | null;
+  reminderAt: string | null;
   tags: string[];
   locations: LocationInput[];
   links: PlaceLinkInput[];
@@ -74,6 +77,7 @@ export function dateIdeaToInput(idea: DateIdea): DateIdeaInput {
     priceNote: idea.priceNote ?? "",
     eventStartsAt: idea.eventStartsAt,
     eventEndsAt: idea.eventEndsAt,
+    reminderAt: idea.reminderAt,
     tags: idea.tags.map((t) => t.tag.name),
     locations: idea.locations.map(locationToInput),
     links: idea.links.map(linkToInput),

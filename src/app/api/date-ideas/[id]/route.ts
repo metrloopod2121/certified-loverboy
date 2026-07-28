@@ -4,7 +4,14 @@ import { requireAuth, isAuthUser } from "@/lib/apiAuth";
 import { resolveTagIds } from "@/lib/tags";
 import { withoutMetroTags } from "@/lib/metro";
 import { trackEvent } from "@/lib/analytics";
+import { eventsFeatureEnabled } from "@/lib/eventsFeature";
 import type { LocationInput, PlaceLinkInput } from "@/lib/types";
+
+function parseEventDate(value: unknown): Date | null {
+  if (typeof value !== "string" || !value.trim()) return null;
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
 
 export async function GET(
   request: Request,
@@ -48,6 +55,11 @@ export async function PATCH(
   const data: Record<string, unknown> = {};
   for (const key of ["title", "description", "priceNote"]) {
     if (key in body) data[key] = body[key];
+  }
+
+  if (eventsFeatureEnabled(auth.telegramId)) {
+    if ("eventStartsAt" in body) data.eventStartsAt = parseEventDate(body.eventStartsAt);
+    if ("eventEndsAt" in body) data.eventEndsAt = parseEventDate(body.eventEndsAt);
   }
 
   const locations: LocationInput[] | null = Array.isArray(body.locations) ? body.locations : null;
@@ -99,10 +111,12 @@ export async function PATCH(
         ...(Array.isArray(body.tags) ? ["tags"] : []),
         ...(locations ? ["locations"] : []),
         ...(Array.isArray(body.links) ? ["links"] : []),
+        ...(["eventStartsAt", "eventEndsAt"].some((key) => key in data) ? ["event"] : []),
       ],
       tagsCount: idea.tags.length,
       locationsCount: idea.locations.length,
       linksCount: idea.links.length,
+      hasEvent: idea.eventStartsAt != null,
     },
     auth.user.username
   );

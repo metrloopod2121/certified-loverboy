@@ -36,7 +36,8 @@ export default function ImportReviewSheet({
   async function quickAdd(item: ReviewItem) {
     setSavingId(item.id);
     try {
-      await onAdd(item.id, item.parsed);
+      // This import surface (markdown file / Yandex Maps link) never produces event data.
+      await onAdd(item.id, { ...item.parsed, eventStartsAt: null, eventEndsAt: null });
     } finally {
       setSavingId(null);
     }

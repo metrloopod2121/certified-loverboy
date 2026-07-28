@@ -311,6 +311,32 @@ source, alongside Yandex Maps / Telegram post links:
 - known limitation: catches spoken narration only, not text burned into the video frame; success
   rate against Instagram's anti-scraping measures is unverified until tested live on the server.
 
+## Timed events (pilot)
+
+A place can optionally be a one-time dated event (concert, show, tournament...) instead of a
+plain evergreen place -- no separate entity, just two nullable columns on `DateIdea`:
+- `eventStartsAt` / `eventEndsAt` (`DateTime?`, both null for an ordinary place). A time of
+  exactly midnight means "no time known" (not literally midnight) -- accepted simplification
+  for a personal tracker, see `formatEventWhen()` in `src/lib/i18n.ts`.
+- gated by `eventsFeatureEnabled()` (`src/lib/eventsFeature.ts`): always on for `ADMIN_TG_ID`,
+  everyone else needs `EVENTS_FEATURE_ENABLED="1"`. Gate is checked at every write path (manual
+  form via `/api/date-ideas(/[id])`, bot approve-callback creation) and at parse time (the
+  multi-place LLM prompt only offers the event schema fields when the requesting chat is
+  allowed, so a non-pilot user's extracted fields are always null rather than just discarded).
+- manual entry: `DateIdeaForm` shows a "When" section (native date+time inputs, start required
+  before end can be entered) only when `features.events` comes back true from `/api/me`.
+- import: `cloudflareAi.ts`'s multi-place prompt asks for `eventStartDate/Time` +
+  `eventEndDate/Time` (separate YYYY-MM-DD / HH:MM strings, today's date injected so relative
+  dates like "завтра"/"в эту пятницу" resolve correctly) only for a permanent-venue post is
+  explicitly told NOT to fill them just because a date is mentioned in passing (a promo
+  deadline, opening year, hours). `socialImport.ts` combines the raw strings into ISO instants.
+  Scoped to Telegram-post/Instagram parsing only -- the Yandex Maps link path never asks for
+  event fields (a map listing describes a permanent venue, not a one-time occurrence).
+- UI: Ideas Storage pins any place with a future `eventStartsAt` to the top of the list (soonest
+  first), ahead of whatever sort is selected -- a past event just falls back into normal sort,
+  same as a plain place. Card and place-detail screen show a "When" badge
+  (`CalendarClock` icon + `formatEventWhen()`) when set.
+
 ## Open Risks / Follow-Ups
 
 - Telegram analytics stream is intentionally noisy while user count is low. If it gets too noisy, disable `ANALYTICS_TELEGRAM_ENABLED` and rely on SQLite/JSONL.
@@ -322,3 +348,5 @@ source, alongside Yandex Maps / Telegram post links:
 - Monetization/subscription via Telegram Stars is not implemented yet.
 - Instagram import is a pilot behind `INSTAGRAM_IMPORT_ENABLED` — needs live testing on the
   server (yt-dlp/ffmpeg installed, real reel links) before opening it up beyond `ADMIN_TG_ID`.
+- Timed events is a pilot behind `EVENTS_FEATURE_ENABLED` — needs live testing (manual entry +
+  bot import against real event posts) before opening it up beyond `ADMIN_TG_ID`.

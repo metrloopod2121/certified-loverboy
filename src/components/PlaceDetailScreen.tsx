@@ -2,14 +2,14 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, MapPin, Link as LinkIcon } from "lucide-react";
+import { ArrowLeft, MapPin, Link as LinkIcon, CalendarClock } from "lucide-react";
 import { apiFetch } from "@/lib/apiClient";
 import type { DateIdea } from "@/lib/types";
 import { priceTier } from "@/lib/priceTier";
 import { pill, mutedText, hashtag } from "@/lib/ui";
 import { trackClientEvent } from "@/lib/clientAnalytics";
 import { useLang, useT } from "@/hooks/useLang";
-import { locationsHeading } from "@/lib/i18n";
+import { locationsHeading, formatEventWhen } from "@/lib/i18n";
 
 type LoadState = "loading" | "error";
 
@@ -67,6 +67,13 @@ export default function PlaceDetailScreen({ id }: { id: string }) {
         {idea !== "loading" && idea !== "error" && (
           <div className="mx-auto flex max-w-2xl flex-col gap-4 pt-2">
             <h1 className="text-[26px] font-semibold leading-[1.1]">{idea.title}</h1>
+
+            {idea.eventStartsAt && (
+              <div className="inline-flex w-fit items-center gap-1.5 rounded-full bg-[var(--app-coral)] px-3 py-1.5 text-[14px] font-bold text-[var(--app-ink)]">
+                <CalendarClock size={15} />
+                {formatEventWhen(lang, idea.eventStartsAt, idea.eventEndsAt)}
+              </div>
+            )}
 
             {idea.priceNote && (
               <p className="text-[16px] font-semibold">{priceTier(idea.priceNote) ?? idea.priceNote}</p>

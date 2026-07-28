@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ChevronDown, Pencil, Trash2, Plus, X, Link as LinkIcon, Upload, PencilLine, FileUp, Navigation, MapPin } from "lucide-react";
+import { ChevronDown, Pencil, Trash2, Plus, X, Link as LinkIcon, Upload, PencilLine, FileUp, Navigation, MapPin, CalendarClock } from "lucide-react";
 import { apiFetch } from "@/lib/apiClient";
 import { dateIdeaToInput, type DateIdea, type DateIdeaInput } from "@/lib/types";
 import DateIdeaForm from "@/components/DateIdeaForm";
@@ -31,7 +31,7 @@ import {
 import { metroPastelTone, metroStations, metroLineTone, sortStationsByLine } from "@/lib/metro";
 import { useLang, useT } from "@/hooks/useLang";
 import { trackClientEvent } from "@/lib/clientAnalytics";
-import { awayText, type StringKey } from "@/lib/i18n";
+import { awayText, formatEventWhen, type StringKey } from "@/lib/i18n";
 
 type Sort = "newest" | "title" | "nearby";
 
@@ -155,7 +155,16 @@ export default function StorageScreen() {
     if (metroFilters.length > 0) {
       result = result.filter((idea) => idea.locations.some((loc) => metroStations(loc.metro).some((station) => metroFilters.includes(station))));
     }
+    // Upcoming events float to the top regardless of the chosen sort, soonest first -- a past
+    // event (already happened) just falls back into the regular sort, same as a plain place.
+    const now = Date.now();
+    const upcomingStartsAt = (idea: DateIdea) =>
+      idea.eventStartsAt && new Date(idea.eventStartsAt).getTime() >= now ? new Date(idea.eventStartsAt).getTime() : null;
     result = [...result].sort((a, b) => {
+      const aEvent = upcomingStartsAt(a);
+      const bEvent = upcomingStartsAt(b);
+      if (aEvent != null && bEvent != null) return aEvent - bEvent;
+      if (aEvent != null || bEvent != null) return aEvent != null ? -1 : 1;
       if (sort === "title") return a.title.localeCompare(b.title);
       if (sort === "nearby") return (distanceById.get(a.id) ?? Infinity) - (distanceById.get(b.id) ?? Infinity);
       return b.createdAt.localeCompare(a.createdAt);
@@ -529,8 +538,14 @@ export default function StorageScreen() {
               onKeyDown={(e) => {
                 if (e.key === "Enter") openPlace(idea.id);
               }}
-              className={`${card} ${metroPastelTone(idea.locations[0]?.metro) ?? pastelTone(idea.id)} flex cursor-pointer flex-col gap-2.5 transition active:scale-[0.99]`}
+              className={`${card} ${idea.eventStartsAt ? "bg-[var(--app-coral)]" : metroPastelTone(idea.locations[0]?.metro) ?? pastelTone(idea.id)} flex cursor-pointer flex-col gap-2.5 transition active:scale-[0.99]`}
             >
+              {idea.eventStartsAt && (
+                <div className="inline-flex w-fit items-center gap-1.5 rounded-full bg-[var(--app-ink)] px-2.5 py-1 text-[12px] font-bold text-[var(--app-canvas)]">
+                  <CalendarClock size={13} />
+                  {formatEventWhen(lang, idea.eventStartsAt, idea.eventEndsAt)}
+                </div>
+              )}
               <div className="flex justify-between items-start gap-2">
                 <h2 className="flex items-start gap-1.5 text-[19px] font-semibold leading-[1.05]">
                   <span>{idea.title}</span>

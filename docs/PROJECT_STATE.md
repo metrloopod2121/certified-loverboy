@@ -368,7 +368,9 @@ plain evergreen place -- no separate entity, just two nullable columns on `DateI
   multi-place LLM prompt only offers the event schema fields when the requesting chat is
   allowed, so a non-pilot user's extracted fields are always null rather than just discarded).
 - manual entry: `DateIdeaForm` shows a "When" section (native date+time inputs, start required
-  before end can be entered) only when `features.events` comes back true from `/api/me`.
+  before end can be entered) only when `features.events` comes back true from `/api/me`. The
+  date/time controls use a compact adaptive grid, not fixed `grid-cols-2`: they stack on narrow
+  edit forms and the time field stays fixed-width on wider phones.
 - import: `cloudflareAi.ts`'s multi-place prompt asks for `eventStartDate/Time` +
   `eventEndDate/Time` (separate YYYY-MM-DD / HH:MM strings, today's date injected so relative
   dates like "завтра"/"в эту пятницу" resolve correctly) only for a permanent-venue post is

@@ -37,6 +37,12 @@ function combineEventIso(date: string, time: string): string | null {
 
 const LocationPicker = dynamic(() => import("@/components/LocationPicker"), { ssr: false });
 
+const eventDateTimeGrid = "grid min-w-0 grid-cols-1 gap-2 min-[380px]:grid-cols-[minmax(0,1fr)_7.75rem]";
+const eventDateTimeField = "flex min-w-0 flex-col gap-1";
+const eventNativeInput =
+  "w-full min-w-0 max-w-full appearance-none rounded-xl border border-[var(--app-outline)]/15 bg-[var(--app-surface)] px-3 py-2 text-[14px] leading-tight text-[var(--app-ink)] outline-none transition [color-scheme:light] focus:border-[var(--app-ink)] focus:ring-2 focus:ring-[var(--app-yellow)]";
+const eventTimeInput = `${eventNativeInput} max-w-[7.75rem]`;
+
 type LocationForm = {
   address: string;
   metro: string;
@@ -341,23 +347,23 @@ export default function DateIdeaForm({
 
           <div className="flex flex-col gap-1">
             <span className={labelClass}>{t("eventStartLabel")}</span>
-            <div className="grid grid-cols-2 gap-2">
-              <div className="flex flex-col gap-1">
+            <div className={eventDateTimeGrid}>
+              <div className={eventDateTimeField}>
                 <span className="text-[11px] font-medium text-[var(--app-muted)]">{t("eventDateFieldLabel")}</span>
                 <input
                   type="date"
                   value={eventStartDate}
                   onChange={(e) => setEventStartDate(e.target.value)}
-                  className={`${input} min-w-0`}
+                  className={eventNativeInput}
                 />
               </div>
-              <div className="flex flex-col gap-1">
+              <div className={eventDateTimeField}>
                 <span className="text-[11px] font-medium text-[var(--app-muted)]">{t("eventTimeFieldLabel")}</span>
                 <input
                   type="time"
                   value={eventStartTime}
                   onChange={(e) => setEventStartTime(e.target.value)}
-                  className={`${input} min-w-0`}
+                  className={eventTimeInput}
                 />
               </div>
             </div>
@@ -366,23 +372,23 @@ export default function DateIdeaForm({
           {eventStartDate && (
             <div className="flex flex-col gap-1">
               <span className={labelClass}>{t("eventEndLabel")}</span>
-              <div className="grid grid-cols-2 gap-2">
-                <div className="flex flex-col gap-1">
+              <div className={eventDateTimeGrid}>
+                <div className={eventDateTimeField}>
                   <span className="text-[11px] font-medium text-[var(--app-muted)]">{t("eventDateFieldLabel")}</span>
                   <input
                     type="date"
                     value={eventEndDate}
                     onChange={(e) => setEventEndDate(e.target.value)}
-                    className={`${input} min-w-0`}
+                    className={eventNativeInput}
                   />
                 </div>
-                <div className="flex flex-col gap-1">
+                <div className={eventDateTimeField}>
                   <span className="text-[11px] font-medium text-[var(--app-muted)]">{t("eventTimeFieldLabel")}</span>
                   <input
                     type="time"
                     value={eventEndTime}
                     onChange={(e) => setEventEndTime(e.target.value)}
-                    className={`${input} min-w-0`}
+                    className={eventTimeInput}
                   />
                 </div>
               </div>

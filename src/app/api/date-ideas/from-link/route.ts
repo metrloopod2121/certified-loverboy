@@ -9,7 +9,9 @@ import {
   parseInstagramLink,
   parsePostTextMulti,
   fetchTelegramPostText,
+  appendPlaceLink,
   type ParsedFromLink,
+  type ParsedPlaceLink,
 } from "@/lib/socialImport";
 import { instagramImportAllowed } from "@/lib/instagramFeature";
 import { eventsFeatureEnabled } from "@/lib/eventsFeature";
@@ -26,8 +28,15 @@ function urlHost(raw: string): string | null {
   }
 }
 
+function sourcePlaceLink(kind: LinkKind, url: string): ParsedPlaceLink | null {
+  if (kind === "telegram") return { label: "Telegram", url };
+  if (kind === "instagram") return { label: "Instagram", url };
+  return null;
+}
+
 /** Shapes a parsed place into the draft shape the Mini App's review sheet / DateIdeaForm expect. */
-function toDraft(parsed: ParsedFromLink, sourceUrl: string): DateIdeaInput {
+function toDraft(parsed: ParsedFromLink, sourceUrl: string, kind: LinkKind): DateIdeaInput {
+  const links = appendPlaceLink(parsed.links, sourcePlaceLink(kind, sourceUrl));
   return {
     title: parsed.title,
     description: parsed.description ?? "",
@@ -41,10 +50,10 @@ function toDraft(parsed: ParsedFromLink, sourceUrl: string): DateIdeaInput {
         metro: parsed.metro ?? "",
         lat: parsed.lat,
         lng: parsed.lng,
-        url: parsed.mapUrl ?? sourceUrl,
+        url: parsed.mapUrl ?? (kind === "yandex" ? sourceUrl : ""),
       },
     ],
-    links: parsed.links.map((link) => ({ label: link.label ?? "", url: link.url })),
+    links: links.map((link) => ({ label: link.label ?? "", url: link.url })),
   };
 }
 
@@ -156,5 +165,5 @@ export async function POST(request: Request) {
     auth.user.username
   );
 
-  return NextResponse.json({ items: drafts.map((parsed) => toDraft(parsed, url)) });
+  return NextResponse.json({ items: drafts.map((parsed) => toDraft(parsed, url, kind)) });
 }

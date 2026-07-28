@@ -36,6 +36,11 @@
   --metro-turquoise: #00c7b1;
   --metro-tan: #d1a35b;
   --metro-pink: #ec5aa6;
+  --metro-mcc: #e53935;
+  --metro-mcd1: #f28a20;
+  --metro-mcd2: #ec5aa6;
+  --metro-mcd3: #e95b2d;
+  --metro-mcd4: #20a957;
   --metro-red-pale: #f9e0de;
   --metro-green-pale: #e2f0e3;
   --metro-orange-pale: #f8dfc3;
@@ -50,6 +55,11 @@
   --metro-turquoise-pale: #d3f2ed;
   --metro-tan-pale: #f1e5d1;
   --metro-pink-pale: #f9dee9;
+  --metro-mcc-pale: #f9e0de;
+  --metro-mcd1-pale: #f8dfc3;
+  --metro-mcd2-pale: #f9dee9;
+  --metro-mcd3-pale: #f6ddcf;
+  --metro-mcd4-pale: #e2f0e3;
   --app-overlay: rgb(255 255 255 / 0.65);
   --app-subtle-overlay: rgb(255 255 255 / 0.5);
   --content-top-gap: 44px;

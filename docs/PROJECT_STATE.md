@@ -58,13 +58,17 @@
 
 Актуальная палитра: базовые тёплые акценты выровнены по насыщенности (`--app-yellow: #efd47c`,
 `--app-coral: #f0a477`), но event-карточки не используют gold/coral как основной язык. Для
-событий актуален светлый neon pink-blue: date badge и внутренний radial-gradient идут pink → blue,
-без teal/rainbow/holo и без золотого. Для event-тегов используется более заметный, но прозрачный
-neon-blue `pillBlue`.
+событий актуален pink-blue язык без teal/rainbow/holo и без золотого: date badge специально
+бледный pastel pink → blue (`#ffd2f1 → #c8f2ff`), а внутренний radial-gradient карточки остается
+чуть ярче. Для event-тегов используется более заметный, но прозрачный neon-blue `pillBlue`.
 
 Metro: `--metro-*` — насыщенные цвета линий для точек/свотчей; `--metro-*-pale` — отдельные
 пастельные фоны карточек. В Storage metro dot чуть крупнее (`size-2.5`) и с белым ring, чтобы
 не сливаться с фоном карточки.
+МЦД/МЦК визуально отличаются от обычного метро: точка — цветное кольцо с белым центром, а не
+залитый кружок. `metro.ts` знает МЦД-1/2/3/4 и МЦК; `Сколково` распознается как МЦД-1 и получает
+оранжевое кольцо + MCD1-pale фон карточки. Для пересадочных станций без явного `МЦД-1`/`МЦК`
+приоритет остается за обычной линией метро, чтобы не перекрашивать метро-станции случайно.
 
 Текущий профиль:
 - выбор языка через нативный `<select>`, не через две большие панели;
@@ -97,6 +101,12 @@ sudo systemctl restart certified-loverboy.service
 - Yandex всегда даёт один draft, Instagram/Telegram — может дать несколько (один пост/рилс
   может упоминать несколько мест) — ответ `{ items: DateIdeaInput[] }`, отрисовывается через
   тот же review sheet, что и file-import;
+- source URL социмпорта сохраняется в `PlaceLink`: Telegram post link / публичный channel forward
+  добавляют link с label `Telegram`, Instagram reel/post добавляет link с label `Instagram`.
+  Это происходит независимо от того, нашлась ли отдельная map-ссылка внутри поста;
+- `Location.url` должен быть только map URL. Для Yandex Maps импорта source URL по умолчанию
+  становится `Location.url`; для Telegram/Instagram source URL никогда не должен попадать в
+  `Location.url`, если это не карта;
 - после парсинга открывается review sheet, сохранение идет обычным `POST /api/date-ideas` с `source: "link_in_app"`.
 
 Геокодинг адреса без ссылки на карту (Telegram-пост/Instagram часто просто пишут адрес текстом,
@@ -120,7 +130,9 @@ sudo systemctl restart certified-loverboy.service
 - голая ссылка на Telegram post;
 - вставленный текст поста;
 - один пост может дать несколько draft'ов;
-- каждый draft подтверждается inline-кнопками approve/reject.
+- каждый draft подтверждается inline-кнопками approve/reject;
+- source URL bare Telegram post / public channel forward / Instagram link добавляется в `PlaceLink`
+  по тем же правилам, что в Mini App. Map URL остается в `Location.url`.
 
 `/start` отдельно уведомляет админа (`ADMIN_TG_ID`) с username/именем/id, языком Telegram
 и deep-link payload. Если payload нет, это прямой заход: поиск Telegram, профиль бота,

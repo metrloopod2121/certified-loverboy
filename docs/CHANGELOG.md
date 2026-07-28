@@ -4,6 +4,22 @@
 
 ## 2026-07-28 (6)
 
+**Import source links: Telegram/Instagram source сохраняется в Links**
+- Mini App `/api/date-ideas/from-link`: при импорте Telegram post link или Instagram reel/post source URL теперь автоматически добавляется в `PlaceLink` с label `Telegram`/`Instagram`.
+- Mini App больше не кладет Instagram/Telegram source URL в `Location.url`, если mapUrl не найден. `Location.url` остается только для карты; для Yandex Maps source URL по-прежнему используется как map link локации.
+- Bot webhook: для bare Telegram post link, Instagram link и публичного channel forward source URL добавляется в `idea.links` независимо от того, нашлась ли отдельная ссылка на карту.
+- Дедуп ссылок вынесен в общий `appendPlaceLink()`, чтобы source link не дублировался с уже найденными `otherLinks`.
+
+**Event date badge: градиент стал бледнее**
+- `eventBadgeColors` в `ui.ts` переведен с плотного neon pink/blue (`#ff8fe1 → #7ddcff`) на более светлый pastel pink/blue (`#ffd2f1 → #c8f2ff`).
+- Тень у date badge ослаблена, чтобы плашка даты события не была самым темным/тяжелым элементом на карточке.
+
+**Metro/MCD dots: МЦД и МЦК показываются кольцом**
+- `metro.ts` расширен с обычного метро до rail/metro lookup: добавлены МЦД-1/2/3/4 и полный список МЦК, включая `Сколково` на МЦД-1.
+- Для МЦД/МЦК `metroLineTone()` теперь возвращает не заливку, а ring marker: цветная обводка линии + белый центр. Обычные станции метро остаются залитыми кружками.
+- Цвета: `Сколково`/МЦД-1 — оранжевое кольцо, МЦД-2 — розовое, МЦД-3 — рыже-красное, МЦД-4 — зелёное, МЦК — красное.
+- `metroPastelTone()` теперь тоже понимает МЦД/МЦК, поэтому карточки с уникальными МЦД-станциями больше не падают в случайный pastel fallback.
+
 **Place detail: ссылки читаются как кликабельные блоки**
 - В деталке места убран явный текст "Открыть ссылку" под локацией: если у локации есть map URL, кликабельной стала вся плашка адреса.
 - У кликабельной локации и обычных `PlaceLink` справа теперь стоит `ArrowUpRight`, чтобы было понятно, что tap откроет внешнюю ссылку.

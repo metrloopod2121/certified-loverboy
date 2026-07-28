@@ -17,13 +17,15 @@ import { DEFAULT_LANG, t, formatEventWhen, type Lang } from "@/lib/i18n";
 
 const execFile = promisify(execFileCallback);
 
+export type ParsedPlaceLink = { label: string | null; url: string };
+
 export type ParsedFromLink = Omit<
   ExtractedIdea,
   "otherLinks" | "eventStartDate" | "eventStartTime" | "eventEndDate" | "eventEndTime"
 > & {
   lat: number | null;
   lng: number | null;
-  links: { label: string | null; url: string }[];
+  links: ParsedPlaceLink[];
   eventStartsAt: string | null;
   eventEndsAt: string | null;
 };
@@ -62,18 +64,45 @@ export function isMapsProviderLink(raw: string): boolean {
 
 /** Turns the model's raw `otherLinks` strings into the place's link list — trimmed, deduped,
  *  dropping anything that isn't a real URL or that duplicates the map link already chosen. */
-function dedupeLinks(rawLinks: string[], exclude: string | null): { label: string | null; url: string }[] {
+function normalizedLinkKey(raw: string): string {
+  try {
+    const url = new URL(stripTrailingPunctuation(raw.trim()));
+    url.hash = "";
+    if (url.pathname !== "/") url.pathname = url.pathname.replace(/\/+$/u, "");
+    return url.toString();
+  } catch {
+    return stripTrailingPunctuation(raw.trim());
+  }
+}
+
+export function appendPlaceLink(links: ParsedPlaceLink[], link: ParsedPlaceLink | null): ParsedPlaceLink[] {
+  const url = stripTrailingPunctuation(link?.url.trim() ?? "");
+  if (!url) return links;
+  try {
+    new URL(url);
+  } catch {
+    return links;
+  }
+
+  const key = normalizedLinkKey(url);
+  if (links.some((existing) => normalizedLinkKey(existing.url) === key)) return links;
+  return [...links, { label: link?.label ?? null, url }];
+}
+
+function dedupeLinks(rawLinks: string[], exclude: string | null): ParsedPlaceLink[] {
   const seen = new Set<string>();
-  const links: { label: string | null; url: string }[] = [];
+  const links: ParsedPlaceLink[] = [];
+  const excludeKey = exclude ? normalizedLinkKey(exclude) : null;
   for (const raw of rawLinks) {
     const url = stripTrailingPunctuation(raw.trim());
-    if (!url || url === exclude || seen.has(url)) continue;
+    const key = normalizedLinkKey(url);
+    if (!url || key === excludeKey || seen.has(key)) continue;
     try {
       new URL(url);
     } catch {
       continue;
     }
-    seen.add(url);
+    seen.add(key);
     links.push({ label: null, url });
   }
   return links;

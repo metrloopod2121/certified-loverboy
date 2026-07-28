@@ -23,12 +23,11 @@ export const pill =
 export const pillBlue =
   "inline-flex items-center rounded-full bg-[#6bdcff]/65 px-2.5 py-1 text-[12px] font-bold text-[var(--app-ink)] shadow-[0_3px_12px_rgba(16,177,236,0.24)] ring-1 ring-[#13bdf2]/45";
 
-/** Shared "this is a one-time event" visual language -- a restrained neon pink/blue gradient with a
- *  soft matching glow, used for the date badge (Storage card, place detail, import review) and
- *  the card's inner light. Keep it to two stops, so it reads as a single event accent rather
- *  than holo/rainbow treatment. */
+/** Shared "this is a one-time event" badge -- pale pink/blue so the date stays visible without
+ *  becoming the darkest or loudest element on the card. Keep it to two stops, so it reads as a
+ *  single event accent rather than holo/rainbow treatment. */
 export const eventBadgeColors =
-  "bg-gradient-to-r from-[#ff8fe1] to-[#7ddcff] text-[var(--app-ink)] shadow-[0_4px_16px_rgba(77,190,255,0.26)] ring-1 ring-white/75";
+  "bg-gradient-to-r from-[#ffd2f1] to-[#c8f2ff] text-[var(--app-ink)] shadow-[0_3px_12px_rgba(77,190,255,0.14)] ring-1 ring-white/85";
 
 export const eventCountdownBadge =
   "inline-flex shrink-0 items-center rounded-full bg-[#7ddcff]/42 px-2.5 py-1 text-[12px] font-bold text-[var(--app-ink)] shadow-[0_3px_12px_rgba(16,177,236,0.18)] ring-1 ring-[#13bdf2]/35";

@@ -28,7 +28,9 @@ import {
   fetchTelegramPostText,
   formatIdeaPreview,
   isMapsProviderLink,
+  appendPlaceLink,
   type ParsedFromLink,
+  type ParsedPlaceLink,
 } from "@/lib/socialImport";
 
 export const runtime = "nodejs";
@@ -193,14 +195,14 @@ async function sendDraftsForApproval(
   fallbackUrlFor: (idea: ParsedFromLink) => string,
   source: string,
   lang: Lang,
-  username: string | null = null
+  username: string | null = null,
+  sourceLinkFor: (idea: ParsedFromLink) => ParsedPlaceLink | null = () => null
 ) {
   for (const idea of ideas) {
     const { locationUrl, extraLink } = resolveLocationUrl(idea, fallbackUrlFor(idea));
-    const enrichedIdea: ParsedFromLink =
-      extraLink && !idea.links.some((link) => link.url === extraLink)
-        ? { ...idea, links: [...idea.links, { label: null, url: extraLink }] }
-        : idea;
+    let links = appendPlaceLink(idea.links, sourceLinkFor(idea));
+    links = appendPlaceLink(links, extraLink ? { label: null, url: extraLink } : null);
+    const enrichedIdea: ParsedFromLink = links === idea.links ? idea : { ...idea, links };
 
     const pending = await prisma.pendingImport.create({
       data: { chatId, sourceUrl: locationUrl, payload: JSON.stringify(enrichedIdea), source },
@@ -342,7 +344,16 @@ async function handleTelegramPostLink(message: TelegramMessage, url: string) {
     username
   );
 
-  await sendDraftsForApproval(chatId, drafts, t(lang, "headerPostLink"), () => url, "bot_telegram_post_link", lang, username);
+  await sendDraftsForApproval(
+    chatId,
+    drafts,
+    t(lang, "headerPostLink"),
+    () => url,
+    "bot_telegram_post_link",
+    lang,
+    username,
+    () => ({ label: "Telegram", url })
+  );
 }
 
 /** Reel/post link, pilot-gated (see instagramImportAllowed). Downloads the audio, transcribes
@@ -398,7 +409,16 @@ async function handleInstagramLink(message: TelegramMessage, url: string) {
     username
   );
 
-  await sendDraftsForApproval(chatId, drafts, t(lang, "headerInstagramLink"), () => url, "bot_instagram_link", lang, username);
+  await sendDraftsForApproval(
+    chatId,
+    drafts,
+    t(lang, "headerInstagramLink"),
+    () => url,
+    "bot_instagram_link",
+    lang,
+    username,
+    () => ({ label: "Instagram", url })
+  );
 }
 
 /** A channel post forwarded straight into the chat — post text already has address/price/
@@ -475,8 +495,18 @@ async function handleChannelForwardPost(message: TelegramMessage) {
     username
   );
 
-  const fallbackUrl = hiddenLinks[0] ?? forwardedChannelSourceUrl(message);
-  await sendDraftsForApproval(chatId, drafts, t(lang, "headerChannelForward"), () => fallbackUrl, "bot_channel_forward", lang, username);
+  const forwardedSourceUrl = forwardedChannelSourceUrl(message);
+  const fallbackUrl = hiddenLinks[0] ?? forwardedSourceUrl;
+  await sendDraftsForApproval(
+    chatId,
+    drafts,
+    t(lang, "headerChannelForward"),
+    () => fallbackUrl,
+    "bot_channel_forward",
+    lang,
+    username,
+    () => (forwardedSourceUrl ? { label: "Telegram", url: forwardedSourceUrl } : null)
+  );
 }
 
 /** Fallback for when forwarding doesn't work (protected content, etc.) — pastes the post text

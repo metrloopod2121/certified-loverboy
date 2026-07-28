@@ -33,7 +33,7 @@
 ## Текущий UI
 
 В Mini App три основных таба:
-- Ideas Storage (`/`) — список мест, фильтры tags/metro, сортировки, добавление места вручную или через Yandex Maps link.
+- Ideas Storage (`/`) — список мест, фильтры tags/metro, сортировки, добавление места вручную или через ссылку (Yandex Maps / Instagram reel-post / Telegram post).
 - Map (`/map`) — карта мест с координатами, фильтры tags/metro.
 - Profile (`/profile`) — язык, инфо о боте, счетчик импортов по ссылке, support, export.
 
@@ -60,8 +60,14 @@ sudo systemctl restart certified-loverboy.service
 
 Импорт через приложение:
 - `POST /api/date-ideas/from-link`
-- только Yandex Maps link;
-- шаринг-блок Yandex Maps "название / адрес / ссылка" схлопывается до ссылки в UI;
+- та же тройка источников, что и у бота: Yandex Maps link, Instagram reel/post, Telegram post
+  (определяется по regex на сервере, тем же кодом, что и webhook);
+- Instagram здесь под тем же pilot-гейтом (`instagramImportAllowed`), что и в боте;
+- шаринг-блок (Yandex "название / адрес / ссылка", инстаграмная подпись и т.п.) схлопывается
+  до голой ссылки в UI при вводе;
+- Yandex всегда даёт один draft, Instagram/Telegram — может дать несколько (один пост/рилс
+  может упоминать несколько мест) — ответ `{ items: DateIdeaInput[] }`, отрисовывается через
+  тот же review sheet, что и file-import;
 - после парсинга открывается review sheet, сохранение идет обычным `POST /api/date-ideas` с `source: "link_in_app"`.
 
 Импорт через bot:
@@ -303,13 +309,21 @@ source, alongside Yandex Maps / Telegram post links:
   effort scrapes the caption too, transcribes the audio with Workers AI Whisper
   (`CLOUDFLARE_WHISPER_MODEL`), then feeds transcript+caption through the same multi-place
   extraction pipeline as Telegram posts (`parsePostTextMulti`);
-- gated by `instagramImportAllowed()`: always on for `ADMIN_TG_ID`, everyone else needs
+- gated by `instagramImportAllowed()` (`src/lib/instagramFeature.ts`, shared between the bot
+  webhook and the in-app Link tab): always on for `ADMIN_TG_ID`, everyone else needs
   `INSTAGRAM_IMPORT_ENABLED="1"`;
 - shares the same `ImportQuota`/`LINK_IMPORT_LIMIT` as other bot imports;
 - `instagram_import_gated` analytics event fires when a non-pilot user tries it, to gauge demand
   before flipping the flag;
 - known limitation: catches spoken narration only, not text burned into the video frame; success
   rate against Instagram's anti-scraping measures is unverified until tested live on the server.
+- also reachable from the Mini App's own "+" → Link tab (`/api/date-ideas/from-link`), not just
+  the bot -- same detection, same pilot gate, same quota. Telegram post links work there too,
+  via `fetchTelegramPostText()` + `parsePostTextMulti()`, same as the bot's post-link handler.
+  `findInstagramLink`/`findTelegramPostLink` live in `src/lib/coords.ts` (pure regex, no heavy
+  deps) so the client-side link-input field can clean pasted text without pulling in
+  `socialImport.ts`'s server-only `yt-dlp`/AI dependencies; `socialImport.ts` re-exports both for
+  existing server-side importers.
 
 ## Timed events (pilot)
 

@@ -5,7 +5,13 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { extractIdeaFromText, extractIdeasFromText, transcribeAudio, type ExtractedIdea } from "@/lib/cloudflareAi";
 import { braveSearchSnippets } from "@/lib/braveSearch";
-import { parseMapsLink, findYandexMapsLink, stripTrailingPunctuation } from "@/lib/coords";
+import {
+  parseMapsLink,
+  findYandexMapsLink,
+  findInstagramLink,
+  findTelegramPostLink,
+  stripTrailingPunctuation,
+} from "@/lib/coords";
 import { DEFAULT_LANG, t, formatEventWhen, type Lang } from "@/lib/i18n";
 
 const execFile = promisify(execFileCallback);
@@ -33,16 +39,9 @@ function combineEventDateTime(date: string | null, time: string | null): string 
 }
 
 // Re-exported for existing callers (webhook route, from-link API route) -- the extraction
-// logic itself lives in coords.ts so the client-side link-import field can also import it
-// directly, without pulling this module's server-only AI/search dependencies into the bundle.
-export { findYandexMapsLink };
-
-const TELEGRAM_POST_URL = /https?:\/\/(t\.me|telegram\.me)\/[^\s]+/iu;
-
-export function findTelegramPostLink(text: string): string | null {
-  const match = text.match(TELEGRAM_POST_URL);
-  return match ? stripTrailingPunctuation(match[0]) : null;
-}
+// logic itself lives in coords.ts so client-side link-input fields can also import it directly,
+// without pulling this module's server-only AI/search/yt-dlp dependencies into the bundle.
+export { findYandexMapsLink, findInstagramLink, findTelegramPostLink };
 
 const MAPS_HOST = /(?:^|\.)(yandex\.[a-z.]+|ya\.ru|2gis\.[a-z.]+|google\.[a-z.]+|goo\.gl)$/iu;
 
@@ -284,13 +283,6 @@ export async function fetchTelegramPostText(url: string): Promise<string | null>
   } catch {
     return null;
   }
-}
-
-const INSTAGRAM_URL = /https?:\/\/(www\.)?instagram\.com\/(reel|reels|p|tv)\/[^\s]+/iu;
-
-export function findInstagramLink(text: string): string | null {
-  const match = text.match(INSTAGRAM_URL);
-  return match ? stripTrailingPunctuation(match[0]) : null;
 }
 
 /** Best-effort scrape of an Instagram post/reel's caption from its public page -- frequently

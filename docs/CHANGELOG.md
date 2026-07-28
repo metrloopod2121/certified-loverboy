@@ -2,6 +2,16 @@
 
 Для контекста между сессиями (Claude Code + Codex работают в одном репо параллельно). Пиши сюда, когда делаешь что-то нетривиальное — особенно смену модели данных или архитектурных решений.
 
+## 2026-07-28
+
+**Мини-апп: Link-таб теперь принимает не только Яндекс.Карты, но и Instagram reel/post, и Telegram post**
+- Раньше `/api/date-ideas/from-link` умел только Yandex Maps и всегда возвращал ровно один draft. Переписал: сервер сам определяет тип ссылки (`findYandexMapsLink`/`findInstagramLink`/`findTelegramPostLink`, тот же приоритет, что у бота) и роутит на `parseYandexMapsLink`/`parseInstagramLink`/`fetchTelegramPostText`+`parsePostTextMulti` — тот же код, что уже год как проверен в боте, никакого дублирования логики.
+- Instagram в мини-аппе под тем же pilot-гейтом, что в боте — вынес `instagramImportAllowed()` из `webhook/route.ts` в общий `src/lib/instagramFeature.ts` (тот же паттерн, что `eventsFeature.ts`), чтобы не плодить вторую копию гейта.
+- Ответ роута стал `{ items: DateIdeaInput[] }` вместо одного объекта — Instagram/Telegram-пост может упоминать несколько мест сразу. `ImportReviewSheet` уже умела рисовать список drafts (раньше только для file-import), просто расширил её тип `ReviewItem.parsed` с урезанного `ParsedDateIdea` до полного `DateIdeaInput`, чтобы события (`eventStartsAt`/`eventEndsAt`) тоже доезжали до review sheet, а не терялись по пути.
+- `findInstagramLink`/`findTelegramPostLink` переехали из `socialImport.ts` (там `node:child_process`, Cloudflare AI, Brave — тяжёлые серверные зависимости) в `coords.ts` (чистые regex, без зависимостей) — по той же причине, по которой там уже жил `findYandexMapsLink`: клиентское поле ввода ссылки в Storage должно уметь чистить вставленный текст до голой ссылки, не утягивая серверный код в клиентский бандл. `socialImport.ts` реэкспортирует обе функции для существующих серверных импортёров.
+- В`from-link` теперь тоже прокидывается `eventsFeatureEnabled()` — событие, найденное в Instagram/Telegram-посте через мини-апп, сохраняется так же, как через бота.
+- Копия Link-таба обновлена («Вставь ссылку на Яндекс.Карты, рилс/пост из Instagram или пост из Telegram»), добавлен `unsupportedLinkError` для случая, когда вставленный текст вообще не похож ни на одну из трёх ссылок.
+
 ## 2026-07-27 (6)
 
 **Временные события (пилот, только ADMIN_TG_ID) — концерт/спектакль/турнир с конкретной датой**

@@ -6,10 +6,10 @@ import { ChevronDown, Pencil, Trash2, Plus, X, Link as LinkIcon, Upload, PencilL
 import { apiFetch } from "@/lib/apiClient";
 import { dateIdeaToInput, type DateIdea, type DateIdeaInput } from "@/lib/types";
 import DateIdeaForm from "@/components/DateIdeaForm";
-import ImportReviewSheet from "@/components/ImportReviewSheet";
+import ImportReviewSheet, { type ReviewItem } from "@/components/ImportReviewSheet";
 import MultiSelectFilter from "@/components/MultiSelectFilter";
-import { parseDateMarkdown, type ParsedDateIdea } from "@/lib/parseDateMarkdown";
-import { parseCoordinates, parseMapsLink, findYandexMapsLink } from "@/lib/coords";
+import { parseDateMarkdown } from "@/lib/parseDateMarkdown";
+import { parseCoordinates, parseMapsLink, findYandexMapsLink, findInstagramLink, findTelegramPostLink } from "@/lib/coords";
 import { distanceKm, formatDistanceKm, type LatLng } from "@/lib/geo";
 import { priceTier } from "@/lib/priceTier";
 import {
@@ -56,13 +56,11 @@ function loadSavedLocation(): LatLng | null {
   return null;
 }
 
-type PendingImport = {
-  id: string;
+type PendingImport = ReviewItem & {
   source: string;
   /** Which "add" flow produced this draft — tagged onto the place_created analytics event
    *  once it's actually saved. */
   origin: "file_import" | "link_in_app";
-  parsed: ParsedDateIdea;
 };
 
 let nextImportId = 0;
@@ -274,7 +272,8 @@ export default function StorageScreen() {
         id: `f${nextImportId++}`,
         source: file.name,
         origin: "file_import" as const,
-        parsed: parseDateMarkdown(await file.text()),
+        // Markdown files never describe a one-time event -- only link imports do.
+        parsed: { ...parseDateMarkdown(await file.text()), eventStartsAt: null, eventEndsAt: null },
       }))
     );
     trackClientEvent("storage_file_import_selected", { filesCount: newItems.length });
@@ -288,11 +287,11 @@ export default function StorageScreen() {
     setImportItems((prev) => prev.filter((i) => i.id !== id));
   }
 
-  // Yandex Maps' own "Share" action copies "Title\nAddress\nhttps://..." as one block, not a
-  // bare URL -- rather than leaving that clutter sitting in the field, collapse it down to just
-  // the link the moment one is found, so what's left is only the link, no extra text.
+  // A share action (Yandex Maps, Instagram, Telegram) often copies a title/caption alongside the
+  // URL as one block, not a bare link -- rather than leaving that clutter sitting in the field,
+  // collapse it down to just the link the moment one is found, so what's left is only the link.
   function handleLinkInputChange(value: string) {
-    const extracted = findYandexMapsLink(value);
+    const extracted = findYandexMapsLink(value) ?? findInstagramLink(value) ?? findTelegramPostLink(value);
     if (extracted && extracted !== value.trim()) {
       trackClientEvent("storage_link_input_normalized", { rawLength: value.length });
     }
@@ -306,11 +305,17 @@ export default function StorageScreen() {
     setLinkImporting(true);
     setLinkError(null);
     try {
-      const parsed: ParsedDateIdea = await apiFetch("/api/date-ideas/from-link", {
+      const { items }: { items: DateIdeaInput[] } = await apiFetch("/api/date-ideas/from-link", {
         method: "POST",
         body: JSON.stringify({ url }),
       });
-      setImportItems((prev) => [...prev, { id: `l${nextImportId++}`, source: url, origin: "link_in_app", parsed }]);
+      const newItems: PendingImport[] = items.map((parsed) => ({
+        id: `l${nextImportId++}`,
+        source: url,
+        origin: "link_in_app",
+        parsed,
+      }));
+      setImportItems((prev) => [...prev, ...newItems]);
       setLinkInput("");
     } catch (err) {
       setLinkError(err instanceof Error ? err.message : t("couldntParseLink"));

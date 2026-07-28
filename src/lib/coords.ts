@@ -44,6 +44,25 @@ export function findYandexMapsLink(text: string): string | null {
   return match ? stripTrailingPunctuation(match[0]) : null;
 }
 
+const INSTAGRAM_URL = /https?:\/\/(www\.)?instagram\.com\/(reel|reels|p|tv)\/[^\s]+/iu;
+
+/** Extracts an Instagram reel/post/tv URL out of arbitrary text. Lives here (not socialImport.ts)
+ *  so client components can detect/clean an Instagram link without pulling in that module's
+ *  server-only AI/yt-dlp dependencies. */
+export function findInstagramLink(text: string): string | null {
+  const match = text.match(INSTAGRAM_URL);
+  return match ? stripTrailingPunctuation(match[0]) : null;
+}
+
+const TELEGRAM_POST_URL = /https?:\/\/(t\.me|telegram\.me)\/[^\s]+/iu;
+
+/** Extracts a Telegram post URL out of arbitrary text -- see findInstagramLink for why this
+ *  lives here instead of socialImport.ts. */
+export function findTelegramPostLink(text: string): string | null {
+  const match = text.match(TELEGRAM_POST_URL);
+  return match ? stripTrailingPunctuation(match[0]) : null;
+}
+
 function safeDecode(text: string): string {
   try {
     return decodeURIComponent(text);

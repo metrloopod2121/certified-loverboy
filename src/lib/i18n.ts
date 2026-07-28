@@ -129,10 +129,17 @@ const strings = {
   tabManual: { ru: "Вручную", en: "Manual" },
   tabLink: { ru: "Ссылка", en: "Link" },
   tabImportFile: { ru: "Импорт файла", en: "Import file" },
-  pasteYandexLink: { ru: "Вставь ссылку на Яндекс.Карты", en: "Paste a Yandex Maps link" },
+  pasteYandexLink: {
+    ru: "Вставь ссылку на Яндекс.Карты, рилс/пост из Instagram или пост из Telegram",
+    en: "Paste a Yandex Maps link, an Instagram reel/post, or a Telegram post",
+  },
   linkPlaceholder: {
     ru: "https://yandex.ru/maps/... (или весь скопированный текст)",
     en: "https://yandex.ru/maps/... (or the whole shared text)",
+  },
+  unsupportedLinkError: {
+    ru: "Не нашёл здесь ссылку на Яндекс.Карты, Instagram или Telegram",
+    en: "Couldn't find a Yandex Maps, Instagram, or Telegram link here",
   },
   reading: { ru: "Читаю…", en: "Reading…" },
   add: { ru: "Добавить", en: "Add" },

@@ -5,7 +5,7 @@ import { Plus, Pencil, Trash2, X, Link as LinkIcon } from "lucide-react";
 import DateIdeaForm from "@/components/DateIdeaForm";
 import type { DateIdeaInput } from "@/lib/types";
 import { priceTier } from "@/lib/priceTier";
-import { card, pill, mutedText, buttonPrimary, buttonSecondary, buttonGhost, iconButton, hashtag } from "@/lib/ui";
+import { card, pill, pillBlue, eventBadgeColors, mutedText, buttonPrimary, buttonSecondary, buttonGhost, iconButton, hashtag } from "@/lib/ui";
 import { useLang, useT } from "@/hooks/useLang";
 import { foundPlacesText, formatEventWhen } from "@/lib/i18n";
 
@@ -75,7 +75,7 @@ export default function ImportReviewSheet({
             ) : (
               <div key={item.id} className={`${card} flex flex-col gap-2.5`}>
                 {item.parsed.eventStartsAt && (
-                  <div className="inline-flex w-fit items-center gap-1.5 rounded-full bg-[var(--app-ink)] px-2.5 py-1 text-[12px] font-bold text-[var(--app-canvas)]">
+                  <div className={`inline-flex w-fit items-center gap-1.5 rounded-full px-2.5 py-1 text-[12px] font-bold ${eventBadgeColors}`}>
                     {formatEventWhen(lang, item.parsed.eventStartsAt, item.parsed.eventEndsAt)}
                   </div>
                 )}
@@ -88,7 +88,7 @@ export default function ImportReviewSheet({
                 {item.parsed.tags.length > 0 && (
                   <div className="flex flex-wrap gap-1.5">
                     {item.parsed.tags.map((tag) => (
-                      <span key={tag} className={pill}>{hashtag(tag)}</span>
+                      <span key={tag} className={item.parsed.eventStartsAt ? pillBlue : pill}>{hashtag(tag)}</span>
                     ))}
                   </div>
                 )}

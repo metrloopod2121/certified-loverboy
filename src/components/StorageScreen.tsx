@@ -17,6 +17,10 @@ import {
   input,
   select,
   pill,
+  pillBlue,
+  eventBadgeColors,
+  eventCardGlow,
+  eventStripe,
   iconButton,
   pageHeading,
   mutedText,
@@ -552,10 +556,15 @@ export default function StorageScreen() {
               onKeyDown={(e) => {
                 if (e.key === "Enter") openPlace(idea.id);
               }}
-              className={`${card} ${idea.eventStartsAt ? "bg-[var(--app-coral)]" : metroPastelTone(idea.locations[0]?.metro) ?? pastelTone(idea.id)} flex cursor-pointer flex-col gap-2.5 transition active:scale-[0.99]`}
+              className={`${card} ${
+                idea.eventStartsAt
+                  ? `relative overflow-hidden bg-[var(--app-surface)] ${eventCardGlow}`
+                  : metroPastelTone(idea.locations[0]?.metro) ?? pastelTone(idea.id)
+              } flex cursor-pointer flex-col gap-2.5 transition active:scale-[0.99]`}
             >
+              {idea.eventStartsAt && <div className={eventStripe} />}
               {idea.eventStartsAt && (
-                <div className="inline-flex w-fit items-center gap-1.5 rounded-full bg-[var(--app-ink)] px-2.5 py-1 text-[12px] font-bold text-[var(--app-canvas)]">
+                <div className={`inline-flex w-fit items-center gap-1.5 rounded-full px-2.5 py-1 text-[12px] font-bold ${eventBadgeColors}`}>
                   <CalendarClock size={13} />
                   {formatEventWhen(lang, idea.eventStartsAt, idea.eventEndsAt)}
                 </div>
@@ -647,7 +656,7 @@ export default function StorageScreen() {
               {idea.tags.length > 0 && (
                 <div className="flex flex-wrap gap-1.5">
                   {idea.tags.map((t) => (
-                    <span key={t.tag.id} className={pill}>{hashtag(t.tag.name)}</span>
+                    <span key={t.tag.id} className={idea.eventStartsAt ? pillBlue : pill}>{hashtag(t.tag.name)}</span>
                   ))}
                 </div>
               )}

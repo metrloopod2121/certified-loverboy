@@ -592,7 +592,7 @@ export default function StorageScreen() {
                             key={station}
                             className="inline-flex items-center gap-1 text-[13px] font-semibold text-[var(--app-ink)]"
                           >
-                            <span className={`size-2 shrink-0 rounded-full ${metroLineTone(station) ?? "bg-[var(--app-muted)]"}`} />
+                            <span className={`size-2.5 shrink-0 rounded-full shadow-[0_0_8px_rgba(28,26,23,0.12)] ring-1 ring-white/70 ${metroLineTone(station) ?? "bg-[var(--app-muted)]"}`} />
                             {station}
                           </span>
                         ))}

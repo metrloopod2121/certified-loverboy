@@ -21,22 +21,22 @@ export const pill =
 /** Tag color for a one-time dated event -- blue instead of the default pink, so tags read as
  *  "this one's an event" at a glance too, not just the date badge. */
 export const pillBlue =
-  "inline-flex items-center rounded-full bg-[#7ddcff]/55 px-2.5 py-1 text-[12px] font-bold text-[var(--app-ink)] shadow-[0_3px_10px_rgba(36,168,220,0.18)] ring-1 ring-[#2fb8ec]/35";
+  "inline-flex items-center rounded-full bg-[#6bdcff]/65 px-2.5 py-1 text-[12px] font-bold text-[var(--app-ink)] shadow-[0_3px_12px_rgba(16,177,236,0.24)] ring-1 ring-[#13bdf2]/45";
 
-/** Shared "this is a one-time event" visual language -- a restrained warm coral/gold gradient with a
+/** Shared "this is a one-time event" visual language -- a restrained neon pink/blue gradient with a
  *  soft matching glow, used for the date badge (Storage card, place detail, import review) and
- *  the card's inner light. Keep it away from holo/rainbow treatment: dated events should read as
- *  one warm accent, not a separate multicolor system. */
+ *  the card's inner light. Keep it to two stops, so it reads as a single event accent rather
+ *  than holo/rainbow treatment. */
 export const eventBadgeColors =
-  "bg-gradient-to-r from-[#ffb182] to-[#ffe28a] text-[var(--app-ink)] shadow-[0_4px_16px_rgba(255,177,130,0.32)] ring-1 ring-white/70";
+  "bg-gradient-to-r from-[#ff8fe1] to-[#7ddcff] text-[var(--app-ink)] shadow-[0_4px_16px_rgba(77,190,255,0.26)] ring-1 ring-white/75";
 
 export const eventCountdownBadge =
-  "inline-flex shrink-0 items-center rounded-full bg-[#7ddcff]/35 px-2.5 py-1 text-[12px] font-bold text-[var(--app-ink)] shadow-[0_3px_12px_rgba(36,168,220,0.16)] ring-1 ring-[#2fb8ec]/30";
+  "inline-flex shrink-0 items-center rounded-full bg-[#7ddcff]/42 px-2.5 py-1 text-[12px] font-bold text-[var(--app-ink)] shadow-[0_3px_12px_rgba(16,177,236,0.18)] ring-1 ring-[#13bdf2]/35";
 
 /** Event card surface in the Storage list -- translucent glass with the light source clipped
  *  inside the rounded card, so the glow spreads toward the edges without bleeding outside. */
 export const eventCardGlow =
-  "relative isolate overflow-hidden !border-white/60 !bg-[radial-gradient(ellipse_at_52%_44%,rgba(255,177,130,0.54)_0%,rgba(255,226,138,0.31)_45%,rgba(255,253,248,0.68)_100%)] shadow-[0_2px_0_rgba(28,26,23,0.08),0_10px_24px_-18px_rgba(255,177,130,0.72)] backdrop-blur-md";
+  "relative isolate overflow-hidden !border-white/60 !bg-[radial-gradient(ellipse_at_50%_44%,rgba(255,143,225,0.43)_0%,rgba(125,220,255,0.31)_48%,rgba(255,253,248,0.69)_100%)] shadow-[0_2px_0_rgba(28,26,23,0.08),0_10px_24px_-18px_rgba(77,190,255,0.62)] backdrop-blur-md";
 
 /** Prefixes a tag name with "#" (no-op if it already has one), and strips whitespace so it
  *  reads as a single hashtag word. */

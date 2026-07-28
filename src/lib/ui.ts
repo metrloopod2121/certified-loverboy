@@ -31,10 +31,10 @@ export const pillBlue =
 export const eventBadgeColors =
   "bg-gradient-to-r from-[#ff8fd6] via-[#a78bfa] to-[#5fd8c8] text-white shadow-[0_4px_14px_rgba(167,139,250,0.45)] ring-1 ring-white/40";
 
-/** Glow around an event card in the Storage list -- a translucent pseudo-element sits behind the
- *  whole card contour, so events read as softly lit without a loud left ribbon. */
+/** Event card surface in the Storage list -- translucent glass with the light source clipped
+ *  inside the rounded card, so the glow spreads toward the edges without bleeding outside. */
 export const eventCardGlow =
-  "relative isolate overflow-visible bg-[var(--app-surface)] shadow-[0_2px_0_rgba(28,26,23,0.08),0_0_0_1px_rgba(255,255,255,0.85),0_14px_32px_-18px_rgba(167,139,250,0.7)] before:pointer-events-none before:absolute before:-inset-1 before:-z-10 before:rounded-[26px] before:bg-gradient-to-r before:from-[#ff8fd6]/40 before:via-[#a78bfa]/35 before:to-[#5fd8c8]/40 before:blur-[12px] before:content-['']";
+  "relative isolate overflow-hidden !border-white/55 !bg-[radial-gradient(ellipse_at_50%_45%,rgba(255,143,214,0.46)_0%,rgba(167,139,250,0.32)_32%,rgba(95,216,200,0.18)_58%,rgba(255,255,255,0.58)_100%)] backdrop-blur-md";
 
 /** Prefixes a tag name with "#" (no-op if it already has one), and strips whitespace so it
  *  reads as a single hashtag word. */

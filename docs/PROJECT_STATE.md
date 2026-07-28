@@ -374,8 +374,9 @@ plain evergreen place -- no separate entity, just two nullable columns on `DateI
 - UI: Ideas Storage pins any place with a future `eventStartsAt` to the top of the list (soonest
   first), ahead of whatever sort is selected -- a past event just falls back into normal sort,
   same as a plain place. Card and place-detail screen show a "When" badge
-  (`CalendarClock` icon + `formatEventWhen()`) when set. Storage event cards use a soft
-  translucent contour glow behind the whole card; there is no left-side event stripe.
+  (`CalendarClock` icon + `formatEventWhen()`) when set. Storage event cards use a translucent
+  glass surface with an internal centered radial-gradient light source clipped inside the rounded
+  card; there is no left-side event stripe or external glow bleeding outside the card.
 - Prod verified 2026-07-28: `EVENTS_FEATURE_ENABLED` is absent/false in `.env`; DB rows with
   `eventStartsAt is not null` belong only to `ADMIN_TG_ID=504196424` (1 row at verification).
 

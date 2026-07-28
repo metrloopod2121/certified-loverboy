@@ -23,18 +23,17 @@ export const pill =
 export const pillBlue =
   "inline-flex items-center rounded-full bg-[var(--app-blue)]/55 px-2.5 py-1 text-[12px] font-bold text-[var(--app-ink)] ring-1 ring-[var(--app-outline)]/10";
 
-/** Shared "this is a one-time event" visual language -- a holo pink/violet/teal gradient with a
+/** Shared "this is a one-time event" visual language -- a warm coral/gold/cool gradient with a
  *  soft matching glow, used for the date badge (Storage card, place detail, import review) and
- *  the card's contour glow. Colors are pushed brighter than the rest of the pastel palette on
- *  purpose: an event should read as brighter/louder than an evergreen place, not just differently
- *  tinted. Sizing/layout (padding, text size, gap) stays with each caller since it varies. */
+ *  the card's inner light. The yellow is muted and the orange is fuller so the three stops sit
+ *  at roughly the same visual weight. Sizing/layout stays with each caller since it varies. */
 export const eventBadgeColors =
-  "bg-gradient-to-r from-[#ff8fd6] via-[#a78bfa] to-[#5fd8c8] text-white shadow-[0_4px_14px_rgba(167,139,250,0.45)] ring-1 ring-white/40";
+  "bg-gradient-to-r from-[#f0a477] via-[#efd47c] to-[#94d2ca] text-[var(--app-ink)] shadow-[0_4px_14px_rgba(240,164,119,0.28)] ring-1 ring-white/60";
 
 /** Event card surface in the Storage list -- translucent glass with the light source clipped
  *  inside the rounded card, so the glow spreads toward the edges without bleeding outside. */
 export const eventCardGlow =
-  "relative isolate overflow-hidden !border-white/55 !bg-[radial-gradient(ellipse_at_50%_45%,rgba(255,143,214,0.46)_0%,rgba(167,139,250,0.32)_32%,rgba(95,216,200,0.18)_58%,rgba(255,255,255,0.58)_100%)] backdrop-blur-md";
+  "relative isolate overflow-hidden !border-white/55 !bg-[radial-gradient(ellipse_at_50%_46%,rgba(240,164,119,0.50)_0%,rgba(239,212,124,0.24)_34%,rgba(148,210,202,0.20)_64%,rgba(255,253,248,0.62)_100%)] backdrop-blur-md";
 
 /** Prefixes a tag name with "#" (no-op if it already has one), and strips whitespace so it
  *  reads as a single hashtag word. */

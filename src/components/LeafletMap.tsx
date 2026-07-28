@@ -1,11 +1,13 @@
 "use client";
 
+import { useRef } from "react";
 import { MapContainer, Marker, Popup } from "react-leaflet";
+import type L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import "maplibre-gl/dist/maplibre-gl.css";
 import "@maplibre/maplibre-gl-leaflet";
 import "./leaflet-theme.css";
-import { OpenFreeMapLayer, InvalidateSizeOnMount, dateMarkerIcon, venueMarkerIcon, MOSCOW_CENTER } from "./mapInternals";
+import { OpenFreeMapLayer, InvalidateSizeOnMount, FocusMarker, dateMarkerIcon, venueMarkerIcon, MOSCOW_CENTER } from "./mapInternals";
 import { useT } from "@/hooks/useLang";
 
 export type MapMarker = {
@@ -20,15 +22,30 @@ export type MapMarker = {
   tags: string[];
 };
 
-export default function LeafletMap({ markers }: { markers: MapMarker[] }) {
+export default function LeafletMap({
+  markers,
+  focusMarkerId = null,
+}: {
+  markers: MapMarker[];
+  /** Location id to fly to and pop open once it shows up in `markers` -- set when arriving from
+   *  Storage's "show on map" button. */
+  focusMarkerId?: string | null;
+}) {
   const t = useT();
+  const markerRefs = useRef<Record<string, L.Marker>>({});
+
   return (
     <MapContainer center={MOSCOW_CENTER} zoom={11} className="h-full w-full" zoomControl={false}>
       <InvalidateSizeOnMount />
       <OpenFreeMapLayer />
+      <FocusMarker markers={markers} focusMarkerId={focusMarkerId} markerRefs={markerRefs} />
       {markers.map((marker) => (
         <Marker
           key={marker.id}
+          ref={(instance) => {
+            if (instance) markerRefs.current[marker.id] = instance;
+            else delete markerRefs.current[marker.id];
+          }}
           position={[marker.lat, marker.lng]}
           icon={marker.tags.includes("date") ? dateMarkerIcon : venueMarkerIcon}
         >

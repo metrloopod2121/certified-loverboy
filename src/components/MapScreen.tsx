@@ -20,6 +20,12 @@ export default function MapScreen() {
   const [tagFilters, setTagFilters] = useState<string[]>([]);
   const [metroFilters, setMetroFilters] = useState<string[]>([]);
   const [openFilter, setOpenFilter] = useState<"tags" | "metro" | null>(null);
+  // Read directly off window.location rather than next/navigation's useSearchParams -- this app
+  // runs on a heavily customized Next.js fork (see AGENTS.md) and the plain browser API sidesteps
+  // any fork-specific quirks around that hook's Suspense requirements.
+  const [focusMarkerId] = useState<string | null>(() =>
+    typeof window === "undefined" ? null : new URLSearchParams(window.location.search).get("focus")
+  );
 
   useEffect(() => {
     apiFetch("/api/date-ideas")
@@ -85,7 +91,7 @@ export default function MapScreen() {
       style={{ marginTop: "calc(-1 * (var(--safe-top) + var(--content-top-gap)))" }}
     >
       <div className="absolute inset-0 z-0">
-        <LeafletMap markers={filtered} />
+        <LeafletMap markers={filtered} focusMarkerId={focusMarkerId} />
       </div>
 
       <div

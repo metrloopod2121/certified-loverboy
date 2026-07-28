@@ -5,6 +5,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { extractIdeaFromText, extractIdeasFromText, transcribeAudio, type ExtractedIdea } from "@/lib/cloudflareAi";
 import { braveSearchSnippets } from "@/lib/braveSearch";
+import { geocodeAddress } from "@/lib/nominatim";
 import {
   parseMapsLink,
   findYandexMapsLink,
@@ -206,29 +207,35 @@ export async function parseYandexMapsLink(url: string): Promise<ParsedFromLink |
  *  needed, the post already has address/price/description. Returns EVERY place mentioned — a
  *  single post can list several venues, each with its own link. Coordinates for each place come
  *  from its own `mapUrl` when the model found one, otherwise from the first maps link anywhere
- *  in the text. */
+ *  in the text, otherwise (last resort) from geocoding the place's own extracted address text --
+ *  posts often just spell out a street address with no map link at all. */
 export async function parsePostTextMulti(text: string, includeEventFields = false): Promise<ParsedFromLink[]> {
   const ideas = await extractIdeasFromText(text, includeEventFields);
   const textCoords = parseMapsLink(text);
-  return ideas.map((idea) => {
-    const mapUrl = idea.mapUrl && isMapsProviderLink(idea.mapUrl) ? idea.mapUrl : null;
-    const coords = (mapUrl ? parseMapsLink(mapUrl) : null) ?? textCoords;
-    // A link the model found but rejected as mapUrl (e.g. Instagram) lands here instead of
-    // being silently dropped, same as one it correctly filed under otherLinks to begin with.
-    const rejectedMapUrl = idea.mapUrl && !mapUrl ? idea.mapUrl : null;
-    const links = dedupeLinks(rejectedMapUrl ? [...idea.otherLinks, rejectedMapUrl] : idea.otherLinks, mapUrl);
-    // An end time given without an end date assumes the same calendar day as the start.
-    const eventEndDate = idea.eventEndDate ?? (idea.eventEndTime ? idea.eventStartDate : null);
-    return {
-      ...withoutOtherLinks(idea),
-      mapUrl,
-      links,
-      lat: coords?.lat ?? null,
-      lng: coords?.lng ?? null,
-      eventStartsAt: combineEventDateTime(idea.eventStartDate, idea.eventStartTime),
-      eventEndsAt: combineEventDateTime(eventEndDate, idea.eventEndTime),
-    };
-  });
+  return Promise.all(
+    ideas.map(async (idea) => {
+      const mapUrl = idea.mapUrl && isMapsProviderLink(idea.mapUrl) ? idea.mapUrl : null;
+      let coords = (mapUrl ? parseMapsLink(mapUrl) : null) ?? textCoords;
+      if (!coords && idea.address) {
+        coords = await geocodeAddress(idea.address);
+      }
+      // A link the model found but rejected as mapUrl (e.g. Instagram) lands here instead of
+      // being silently dropped, same as one it correctly filed under otherLinks to begin with.
+      const rejectedMapUrl = idea.mapUrl && !mapUrl ? idea.mapUrl : null;
+      const links = dedupeLinks(rejectedMapUrl ? [...idea.otherLinks, rejectedMapUrl] : idea.otherLinks, mapUrl);
+      // An end time given without an end date assumes the same calendar day as the start.
+      const eventEndDate = idea.eventEndDate ?? (idea.eventEndTime ? idea.eventStartDate : null);
+      return {
+        ...withoutOtherLinks(idea),
+        mapUrl,
+        links,
+        lat: coords?.lat ?? null,
+        lng: coords?.lng ?? null,
+        eventStartsAt: combineEventDateTime(idea.eventStartDate, idea.eventStartTime),
+        eventEndsAt: combineEventDateTime(eventEndDate, idea.eventEndTime),
+      };
+    })
+  );
 }
 
 /** Превращает HTML тела поста в текст, СОХРАНЯЯ ссылки, спрятанные за словами. Telegram прячет

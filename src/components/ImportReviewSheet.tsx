@@ -4,13 +4,15 @@ import { useState } from "react";
 import { Plus, Pencil, Trash2, X, Link as LinkIcon } from "lucide-react";
 import DateIdeaForm from "@/components/DateIdeaForm";
 import type { DateIdeaInput } from "@/lib/types";
-import type { ParsedDateIdea } from "@/lib/parseDateMarkdown";
 import { priceTier } from "@/lib/priceTier";
 import { card, pill, mutedText, buttonPrimary, buttonSecondary, buttonGhost, iconButton, hashtag } from "@/lib/ui";
 import { useLang, useT } from "@/hooks/useLang";
-import { foundPlacesText } from "@/lib/i18n";
+import { foundPlacesText, formatEventWhen } from "@/lib/i18n";
 
-export type ReviewItem = { id: string; parsed: ParsedDateIdea };
+// Full DateIdeaInput, not just the markdown-import subset -- link imports (Yandex/Instagram/
+// Telegram) can carry event fields too, so every producer of a ReviewItem fills them in
+// (null when the source never produces event data, e.g. plain markdown files).
+export type ReviewItem = { id: string; parsed: DateIdeaInput };
 
 /** Bottom sheet shown right after a successful import parse — one card per found place, with
  *  Add / Edit / Delete per card, instead of dropping a bare form into the page flow where it's
@@ -36,8 +38,7 @@ export default function ImportReviewSheet({
   async function quickAdd(item: ReviewItem) {
     setSavingId(item.id);
     try {
-      // This import surface (markdown file / Yandex Maps link) never produces event data.
-      await onAdd(item.id, { ...item.parsed, eventStartsAt: null, eventEndsAt: null });
+      await onAdd(item.id, item.parsed);
     } finally {
       setSavingId(null);
     }
@@ -73,6 +74,11 @@ export default function ImportReviewSheet({
               />
             ) : (
               <div key={item.id} className={`${card} flex flex-col gap-2.5`}>
+                {item.parsed.eventStartsAt && (
+                  <div className="inline-flex w-fit items-center gap-1.5 rounded-full bg-[var(--app-ink)] px-2.5 py-1 text-[12px] font-bold text-[var(--app-canvas)]">
+                    {formatEventWhen(lang, item.parsed.eventStartsAt, item.parsed.eventEndsAt)}
+                  </div>
+                )}
                 <h3 className="text-[18px] font-semibold leading-[1.1]">{item.parsed.title || t("untitled")}</h3>
                 {item.parsed.locations[0]?.address && <p className={mutedText}>{item.parsed.locations[0].address}</p>}
                 {item.parsed.priceNote && (

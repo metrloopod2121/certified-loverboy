@@ -9,6 +9,7 @@ import { trackEvent } from "@/lib/analytics";
 import { submitSupportMessage } from "@/lib/support";
 import { getUserLanguage } from "@/lib/userSettings";
 import { eventsFeatureEnabled } from "@/lib/eventsFeature";
+import { instagramImportAllowed } from "@/lib/instagramFeature";
 import { t, addedEditText, type Lang } from "@/lib/i18n";
 import {
   sendTelegramMessage,
@@ -158,16 +159,6 @@ function forwardedChannelSourceUrl(message: TelegramMessage): string {
 
 function isChannelForward(message: TelegramMessage): boolean {
   return (message.forward_origin?.chat ?? message.forward_from_chat)?.type === "channel";
-}
-
-/** Pilot gate: always on for the admin's own account (that's the point of testing it there
- *  first), otherwise behind an explicit flag flipped once the pilot looks good. Instagram
- *  scraping is inherently less reliable than the Yandex/Telegram sources (login walls, silent
- *  reels have no transcript at all), so this ships gated rather than open to everyone. */
-function instagramImportAllowed(chatId: string): boolean {
-  const adminId = process.env.ADMIN_TG_ID;
-  if (adminId && chatId === adminId) return true;
-  return envFlag("INSTAGRAM_IMPORT_ENABLED", false);
 }
 
 type TelegramCallbackQuery = {

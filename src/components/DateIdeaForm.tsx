@@ -10,7 +10,7 @@ import { input, label as labelClass, buttonPrimary, buttonSecondary, buttonGhost
 import { trackClientEvent } from "@/lib/clientAnalytics";
 import { useLang, useT } from "@/hooks/useLang";
 import { useAuth } from "@/hooks/useAuth";
-import { locationOrdinalLabel } from "@/lib/i18n";
+import { locationOrdinalLabel, type StringKey } from "@/lib/i18n";
 
 function splitIso(iso: string | null, midnightAsEmpty: boolean): { date: string; time: string } {
   if (!iso) return { date: "", time: "" };
@@ -29,10 +29,6 @@ function splitEventIso(iso: string | null): { date: string; time: string } {
   return splitIso(iso, true);
 }
 
-function splitReminderIso(iso: string | null): { date: string; time: string } {
-  return splitIso(iso, false);
-}
-
 /** Combines the local date/time inputs back into a single ISO instant -- no date means no
  *  event at all; a date with no time defaults to midnight (unknown time, not literal midnight). */
 function combineEventIso(date: string, time: string): string | null {
@@ -43,15 +39,35 @@ function combineEventIso(date: string, time: string): string | null {
   return Number.isNaN(d.getTime()) ? null : d.toISOString();
 }
 
-function combineReminderIso(date: string, time: string): string | null {
-  if (!date || !time) return null;
-  const [year, month, day] = date.split("-").map(Number);
-  const [hours, minutes] = time.split(":").map(Number);
-  const d = new Date(year, month - 1, day, hours, minutes);
-  return Number.isNaN(d.getTime()) ? null : d.toISOString();
+const LocationPicker = dynamic(() => import("@/components/LocationPicker"), { ssr: false });
+
+type ReminderOffsetMinutes = 15 | 60 | 360 | 1440 | 2880;
+
+const DEFAULT_REMINDER_OFFSET: ReminderOffsetMinutes = 60;
+const REMINDER_OPTIONS: { value: ReminderOffsetMinutes; labelKey: StringKey }[] = [
+  { value: 15, labelKey: "reminderBefore15m" },
+  { value: 60, labelKey: "reminderBefore1h" },
+  { value: 360, labelKey: "reminderBefore6h" },
+  { value: 1440, labelKey: "reminderBefore1d" },
+  { value: 2880, labelKey: "reminderBefore2d" },
+];
+
+function reminderOffsetFromIso(eventStartsAtIso: string | null | undefined, reminderAtIso: string | null | undefined): ReminderOffsetMinutes | null {
+  if (!eventStartsAtIso || !reminderAtIso) return null;
+  const eventMs = new Date(eventStartsAtIso).getTime();
+  const reminderMs = new Date(reminderAtIso).getTime();
+  if (!Number.isFinite(eventMs) || !Number.isFinite(reminderMs)) return null;
+
+  const diffMinutes = Math.round((eventMs - reminderMs) / 60_000);
+  return REMINDER_OPTIONS.find((option) => Math.abs(option.value - diffMinutes) <= 1)?.value ?? null;
 }
 
-const LocationPicker = dynamic(() => import("@/components/LocationPicker"), { ssr: false });
+function reminderIsoFromOffset(eventStartsAtIso: string | null, offsetMinutes: ReminderOffsetMinutes): string | null {
+  if (!eventStartsAtIso) return null;
+  const eventMs = new Date(eventStartsAtIso).getTime();
+  if (!Number.isFinite(eventMs)) return null;
+  return new Date(eventMs - offsetMinutes * 60_000).toISOString();
+}
 
 const eventDateTimeGrid = "grid min-w-0 grid-cols-1 gap-2 min-[380px]:grid-cols-[minmax(0,1fr)_7.75rem]";
 const eventDateTimeField = "relative min-w-0";
@@ -167,14 +183,13 @@ export default function DateIdeaForm({
   const [tags, setTags] = useState(initial?.tags?.join(", ") ?? "");
   const initialEventStart = splitEventIso(initial?.eventStartsAt ?? null);
   const initialEventEnd = splitEventIso(initial?.eventEndsAt ?? null);
-  const initialReminder = splitReminderIso(initial?.reminderAt ?? null);
+  const initialReminderOffset = reminderOffsetFromIso(initial?.eventStartsAt, initial?.reminderAt);
   const [eventStartDate, setEventStartDate] = useState(initialEventStart.date);
   const [eventStartTime, setEventStartTime] = useState(initialEventStart.time);
   const [eventEndDate, setEventEndDate] = useState(initialEventEnd.date);
   const [eventEndTime, setEventEndTime] = useState(initialEventEnd.time);
   const [reminderEnabled, setReminderEnabled] = useState(Boolean(initial?.reminderAt));
-  const [reminderDate, setReminderDate] = useState(initialReminder.date);
-  const [reminderTime, setReminderTime] = useState(initialReminder.time);
+  const [reminderOffsetMinutes, setReminderOffsetMinutes] = useState<ReminderOffsetMinutes>(initialReminderOffset ?? DEFAULT_REMINDER_OFFSET);
   const [locations, setLocations] = useState<LocationForm[]>(
     initial?.locations?.length ? initial.locations.map(toLocationForm) : [EMPTY_LOCATION]
   );
@@ -195,18 +210,18 @@ export default function DateIdeaForm({
     setEventEndDate("");
     setEventEndTime("");
     setReminderEnabled(false);
-    setReminderDate("");
-    setReminderTime("");
+    setReminderOffsetMinutes(DEFAULT_REMINDER_OFFSET);
     trackClientEvent("place_form_event_cleared", { mode: formMode });
   }
 
   function toggleReminder(enabled: boolean) {
     setReminderEnabled(enabled);
-    if (!enabled) {
-      setReminderDate("");
-      setReminderTime("");
-    }
     trackClientEvent("place_form_reminder_toggled", { mode: formMode, enabled });
+  }
+
+  function selectReminderOffset(value: ReminderOffsetMinutes) {
+    setReminderOffsetMinutes(value);
+    trackClientEvent("place_form_reminder_offset_selected", { mode: formMode, offsetMinutes: value });
   }
 
   // A shared Yandex Maps link often carries "Title\nAddress\nhttps://..." as one block, not a
@@ -374,16 +389,21 @@ export default function DateIdeaForm({
     const effectiveEndDate = eventEndDate || (eventEndTime ? eventStartDate : "");
     const eventStartsAt = combineEventIso(eventStartDate, eventStartTime);
     const eventEndsAt = combineEventIso(effectiveEndDate, eventEndTime);
-    const reminderAt = reminderEnabled ? combineReminderIso(reminderDate, reminderTime) : null;
+    const reminderAt = reminderEnabled ? reminderIsoFromOffset(eventStartsAt, reminderOffsetMinutes) : null;
 
     if (reminderEnabled && !eventStartsAt) {
       setError(t("reminderNeedsEventDate"));
       trackClientEvent("place_form_validation_failed", { mode: formMode, reason: "reminder_event_date" });
       return;
     }
+    if (reminderEnabled && !eventStartTime) {
+      setError(t("reminderNeedsEventTime"));
+      trackClientEvent("place_form_validation_failed", { mode: formMode, reason: "reminder_event_time" });
+      return;
+    }
     if (reminderEnabled && !reminderAt) {
       setError(t("reminderDateTimeRequired"));
-      trackClientEvent("place_form_validation_failed", { mode: formMode, reason: "reminder_datetime" });
+      trackClientEvent("place_form_validation_failed", { mode: formMode, reason: "reminder_offset" });
       return;
     }
     if (reminderAt && new Date(reminderAt).getTime() <= Date.now()) {
@@ -428,34 +448,67 @@ export default function DateIdeaForm({
       </div>
 
       {eventsEnabled && (
-        <div className="flex flex-col gap-2 rounded-2xl bg-[var(--app-subtle-overlay)] p-3">
-          <span className="inline-flex items-center gap-1.5 text-[12px] font-semibold uppercase tracking-[0.06em] text-[var(--app-muted)]">
-            <CalendarClock size={14} />
-            {t("eventSectionLabel")}
-          </span>
+        <>
+          <div className="flex flex-col gap-2 rounded-2xl bg-[var(--app-subtle-overlay)] p-3">
+            <span className="inline-flex items-center gap-1.5 text-[12px] font-semibold uppercase tracking-[0.06em] text-[var(--app-muted)]">
+              <CalendarClock size={14} />
+              {t("eventSectionLabel")}
+            </span>
 
-          <div className="flex flex-col gap-1.5">
-            <div className={eventDateTimeGrid}>
-              <EventDateTimeInput
-                type="date"
-                ariaLabel={t("eventDateFieldLabel")}
-                placeholder={t("eventDatePlaceholder")}
-                value={eventStartDate}
-                onChange={setEventStartDate}
-                className={eventNativeInput}
-              />
-              <EventDateTimeInput
-                type="time"
-                ariaLabel={t("eventTimeFieldLabel")}
-                placeholder={t("eventTimePlaceholder")}
-                value={eventStartTime}
-                onChange={setEventStartTime}
-                className={eventTimeInput}
-              />
+            <div className="flex flex-col gap-1.5">
+              <div className={eventDateTimeGrid}>
+                <EventDateTimeInput
+                  type="date"
+                  ariaLabel={t("eventDateFieldLabel")}
+                  placeholder={t("eventDatePlaceholder")}
+                  value={eventStartDate}
+                  onChange={setEventStartDate}
+                  className={eventNativeInput}
+                />
+                <EventDateTimeInput
+                  type="time"
+                  ariaLabel={t("eventTimeFieldLabel")}
+                  placeholder={t("eventTimePlaceholder")}
+                  value={eventStartTime}
+                  onChange={setEventStartTime}
+                  className={eventTimeInput}
+                />
+              </div>
             </div>
+
+            {eventStartDate && (
+              <div className="flex flex-col gap-1">
+                <span className={labelClass}>{t("eventEndLabel")}</span>
+                <div className={eventDateTimeGrid}>
+                  <EventDateTimeInput
+                    type="date"
+                    ariaLabel={t("eventDateFieldLabel")}
+                    placeholder={t("eventDatePlaceholder")}
+                    value={eventEndDate}
+                    onChange={setEventEndDate}
+                    className={eventNativeInput}
+                  />
+                  <EventDateTimeInput
+                    type="time"
+                    ariaLabel={t("eventTimeFieldLabel")}
+                    placeholder={t("eventTimePlaceholder")}
+                    value={eventEndTime}
+                    onChange={setEventEndTime}
+                    className={eventTimeInput}
+                  />
+                </div>
+              </div>
+            )}
+
+            {(eventStartDate || eventEndDate) && (
+              <button type="button" onClick={clearEventFields} className={`${buttonGhost} self-start`}>
+                <X size={14} />
+                {t("eventClearBtn")}
+              </button>
+            )}
           </div>
 
-          <div className="rounded-2xl bg-[var(--app-surface)]/65 px-3 py-2.5 ring-1 ring-[var(--app-outline)]/10">
+          <div className="flex flex-col gap-2 rounded-2xl bg-[var(--app-subtle-overlay)] p-3">
             <label className="flex min-h-9 items-center justify-between gap-3">
               <span className="inline-flex items-center gap-1.5 text-[14px] font-semibold text-[var(--app-ink)]">
                 <Bell size={15} />
@@ -480,58 +533,28 @@ export default function DateIdeaForm({
               </span>
             </label>
             {reminderEnabled && (
-              <div className={`${eventDateTimeGrid} mt-2`}>
-                <EventDateTimeInput
-                  type="date"
-                  ariaLabel={t("reminderDateFieldLabel")}
-                  placeholder={t("eventDatePlaceholder")}
-                  value={reminderDate}
-                  onChange={setReminderDate}
-                  className={eventNativeInput}
-                />
-                <EventDateTimeInput
-                  type="time"
-                  ariaLabel={t("reminderTimeFieldLabel")}
-                  placeholder={t("eventTimePlaceholder")}
-                  value={reminderTime}
-                  onChange={setReminderTime}
-                  className={eventTimeInput}
-                />
+              <div className="grid grid-cols-2 gap-2 min-[420px]:grid-cols-5">
+                {REMINDER_OPTIONS.map((option) => {
+                  const active = reminderOffsetMinutes === option.value;
+                  return (
+                    <button
+                      key={option.value}
+                      type="button"
+                      onClick={() => selectReminderOffset(option.value)}
+                      className={`min-h-10 min-w-0 rounded-full border px-3 py-2 text-[13px] font-semibold transition active:scale-[0.98] ${
+                        active
+                          ? "border-[var(--app-ink)] bg-[var(--app-ink)] text-[var(--app-canvas)]"
+                          : "border-[var(--app-outline)]/15 bg-[var(--app-surface)] text-[var(--app-ink)]"
+                      }`}
+                    >
+                      <span className="block truncate">{t(option.labelKey)}</span>
+                    </button>
+                  );
+                })}
               </div>
             )}
           </div>
-
-          {eventStartDate && (
-            <div className="flex flex-col gap-1">
-              <span className={labelClass}>{t("eventEndLabel")}</span>
-              <div className={eventDateTimeGrid}>
-                <EventDateTimeInput
-                  type="date"
-                  ariaLabel={t("eventDateFieldLabel")}
-                  placeholder={t("eventDatePlaceholder")}
-                  value={eventEndDate}
-                  onChange={setEventEndDate}
-                  className={eventNativeInput}
-                />
-                <EventDateTimeInput
-                  type="time"
-                  ariaLabel={t("eventTimeFieldLabel")}
-                  placeholder={t("eventTimePlaceholder")}
-                  value={eventEndTime}
-                  onChange={setEventEndTime}
-                  className={eventTimeInput}
-                />
-              </div>
-            </div>
-          )}
-
-          {(eventStartDate || eventEndDate) && (
-            <button type="button" onClick={clearEventFields} className={`${buttonGhost} self-start`}>
-              <X size={14} />
-              {t("eventClearBtn")}
-            </button>
-          )}
-        </div>
+        </>
       )}
 
       <div className="flex flex-col gap-3">

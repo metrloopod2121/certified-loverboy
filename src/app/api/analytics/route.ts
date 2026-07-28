@@ -36,6 +36,7 @@ const CLIENT_EVENT_NAMES = new Set([
   "place_form_location_pin_cleared",
   "place_form_event_cleared",
   "place_form_reminder_toggled",
+  "place_form_reminder_offset_selected",
   "place_form_maps_link_applied",
   "place_form_link_added",
   "place_form_link_removed",

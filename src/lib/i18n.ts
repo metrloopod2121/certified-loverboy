@@ -179,15 +179,22 @@ const strings = {
   eventTimePlaceholder: { ru: "19:30", en: "19:30" },
   eventClearBtn: { ru: "Убрать дату события", en: "Remove event date" },
   reminderLabel: { ru: "Напоминание", en: "Reminder" },
-  reminderDateFieldLabel: { ru: "Дата напоминания", en: "Reminder date" },
-  reminderTimeFieldLabel: { ru: "Время напоминания", en: "Reminder time" },
+  reminderBefore15m: { ru: "За 15 мин", en: "15 min" },
+  reminderBefore1h: { ru: "За час", en: "1 hour" },
+  reminderBefore6h: { ru: "За 6 часов", en: "6 hours" },
+  reminderBefore1d: { ru: "За день", en: "1 day" },
+  reminderBefore2d: { ru: "За 2 дня", en: "2 days" },
   reminderDateTimeRequired: {
-    ru: "Выбери дату и время напоминания",
-    en: "Choose reminder date and time",
+    ru: "Выбери, когда напомнить",
+    en: "Choose when to remind",
   },
   reminderNeedsEventDate: {
     ru: "Сначала укажи дату события",
     en: "Set the event date first",
+  },
+  reminderNeedsEventTime: {
+    ru: "Укажи время события для напоминания",
+    en: "Set the event time for reminders",
   },
   reminderMustBeFuture: {
     ru: "Дата напоминания уже прошла",

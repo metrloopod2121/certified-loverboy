@@ -318,8 +318,8 @@ const YT_DLP_TIMEOUT_MS = 60_000;
  *  see docs/RESTORE.md for the one-time server setup -- and transcribes it with the configured
  *  Workers AI Whisper model. Most place-focused reels are someone talking over the shot
  *  ("зашли, взяли вот это...") rather than relying on on-screen text, so spoken audio is usually
- *  the richest signal available here. Low mp3 bitrate keeps the file (and the JSON payload to
- *  Whisper, which sends raw bytes as a JSON number array) small for a typical <90s reel. */
+ *  the richest signal available here. Low mp3 bitrate keeps the file (and the base64 JSON payload
+ *  sent to Whisper) small for a typical <90s reel. */
 async function fetchInstagramTranscript(url: string): Promise<string | null> {
   const dir = await mkdtemp(path.join(tmpdir(), "ig-"));
   try {

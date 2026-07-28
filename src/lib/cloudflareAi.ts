@@ -235,10 +235,9 @@ export async function extractIdeasFromText(pageText: string, includeEventFields 
   return ideas;
 }
 
-/** Sends raw audio bytes to the configured Workers AI Whisper model and returns the transcribed
- *  text, or null if not configured / the call failed. Payload shape (`{ audio: [...bytes] }`)
- *  matches Cloudflare's documented Workers-binding contract for this model family, translated
- *  to the plain REST API used everywhere else in this file. */
+/** Sends audio to the configured Workers AI Whisper model and returns the transcribed text,
+ *  or null if not configured / the call failed. Workers AI expects the JSON `audio` field as
+ *  a base64 string; a JSON array of individual bytes is rejected with HTTP 400. */
 export async function transcribeAudio(audio: Buffer): Promise<string | null> {
   const accountId = process.env.CLOUDFLARE_ACCOUNT_ID;
   const token = process.env.CLOUDFLARE_API_TOKEN;
@@ -248,11 +247,12 @@ export async function transcribeAudio(audio: Buffer): Promise<string | null> {
   const res = await fetch(`https://api.cloudflare.com/client/v4/accounts/${accountId}/ai/run/${model}`, {
     method: "POST",
     headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-    body: JSON.stringify({ audio: Array.from(audio) }),
+    body: JSON.stringify({ audio: audio.toString("base64") }),
   });
 
   if (!res.ok) {
-    console.log(`[usage] cloudflare-whisper request failed status=${res.status}`);
+    const detail = (await res.text()).replace(/\s+/g, " ").slice(0, 500);
+    console.log(`[usage] cloudflare-whisper request failed status=${res.status} detail=${detail}`);
     return null;
   }
   const data = await res.json();

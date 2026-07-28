@@ -69,6 +69,11 @@ function reminderIsoFromOffset(eventStartsAtIso: string | null, offsetMinutes: R
   return new Date(eventMs - offsetMinutes * 60_000).toISOString();
 }
 
+function reminderOffsetFromSelectValue(value: string): ReminderOffsetMinutes {
+  const parsed = Number(value);
+  return REMINDER_OPTIONS.find((option) => option.value === parsed)?.value ?? DEFAULT_REMINDER_OFFSET;
+}
+
 const eventDateTimeGrid = "grid min-w-0 grid-cols-1 gap-2 min-[380px]:grid-cols-[minmax(0,1fr)_7.75rem]";
 const eventDateTimeField = "relative min-w-0";
 const eventNativeInput =
@@ -533,25 +538,18 @@ export default function DateIdeaForm({
               </span>
             </label>
             {reminderEnabled && (
-              <div className="grid grid-cols-2 gap-2 min-[420px]:grid-cols-5">
-                {REMINDER_OPTIONS.map((option) => {
-                  const active = reminderOffsetMinutes === option.value;
-                  return (
-                    <button
-                      key={option.value}
-                      type="button"
-                      onClick={() => selectReminderOffset(option.value)}
-                      className={`min-h-10 min-w-0 rounded-full border px-3 py-2 text-[13px] font-semibold transition active:scale-[0.98] ${
-                        active
-                          ? "border-[var(--app-ink)] bg-[var(--app-ink)] text-[var(--app-canvas)]"
-                          : "border-[var(--app-outline)]/15 bg-[var(--app-surface)] text-[var(--app-ink)]"
-                      }`}
-                    >
-                      <span className="block truncate">{t(option.labelKey)}</span>
-                    </button>
-                  );
-                })}
-              </div>
+              <select
+                aria-label={t("reminderLabel")}
+                value={reminderOffsetMinutes}
+                onChange={(e) => selectReminderOffset(reminderOffsetFromSelectValue(e.target.value))}
+                className={`${input} appearance-auto text-[14px]`}
+              >
+                {REMINDER_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {t(option.labelKey)}
+                  </option>
+                ))}
+              </select>
             )}
           </div>
         </>

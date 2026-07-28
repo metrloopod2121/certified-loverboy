@@ -49,9 +49,9 @@
 - event-секция называется "Дата (опционально)" и без поясняющего текста; у start date/time нет видимых
   лейблов над полями, только нативные поля с compact placeholder/aria-label;
 - под блоком даты отдельной карточкой стоит "Напоминание": строка с текстом слева и тумблером
-  справа. При включении раскрываются только пять относительных пресетов: за 15 минут, за час,
-  за 6 часов, за день, за 2 дня. В БД всё равно сохраняется абсолютный `reminderAt`, вычисленный
-  от `eventStartsAt`; для сохранения reminder нужны дата и время события;
+  справа. При включении раскрывается нативный `<select>` с пятью относительными пресетами:
+  за 15 минут, за час, за 6 часов, за день, за 2 дня. В БД всё равно сохраняется абсолютный
+  `reminderAt`, вычисленный от `eventStartsAt`; для сохранения reminder нужны дата и время события;
 - секция локаций называется просто "Локации", без счетчика в скобках;
 - кнопки получения пина компактные: "Из ссылки" и "На карте" в две равные колонки;
 - выбранный пин показывается status-плашкой "Пин выбран" и маленькой icon-кнопкой очистки.
@@ -414,9 +414,9 @@ plain evergreen place -- no separate entity, just nullable columns on `DateIdea`
   before end can be entered) only when `features.events` comes back true from `/api/me`. The
   date/time controls use a compact adaptive grid, not fixed `grid-cols-2`: they stack on narrow
   edit forms and the time field stays fixed-width on wider phones. Reminder is a separate card
-  below the date section: toggle + five preset offsets (`15m`, `1h`, `6h`, `1d`, `2d`) from
-  `eventStartsAt`; event time is required for reminders and past reminders are rejected
-  client-side.
+  below the date section: toggle + native `<select>` with five preset offsets (`15m`, `1h`,
+  `6h`, `1d`, `2d`) from `eventStartsAt`; event time is required for reminders and past
+  reminders are rejected client-side.
 - import: `cloudflareAi.ts`'s multi-place prompt asks for `eventStartDate/Time` +
   `eventEndDate/Time` (separate YYYY-MM-DD / HH:MM strings, today's date injected so relative
   dates like "завтра"/"в эту пятницу" resolve correctly) only for a permanent-venue post is

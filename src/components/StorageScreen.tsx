@@ -662,7 +662,7 @@ export default function StorageScreen() {
         <div className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-3 bg-[var(--app-canvas)]/90 backdrop-blur-sm">
           <BlobLoader size={104} />
           <p className="text-[15px] font-semibold text-[var(--app-ink)]">{t("readingLinkOverlay")}</p>
-          <LoadingCaptions phrases={loadingPhrases(lang)} />
+          <LoadingCaptions key={lang} phrases={loadingPhrases(lang)} />
         </div>
       )}
 

@@ -3,7 +3,7 @@ import path from "node:path";
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { resolveTagIds } from "@/lib/tags";
-import { withoutMetroTags } from "@/lib/metro";
+import { normalizeMetroValue, withoutMetroTags } from "@/lib/metro";
 import { tryConsumeImportQuota, quotaExhaustedMessage } from "@/lib/importQuota";
 import { trackEvent } from "@/lib/analytics";
 import { submitSupportMessage } from "@/lib/support";
@@ -672,7 +672,8 @@ async function handleCallbackQuery(callbackQuery: TelegramCallbackQuery) {
   }
 
   const idea = JSON.parse(pending.payload) as ParsedFromLink;
-  const tagIds = await resolveTagIds(withoutMetroTags(idea.tags, [idea.metro]));
+  const metro = normalizeMetroValue(idea.metro);
+  const tagIds = await resolveTagIds(withoutMetroTags(idea.tags, [metro]));
   const eventsAllowed = eventsFeatureEnabled(pending.chatId);
 
   const created = await prisma.dateIdea.create({
@@ -688,7 +689,7 @@ async function handleCallbackQuery(callbackQuery: TelegramCallbackQuery) {
         create: [
           {
             address: idea.address,
-            metro: idea.metro,
+            metro: metro || null,
             lat: idea.lat,
             lng: idea.lng,
             url: pending.sourceUrl,

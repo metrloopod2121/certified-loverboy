@@ -1,5 +1,5 @@
 import { parseCoordinates, parseMapsLink, isYandexMapsUrl, stripTrailingPunctuation } from "@/lib/coords";
-import { metroStations, withoutMetroTags } from "@/lib/metro";
+import { metroStations, normalizeMetroValue, withoutMetroTags } from "@/lib/metro";
 import type { DateIdeaInput, PlaceLinkInput } from "@/lib/types";
 
 export type ParsedDateIdea = Pick<
@@ -122,7 +122,7 @@ function mergeLocations(locations: ParsedLocation[]): ParsedLocation[] {
 
     const next: ParsedLocation = {
       address: location.address.trim(),
-      metro: location.metro.trim(),
+      metro: normalizeMetroValue(location.metro),
       lat: location.lat,
       lng: location.lng,
       url: stripTrailingPunctuation(location.url.trim()),
@@ -233,7 +233,7 @@ export function parseDateMarkdown(raw: string): ParsedDateIdea {
         const location = hasFieldValue(baseLocation, field)
           ? startLocation(result.locations)
           : baseLocation;
-        location[field] = field === "url" ? url : value;
+        location[field] = field === "url" ? url : field === "metro" ? normalizeMetroValue(value) : value;
         currentLocation = location;
         continue;
       }

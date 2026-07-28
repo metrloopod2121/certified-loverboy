@@ -14,6 +14,7 @@ import {
   stripTrailingPunctuation,
 } from "@/lib/coords";
 import { DEFAULT_LANG, t, formatEventWhen, type Lang } from "@/lib/i18n";
+import { normalizeMetroValue } from "@/lib/metro";
 
 const execFile = promisify(execFileCallback);
 
@@ -114,7 +115,7 @@ function withoutOtherLinks(
   return {
     title: idea.title,
     address: idea.address,
-    metro: idea.metro,
+    metro: normalizeMetroValue(idea.metro) || null,
     priceNote: idea.priceNote,
     tags: idea.tags,
     description: idea.description,

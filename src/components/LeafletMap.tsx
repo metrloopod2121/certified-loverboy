@@ -9,6 +9,7 @@ import "@maplibre/maplibre-gl-leaflet";
 import "./leaflet-theme.css";
 import { OpenFreeMapLayer, InvalidateSizeOnMount, FocusMarker, dateMarkerIcon, venueMarkerIcon, MOSCOW_CENTER } from "./mapInternals";
 import { useT } from "@/hooks/useLang";
+import { normalizeMetroValue } from "@/lib/metro";
 
 export type MapMarker = {
   id: string;
@@ -39,31 +40,34 @@ export default function LeafletMap({
       <InvalidateSizeOnMount />
       <OpenFreeMapLayer />
       <FocusMarker markers={markers} focusMarkerId={focusMarkerId} markerRefs={markerRefs} />
-      {markers.map((marker) => (
-        <Marker
-          key={marker.id}
-          ref={(instance) => {
-            if (instance) markerRefs.current[marker.id] = instance;
-            else delete markerRefs.current[marker.id];
-          }}
-          position={[marker.lat, marker.lng]}
-          icon={marker.tags.includes("date") ? dateMarkerIcon : venueMarkerIcon}
-        >
-          <Popup>
-            <strong>{marker.title}</strong>
-            {marker.address && <div>{marker.address}</div>}
-            {marker.metro && <div>M {marker.metro}</div>}
-            {marker.priceNote && <div>{marker.priceNote}</div>}
-            {marker.url && (
-              <div>
-                <a href={marker.url} target="_blank" rel="noreferrer">
-                  {t("linkWord")}
-                </a>
-              </div>
-            )}
-          </Popup>
-        </Marker>
-      ))}
+      {markers.map((marker) => {
+        const metro = normalizeMetroValue(marker.metro);
+        return (
+          <Marker
+            key={marker.id}
+            ref={(instance) => {
+              if (instance) markerRefs.current[marker.id] = instance;
+              else delete markerRefs.current[marker.id];
+            }}
+            position={[marker.lat, marker.lng]}
+            icon={marker.tags.includes("date") ? dateMarkerIcon : venueMarkerIcon}
+          >
+            <Popup>
+              <strong>{marker.title}</strong>
+              {marker.address && <div>{marker.address}</div>}
+              {metro && <div>M {metro}</div>}
+              {marker.priceNote && <div>{marker.priceNote}</div>}
+              {marker.url && (
+                <div>
+                  <a href={marker.url} target="_blank" rel="noreferrer">
+                    {t("linkWord")}
+                  </a>
+                </div>
+              )}
+            </Popup>
+          </Marker>
+        );
+      })}
     </MapContainer>
   );
 }

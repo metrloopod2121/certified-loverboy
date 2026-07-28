@@ -17,6 +17,7 @@ import { instagramImportAllowed } from "@/lib/instagramFeature";
 import { eventsFeatureEnabled } from "@/lib/eventsFeature";
 import { getUserLanguage } from "@/lib/userSettings";
 import { t } from "@/lib/i18n";
+import { normalizeMetroValue } from "@/lib/metro";
 import { trackEvent } from "@/lib/analytics";
 import type { DateIdeaInput } from "@/lib/types";
 
@@ -48,7 +49,7 @@ function toDraft(parsed: ParsedFromLink, sourceUrl: string, kind: LinkKind): Dat
     locations: [
       {
         address: parsed.address ?? "",
-        metro: parsed.metro ?? "",
+        metro: normalizeMetroValue(parsed.metro),
         lat: parsed.lat,
         lng: parsed.lng,
         url: parsed.mapUrl ?? (kind === "yandex" ? sourceUrl : ""),

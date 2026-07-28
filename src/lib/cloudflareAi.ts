@@ -1,3 +1,5 @@
+import { normalizeMetroValue } from "@/lib/metro";
+
 export type ExtractedIdea = {
   title: string;
   address: string | null;
@@ -103,7 +105,7 @@ function toExtractedIdea(value: unknown): ExtractedIdea | null {
   return {
     title: obj.title.trim(),
     address: typeof obj.address === "string" && obj.address.trim() ? obj.address.trim() : null,
-    metro: typeof obj.metro === "string" && obj.metro.trim() ? obj.metro.trim() : null,
+    metro: normalizeMetroValue(typeof obj.metro === "string" ? obj.metro : null) || null,
     priceNote: typeof obj.priceNote === "string" && obj.priceNote.trim() ? obj.priceNote.trim() : null,
     tags: Array.isArray(obj.tags) ? obj.tags.filter((t): t is string => typeof t === "string") : [],
     description: typeof obj.description === "string" && obj.description.trim() ? obj.description.trim() : null,

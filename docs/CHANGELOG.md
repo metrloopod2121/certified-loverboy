@@ -2,6 +2,20 @@
 
 Для контекста между сессиями (Claude Code + Codex работают в одном репо параллельно). Пиши сюда, когда делаешь что-то нетривиальное — особенно смену модели данных или архитектурных решений.
 
+## 2026-07-28 (11)
+
+**Metro normalization: Telegram hashtag/prefix мусор больше не попадает в станцию**
+- Добавлен `normalizeMetroValue()` в `metro.ts`: чистит `метро`, `м.`, `станция метро`,
+  `ст.м.`, `#метроМаяковская`, кавычки/underscores и повторные префиксы, но не ломает
+  явные `МЦД-1`/`МЦК` маркеры.
+- AI-decoder (`cloudflareAi.ts`), link import (`socialImport.ts`, `/api/date-ideas/from-link`),
+  file/markdown import, create/update API и Telegram approve callback теперь нормализуют `metro`
+  перед draft/preview, tag-dedupe и записью в `Location`.
+- `metroStations()` теперь возвращает уже очищенные станции, поэтому существующие грязные строки
+  вроде `метро Маяковская` не ломают фильтры/цвет линии в Storage/Map.
+- Place detail, map popup, edit-form input и markdown export показывают/отдают нормализованное
+  значение, даже если старая запись в базе была создана до фикса.
+
 ## 2026-07-28 (10)
 
 **Import review sheet: actions не вылезают, ссылки аккуратнее**

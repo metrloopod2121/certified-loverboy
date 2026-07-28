@@ -1,3 +1,5 @@
+import { normalizeMetroValue } from "@/lib/metro";
+
 export type Location = {
   id: string;
   address: string | null;
@@ -59,7 +61,7 @@ export type DateIdeaInput = {
 export function locationToInput(location: Location): LocationInput {
   return {
     address: location.address ?? "",
-    metro: location.metro ?? "",
+    metro: normalizeMetroValue(location.metro),
     lat: location.lat,
     lng: location.lng,
     url: location.url ?? "",

@@ -11,6 +11,7 @@ import { pill, pillBlue, eventBadgeColors, mutedText, hashtag, buttonSecondary }
 import { trackClientEvent } from "@/lib/clientAnalytics";
 import { useLang, useT } from "@/hooks/useLang";
 import { locationsHeading, formatEventWhen } from "@/lib/i18n";
+import { normalizeMetroValue } from "@/lib/metro";
 
 type LoadState = "loading" | "error";
 
@@ -130,8 +131,9 @@ export default function PlaceDetailScreen({ id }: { id: string }) {
                 {idea.locations.length > 0 && (
                   <div className="flex flex-col gap-2.5 pt-2">
                     <h2 className={mutedText}>{locationsHeading(lang, idea.locations.length)}</h2>
-                    {idea.locations.map((loc) => (
-                      loc.url ? (
+                    {idea.locations.map((loc) => {
+                      const metro = normalizeMetroValue(loc.metro);
+                      return loc.url ? (
                         <a
                           key={loc.id}
                           href={loc.url}
@@ -144,7 +146,7 @@ export default function PlaceDetailScreen({ id }: { id: string }) {
                             <MapPin size={16} className="mt-0.5 shrink-0" />
                             <span className="flex min-w-0 flex-col gap-0.5">
                               <span className="text-[14px] font-medium">{loc.address || t("noAddress")}</span>
-                              {loc.metro && <span className={mutedText}>M {loc.metro}</span>}
+                              {metro && <span className={mutedText}>M {metro}</span>}
                             </span>
                           </span>
                           <ArrowUpRight size={16} className="mt-0.5 shrink-0 text-[var(--app-muted)] transition group-active:translate-x-0.5 group-active:-translate-y-0.5" />
@@ -157,11 +159,11 @@ export default function PlaceDetailScreen({ id }: { id: string }) {
                           <MapPin size={16} className="mt-0.5 shrink-0" />
                           <div className="flex min-w-0 flex-col gap-0.5">
                             <span className="text-[14px] font-medium">{loc.address || t("noAddress")}</span>
-                            {loc.metro && <span className={mutedText}>M {loc.metro}</span>}
+                            {metro && <span className={mutedText}>M {metro}</span>}
                           </div>
                         </div>
-                      )
-                    ))}
+                      );
+                    })}
                   </div>
                 )}
 

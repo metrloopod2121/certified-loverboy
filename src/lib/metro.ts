@@ -196,10 +196,44 @@ for (const [line, stations] of Object.entries(LINE_STATIONS)) {
   }
 }
 
-function normalizeStation(value: string) {
+function stripMetroPrefix(value: string): string {
+  let normalized = value
+    .trim()
+    .replace(/^#+/u, "")
+    .replace(/_/gu, " ")
+    .replace(/^[\s"'«»]+|[\s"'«»]+$/gu, "")
+    .trim();
+
+  let previous = "";
+  while (normalized && normalized !== previous) {
+    previous = normalized;
+    normalized = normalized
+      .replace(/^(?:станция\s+)?(?:метро|metro|subway)\s*[:—–-]?\s*/iu, "")
+      .replace(/^метро\s*[:—–-]?\s*/iu, "")
+      .replace(/^станция\s+/iu, "")
+      .replace(/^ст\.\s*/iu, "")
+      .replace(/^ст\s+/iu, "")
+      .replace(/^м\.\s*/iu, "")
+      .replace(/^м\s+/iu, "")
+      .replace(/^[\s"'«»]+|[\s"'«»]+$/gu, "")
+      .trim();
+  }
+
+  return normalized;
+}
+
+export function normalizeMetroValue(value: string | null | undefined): string {
+  if (!value) return "";
   return value
+    .split(/[;,]/u)
+    .map(stripMetroPrefix)
+    .filter(Boolean)
+    .join(", ");
+}
+
+function normalizeStation(value: string) {
+  return stripMetroPrefix(value)
     .toLocaleLowerCase("ru-RU")
-    .replace(/^м(?:\.\s*|\s+)/u, "")
     .replace(/(^|\s)(?:мцд|mcd|d|д)\s*-?\s*[1-5](?=\s|$)/giu, " ")
     .replace(/(^|\s)(?:мцд|mcd|мцк|mcc)(?=\s|$)/giu, " ")
     .replace(/\s+/gu, " ")
@@ -223,9 +257,9 @@ function stationLine(station: string | null | undefined): string | null {
 
 export function metroStations(value: string | null | undefined) {
   if (!value) return [];
-  return value
+  return normalizeMetroValue(value)
     .split(/[;,]/u)
-    .map((station) => station.replace(/^м(?:\.\s*|\s+)/u, "").trim())
+    .map((station) => station.trim())
     .filter(Boolean);
 }
 

@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { requireAuth, isAuthUser } from "@/lib/apiAuth";
 import { resolveTagIds } from "@/lib/tags";
-import { withoutMetroTags } from "@/lib/metro";
+import { normalizeMetroValue, withoutMetroTags } from "@/lib/metro";
 import { trackEvent } from "@/lib/analytics";
 import { eventsFeatureEnabled } from "@/lib/eventsFeature";
 import type { LocationInput, PlaceLinkInput } from "@/lib/types";
@@ -74,7 +74,9 @@ export async function PATCH(
     }
   }
 
-  const locations: LocationInput[] | null = Array.isArray(body.locations) ? body.locations : null;
+  const locations: LocationInput[] | null = Array.isArray(body.locations)
+    ? body.locations.map((loc: LocationInput) => ({ ...loc, metro: normalizeMetroValue(loc.metro) }))
+    : null;
 
   if (Array.isArray(body.tags)) {
     const metroSource = locations ?? existing.locations;

@@ -25,7 +25,7 @@ export default function NavBar() {
 
   return (
     <nav
-      className="fixed bottom-0 left-1/2 z-20 flex w-fit max-w-[calc(100vw-24px)] -translate-x-1/2 justify-center gap-0.5 rounded-full border border-[var(--app-outline)]/10 bg-[#f8d9e8]/70 px-1 py-1 shadow-[0_8px_22px_rgba(28,26,23,0.12)] backdrop-blur-xl"
+      className="fixed bottom-0 left-1/2 z-20 grid w-[calc(100vw-24px)] max-w-[360px] -translate-x-1/2 grid-cols-3 gap-0.5 rounded-full border border-[var(--app-outline)]/10 bg-[#f8d9e8]/70 px-1 py-1 shadow-[0_8px_22px_rgba(28,26,23,0.12)] backdrop-blur-xl"
       style={{ marginBottom: "calc(var(--safe-bottom) + 12px)" }}
     >
       {LINKS.map((link) => {
@@ -36,14 +36,14 @@ export default function NavBar() {
             key={link.href}
             href={link.href}
             onClick={() => trackClientEvent("nav_click", { href: link.href })}
-            className={`flex min-h-[58px] min-w-[64px] flex-col items-center justify-center gap-0.5 rounded-full px-4 py-2 text-[10px] font-semibold transition ${
+            className={`flex min-h-[58px] min-w-0 flex-col items-center justify-center gap-0.5 rounded-full px-2 py-2 text-[10px] font-semibold transition ${
               active
                 ? "bg-[var(--app-ink)] text-[var(--app-canvas)] shadow-[0_2px_0_rgba(28,26,23,0.16)]"
                 : "text-[var(--app-ink)]/70 active:bg-[var(--app-ink)]/8"
             }`}
           >
             <Icon size={20} strokeWidth={2} />
-            {t(link.labelKey)}
+            <span className="max-w-full truncate">{t(link.labelKey)}</span>
           </Link>
         );
       })}

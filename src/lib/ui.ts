@@ -25,24 +25,16 @@ export const pillBlue =
 
 /** Shared "this is a one-time event" visual language -- a holo pink/violet/teal gradient with a
  *  soft matching glow, used for the date badge (Storage card, place detail, import review) and
- *  the card's own glow/stripe. Colors are pushed brighter than the rest of the pastel palette on
+ *  the card's contour glow. Colors are pushed brighter than the rest of the pastel palette on
  *  purpose: an event should read as brighter/louder than an evergreen place, not just differently
  *  tinted. Sizing/layout (padding, text size, gap) stays with each caller since it varies. */
 export const eventBadgeColors =
   "bg-gradient-to-r from-[#ff8fd6] via-[#a78bfa] to-[#5fd8c8] text-white shadow-[0_4px_14px_rgba(167,139,250,0.45)] ring-1 ring-white/40";
 
-/** Glow ring around an event card in the Storage list -- pairs with eventBadgeColors' palette so
- *  the whole card reads as lit up, not just the badge. A single `shadow-[...]` utility bundling
- *  all three layers (card's own flat "sticker" shadow + colored ring + blurred glow) -- box-shadow
- *  is a single CSS property, so a second separate `shadow-[...]` class on the same element (e.g.
- *  `card`'s own) would silently replace rather than combine with this one. */
+/** Glow around an event card in the Storage list -- a translucent pseudo-element sits behind the
+ *  whole card contour, so events read as softly lit without a loud left ribbon. */
 export const eventCardGlow =
-  "shadow-[0_2px_0_rgba(28,26,23,0.08),0_0_0_2px_rgba(255,143,214,0.55),0_10px_28px_-6px_rgba(167,139,250,0.55)]";
-
-/** Vertical accent stripe along an event card's left edge -- the "ribbon" cue that marks it as an
- *  event even before reading any text. Card needs `relative overflow-hidden` for this to clip to
- *  its rounded corners. */
-export const eventStripe = "absolute inset-y-0 left-0 w-2 bg-gradient-to-b from-[#ff8fd6] via-[#a78bfa] to-[#5fd8c8]";
+  "relative isolate overflow-visible bg-[var(--app-surface)] shadow-[0_2px_0_rgba(28,26,23,0.08),0_0_0_1px_rgba(255,255,255,0.85),0_14px_32px_-18px_rgba(167,139,250,0.7)] before:pointer-events-none before:absolute before:-inset-1 before:-z-10 before:rounded-[26px] before:bg-gradient-to-r before:from-[#ff8fd6]/40 before:via-[#a78bfa]/35 before:to-[#5fd8c8]/40 before:blur-[12px] before:content-['']";
 
 /** Prefixes a tag name with "#" (no-op if it already has one), and strips whitespace so it
  *  reads as a single hashtag word. */

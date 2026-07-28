@@ -20,7 +20,6 @@ import {
   pillBlue,
   eventBadgeColors,
   eventCardGlow,
-  eventStripe,
   iconButton,
   pageHeading,
   mutedText,
@@ -93,6 +92,7 @@ export default function StorageScreen() {
   const sortRef = useRef<HTMLDivElement>(null);
   const sortLabel = t(sortOptions.find((option) => option.value === sort)?.labelKey ?? "sortDefaultLabel");
   const [userLocation, setUserLocation] = useState<LatLng | null>(() => loadSavedLocation());
+  const [currentTimeMs, setCurrentTimeMs] = useState(0);
   const [locatingMe, setLocatingMe] = useState(false);
   const [locationError, setLocationError] = useState<string | null>(null);
   const [manualLocationInput, setManualLocationInput] = useState("");
@@ -124,6 +124,16 @@ export default function StorageScreen() {
     document.addEventListener("mousedown", onClickOutside);
     return () => document.removeEventListener("mousedown", onClickOutside);
   }, [openFilter]);
+
+  useEffect(() => {
+    const updateCurrentTime = () => setCurrentTimeMs(Date.now());
+    const frame = window.requestAnimationFrame(updateCurrentTime);
+    const timer = window.setInterval(updateCurrentTime, 60_000);
+    return () => {
+      window.cancelAnimationFrame(frame);
+      window.clearInterval(timer);
+    };
+  }, []);
 
   const allTags = useMemo(() => {
     const set = new Set<string>();
@@ -159,9 +169,8 @@ export default function StorageScreen() {
     }
     // Upcoming events float to the top regardless of the chosen sort, soonest first -- a past
     // event (already happened) just falls back into the regular sort, same as a plain place.
-    const now = Date.now();
     const upcomingStartsAt = (idea: DateIdea) =>
-      idea.eventStartsAt && new Date(idea.eventStartsAt).getTime() >= now ? new Date(idea.eventStartsAt).getTime() : null;
+      idea.eventStartsAt && new Date(idea.eventStartsAt).getTime() >= currentTimeMs ? new Date(idea.eventStartsAt).getTime() : null;
     result = [...result].sort((a, b) => {
       const aEvent = upcomingStartsAt(a);
       const bEvent = upcomingStartsAt(b);
@@ -172,7 +181,7 @@ export default function StorageScreen() {
       return b.createdAt.localeCompare(a.createdAt);
     });
     return result;
-  }, [ideas, tagFilters, metroFilters, sort, distanceById]);
+  }, [ideas, tagFilters, metroFilters, sort, distanceById, currentTimeMs]);
 
   function updateTagFilters(next: string[]) {
     setTagFilters(next);
@@ -558,11 +567,10 @@ export default function StorageScreen() {
               }}
               className={`${card} ${
                 idea.eventStartsAt
-                  ? `relative overflow-hidden bg-[var(--app-surface)] ${eventCardGlow}`
+                  ? eventCardGlow
                   : metroPastelTone(idea.locations[0]?.metro) ?? pastelTone(idea.id)
               } flex cursor-pointer flex-col gap-2.5 transition active:scale-[0.99]`}
             >
-              {idea.eventStartsAt && <div className={eventStripe} />}
               {idea.eventStartsAt && (
                 <div className={`inline-flex w-fit items-center gap-1.5 rounded-full px-2.5 py-1 text-[12px] font-bold ${eventBadgeColors}`}>
                   <CalendarClock size={13} />

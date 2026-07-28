@@ -1,6 +1,6 @@
 # Project State
 
-Актуальный снимок состояния проекта на 2026-07-27. Этот файл нужен как "память"
+Актуальный снимок состояния проекта на 2026-07-28. Этот файл нужен как "память"
 проекта: что сейчас включено, где это лежит, какие команды важны, что уже
 задеплоено и какие решения были приняты.
 
@@ -20,15 +20,19 @@
 - port: `3101`
 - HTTPS: `https://vacanator.xyz/` (порт 443 напрямую, без `:8443` — сервер свободен от VPN)
 - bot: `@certified7overBot`
-- latest deployed commit: `33bf1ea Add start mini app button`
+- Telegram webhook: `https://vacanator.xyz/api/telegram/webhook`, pinned with Bot API
+  `ip_address=2.26.91.146` to avoid Telegram using stale DNS for the old VPN host
+- latest deployed commit: verify on the server with
+  `sudo -u loverboy git rev-parse --short HEAD` after each deploy
 
 **Старый сервер `31.76.0.133` больше не используется для этого проекта — НЕ деплоить туда.**
 Сервис там пока оставлен выключенным/остановленным как временный откат, домен на него больше
 не резолвится. На нём по-прежнему живёт VPN-стек и отдельный проект `moPlaces`
 (`moplaces.vacanator.xyz`) — их не трогать.
 
-Локально рабочее дерево после последнего деплоя чистое, кроме untracked
-`pre fill data .zip`; этот zip не относится к текущим изменениям и не трогался.
+Локально `pre fill data .zip` — частный untracked файл, не относится к деплою и не должен
+случайно попадать в commit. Перед любым деплоем всегда сверять `git status`, потому что
+в репо параллельно работают Codex/Claude/пользователь.
 
 ## Текущий UI
 
@@ -283,14 +287,15 @@ Deploy script behavior:
 - `next build` and service restart when there is something to deploy;
 - prints service active status and HTTPS check.
 
-Last successful checks before analytics deploy:
+Last successful checks before new-server migration:
 - `npm run lint`
 - `npx tsc --noEmit`
 - `npm run build`
 - server deploy build;
 - `certified-loverboy.service` active;
 - HTTPS returned `200`;
-- production webhook `/usage` probe returned `{ "ok": true }`;
+- Telegram webhook switched to `https://vacanator.xyz/api/telegram/webhook`;
+- Telegram webhook was forced to `ip_address=2.26.91.146`; `pending_update_count` returned to `0`;
 - JSONL file received analytics events.
 
 ## Backups and restore
@@ -369,7 +374,10 @@ plain evergreen place -- no separate entity, just two nullable columns on `DateI
 - UI: Ideas Storage pins any place with a future `eventStartsAt` to the top of the list (soonest
   first), ahead of whatever sort is selected -- a past event just falls back into normal sort,
   same as a plain place. Card and place-detail screen show a "When" badge
-  (`CalendarClock` icon + `formatEventWhen()`) when set.
+  (`CalendarClock` icon + `formatEventWhen()`) when set. Storage event cards use a soft
+  translucent contour glow behind the whole card; there is no left-side event stripe.
+- Prod verified 2026-07-28: `EVENTS_FEATURE_ENABLED` is absent/false in `.env`; DB rows with
+  `eventStartsAt is not null` belong only to `ADMIN_TG_ID=504196424` (1 row at verification).
 
 ## Open Risks / Follow-Ups
 

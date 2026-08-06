@@ -1,3 +1,5 @@
+import { normalizeMetroValue } from "@/lib/metro";
+
 export type Location = {
   id: string;
   address: string | null;
@@ -35,6 +37,8 @@ export type DateIdea = {
   /// evergreen place. ISO strings, like createdAt/updatedAt.
   eventStartsAt: string | null;
   eventEndsAt: string | null;
+  reminderAt: string | null;
+  reminderSentAt: string | null;
   tags: { tag: { id: string; name: string } }[];
   locations: Location[];
   links: PlaceLink[];
@@ -48,6 +52,7 @@ export type DateIdeaInput = {
   priceNote: string;
   eventStartsAt: string | null;
   eventEndsAt: string | null;
+  reminderAt: string | null;
   tags: string[];
   locations: LocationInput[];
   links: PlaceLinkInput[];
@@ -56,7 +61,7 @@ export type DateIdeaInput = {
 export function locationToInput(location: Location): LocationInput {
   return {
     address: location.address ?? "",
-    metro: location.metro ?? "",
+    metro: normalizeMetroValue(location.metro),
     lat: location.lat,
     lng: location.lng,
     url: location.url ?? "",
@@ -74,6 +79,7 @@ export function dateIdeaToInput(idea: DateIdea): DateIdeaInput {
     priceNote: idea.priceNote ?? "",
     eventStartsAt: idea.eventStartsAt,
     eventEndsAt: idea.eventEndsAt,
+    reminderAt: idea.reminderAt,
     tags: idea.tags.map((t) => t.tag.name),
     locations: idea.locations.map(locationToInput),
     links: idea.links.map(linkToInput),

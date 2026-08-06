@@ -6,6 +6,7 @@ import "maplibre-gl/dist/maplibre-gl.css";
 import "./map-theme.css";
 import { MAP_STYLE_URL, MOSCOW_CENTER, FOCUS_ZOOM, createPlaceMarkerElement } from "./mapInternals";
 import { useT } from "@/hooks/useLang";
+import { normalizeMetroValue } from "@/lib/metro";
 
 export type MapMarker = {
   id: string;
@@ -34,9 +35,10 @@ function buildPopupContent(marker: MapMarker, linkWord: string): HTMLElement {
     row.textContent = marker.address;
     container.appendChild(row);
   }
-  if (marker.metro) {
+  const metro = normalizeMetroValue(marker.metro);
+  if (metro) {
     const row = document.createElement("div");
-    row.textContent = `M ${marker.metro}`;
+    row.textContent = `M ${metro}`;
     container.appendChild(row);
   }
   if (marker.priceNote) {

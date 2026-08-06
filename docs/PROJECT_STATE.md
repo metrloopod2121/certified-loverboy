@@ -1,6 +1,6 @@
 # Project State
 
-Актуальный снимок состояния проекта на 2026-07-27. Этот файл нужен как "память"
+Актуальный снимок состояния проекта на 2026-07-28. Этот файл нужен как "память"
 проекта: что сейчас включено, где это лежит, какие команды важны, что уже
 задеплоено и какие решения были приняты.
 
@@ -18,22 +18,30 @@
 - app path: `/srv/web/app/certified-loverboy/app`
 - app user: `loverboy`
 - port: `3101`
+- reminders timer: `certified-loverboy-reminders.timer` runs `scripts/sendReminders.mjs` every
+  minute; emergency pause via `REMINDERS_ENABLED=0` in `.env` or
+  `systemctl disable --now certified-loverboy-reminders.timer`
 - HTTPS: `https://vacanator.xyz/` (порт 443 напрямую, без `:8443` — сервер свободен от VPN)
 - bot: `@certified7overBot`
-- latest deployed commit: `33bf1ea Add start mini app button`
+- Telegram webhook: `https://vacanator.xyz/api/telegram/webhook`, pinned with Bot API
+  `ip_address=2.26.91.146` to avoid Telegram using stale DNS for the old VPN host
+- latest deployed commit: verify on the server with
+  `sudo -u loverboy git rev-parse --short HEAD` after each deploy
 
 **Старый сервер `31.76.0.133` больше не используется для этого проекта — НЕ деплоить туда.**
 Сервис там пока оставлен выключенным/остановленным как временный откат, домен на него больше
 не резолвится. На нём по-прежнему живёт VPN-стек и отдельный проект `moPlaces`
 (`moplaces.vacanator.xyz`) — их не трогать.
 
-Локально рабочее дерево после последнего деплоя чистое, кроме untracked
-`pre fill data .zip`; этот zip не относится к текущим изменениям и не трогался.
+Локально `pre fill data .zip` — частный untracked файл, не относится к деплою и не должен
+случайно попадать в commit. Перед любым деплоем всегда сверять `git status`, потому что
+в репо параллельно работают Codex/Claude/пользователь.
 
 ## Текущий UI
 
 В Mini App три основных таба:
-- Ideas Storage (`/`) — список мест, фильтры tags/metro, сортировки, добавление места вручную или через ссылку (Yandex Maps / Instagram reel-post / Telegram post); у карточки с координатами есть кнопка "показать на карте" — переход на `/map?focus=<locationId>`.
+- Ideas Storage (`/`) — список мест, фильтры tags/metro, сортировки, добавление места вручную или через ссылку (Yandex Maps / Instagram reel-post / Telegram post); карточки открывают `/place/[id]`, а у карточки с координатами есть только быстрый переход на карту `/map?focus=<locationId>` — edit/delete на карточке не показываются. Add-flow от кнопки `+` должен схлопываться после успешного ручного add, успешного parse ссылки/файла, закрытия/отмены import review и сохранения/skip последнего imported draft. Во время link import показывается `BlobLoader` + `LoadingCaptions`; captions должны меняться в одном фиксированном `overflow-hidden` контейнере через fade-out → blank-frame → next text, без наложения старой и новой строки.
+- Place detail (`/place/[id]`) — описание места, ссылки/локации, нижняя action bar: "Удалить" слева, "Редактировать" справа; редактирование открывает `DateIdeaForm` прямо на экране деталей, удаление возвращает на Ideas Storage. Локация с map URL кликабельна всей адресной плашкой и показывает стрелку справа; отдельный текст "Открыть ссылку" не используется. `PlaceLink` в разделе "Ссылки" тоже рисуются как отдельные full-width кликабельные rows с иконкой и стрелкой справа.
 - Map (`/map`) — карта мест с координатами, фильтры tags/metro; при `?focus=<locationId>` в query карта долетает (`flyTo`) до этого пина и открывает его попап, как только маркеры подгрузятся (свой отдельный `/api/date-ideas` fetch, независимый от Storage).
 
 ## Карта: нативный MapLibre GL, без Leaflet
@@ -69,6 +77,42 @@ MapLibre, отполированная, единственный движок в
 отдельный заход там, где реально можно прогнать `npm install`.
 - Profile (`/profile`) — язык, инфо о боте, счетчик импортов по ссылке, support, export.
 
+Текущая форма места (`DateIdeaForm`):
+- event-секция называется "Дата (опционально)" и без поясняющего текста; у start date/time нет видимых
+  лейблов над полями, только нативные поля с compact placeholder/aria-label;
+- под блоком даты отдельной карточкой стоит "Напоминание": строка с текстом слева и тумблером
+  справа. При включении раскрывается нативный `<select>` с пятью относительными пресетами:
+  за 15 минут, за час, за 6 часов, за день, за 2 дня. В БД всё равно сохраняется абсолютный
+  `reminderAt`, вычисленный от `eventStartsAt`; для сохранения reminder нужны дата и время события;
+- секция локаций называется просто "Локации", без счетчика в скобках;
+- кнопки получения пина компактные: "Из ссылки" и "На карте" в две равные колонки;
+- выбранный пин показывается status-плашкой "Пин выбран" и маленькой icon-кнопкой очистки.
+- под полем тегов нет поясняющей подписи про `date`; чем меньше helper-текстов под полями, тем лучше для этого UI.
+
+Локальные проверки:
+- `npm run lint` и `npx tsc --noEmit` можно гонять в обычном sandbox;
+- `npm run build` на этом проекте использует `next/font` + Google Fonts (`Geist`, `Geist Mono`),
+  поэтому в Codex sandbox без сети он долго висит и падает на скачивании шрифтов. Не тратить время
+  на первый sandbox-build: для production build сразу запускать `npm run build` с разрешенным network/escalated access.
+
+Актуальная палитра: базовые тёплые акценты выровнены по насыщенности (`--app-yellow: #efd47c`,
+`--app-coral: #f0a477`), но event-карточки не используют gold/coral как основной язык. Для
+событий актуален pink-blue язык без teal/rainbow/holo и без золотого: date badge специально
+бледный pastel pink → blue (`#ffd2f1 → #c8f2ff`), а внутренний radial-gradient карточки остается
+чуть ярче. Для event-тегов используется более заметный, но прозрачный neon-blue `pillBlue`.
+
+Metro: `--metro-*` — насыщенные цвета линий для точек/свотчей; `--metro-*-pale` — отдельные
+пастельные фоны карточек. В Storage metro dot чуть крупнее (`size-2.5`) и с белым ring, чтобы
+не сливаться с фоном карточки.
+МЦД/МЦК визуально отличаются от обычного метро: точка — цветное кольцо с белым центром, а не
+залитый кружок. `metro.ts` знает МЦД-1/2/3/4 и МЦК; `Сколково` распознается как МЦД-1 и получает
+оранжевое кольцо + MCD1-pale фон карточки. Для пересадочных станций без явного `МЦД-1`/`МЦК`
+приоритет остается за обычной линией метро, чтобы не перекрашивать метро-станции случайно.
+`metro` должен храниться как название станции без префиксов. Перед draft/preview/save/export
+используется `normalizeMetroValue()`: она чистит `метро`, `м.`, `станция метро`, `ст.м.`,
+хэштеги вида `#метроМаяковская` и повторные префиксы, но не выкидывает явные `МЦД-1`/`МЦК`
+маркеры, чтобы rail-цвета оставались корректными.
+
 Текущий профиль:
 - выбор языка через нативный `<select>`, не через две большие панели;
 - счетчик импортов показывает оставшиеся импорты;
@@ -100,6 +144,16 @@ sudo systemctl restart certified-loverboy.service
 - Yandex всегда даёт один draft, Instagram/Telegram — может дать несколько (один пост/рилс
   может упоминать несколько мест) — ответ `{ items: DateIdeaInput[] }`, отрисовывается через
   тот же review sheet, что и file-import;
+- review sheet после импорта: на карточке draft'а actions не должны переполнять экран — delete
+  и edit это круглые icon-only кнопки слева, Add остаётся единственной текстовой кнопкой справа.
+  Ссылки в draft'е рисуются full-width rows с одинаковой круглой link-иконкой, title и
+  обрезанным URL/subtitle, а не сырым inline URL-текстом;
+- source URL социмпорта сохраняется в `PlaceLink`: Telegram post link / публичный channel forward
+  добавляют link с label `Telegram`, Instagram reel/post добавляет link с label `Instagram`.
+  Это происходит независимо от того, нашлась ли отдельная map-ссылка внутри поста;
+- `Location.url` должен быть только map URL. Для Yandex Maps импорта source URL по умолчанию
+  становится `Location.url`; для Telegram/Instagram source URL никогда не должен попадать в
+  `Location.url`, если это не карта;
 - после парсинга открывается review sheet, сохранение идет обычным `POST /api/date-ideas` с `source: "link_in_app"`.
 
 Геокодинг адреса без ссылки на карту (Telegram-пост/Instagram часто просто пишут адрес текстом,
@@ -123,7 +177,9 @@ sudo systemctl restart certified-loverboy.service
 - голая ссылка на Telegram post;
 - вставленный текст поста;
 - один пост может дать несколько draft'ов;
-- каждый draft подтверждается inline-кнопками approve/reject.
+- каждый draft подтверждается inline-кнопками approve/reject;
+- source URL bare Telegram post / public channel forward / Instagram link добавляется в `PlaceLink`
+  по тем же правилам, что в Mini App. Map URL остается в `Location.url`.
 
 `/start` отдельно уведомляет админа (`ADMIN_TG_ID`) с username/именем/id, языком Telegram
 и deep-link payload. Если payload нет, это прямой заход: поиск Telegram, профиль бота,
@@ -315,14 +371,15 @@ Deploy script behavior:
 - `next build` and service restart when there is something to deploy;
 - prints service active status and HTTPS check.
 
-Last successful checks before analytics deploy:
+Last successful checks before new-server migration:
 - `npm run lint`
 - `npx tsc --noEmit`
 - `npm run build`
 - server deploy build;
 - `certified-loverboy.service` active;
 - HTTPS returned `200`;
-- production webhook `/usage` probe returned `{ "ok": true }`;
+- Telegram webhook switched to `https://vacanator.xyz/api/telegram/webhook`;
+- Telegram webhook was forced to `ip_address=2.26.91.146`; `pending_update_count` returned to `0`;
 - JSONL file received analytics events.
 
 ## Backups and restore
@@ -380,17 +437,26 @@ source, alongside Yandex Maps / Telegram post links:
 ## Timed events (pilot)
 
 A place can optionally be a one-time dated event (concert, show, tournament...) instead of a
-plain evergreen place -- no separate entity, just two nullable columns on `DateIdea`:
+plain evergreen place -- no separate entity, just nullable columns on `DateIdea`:
 - `eventStartsAt` / `eventEndsAt` (`DateTime?`, both null for an ordinary place). A time of
   exactly midnight means "no time known" (not literally midnight) -- accepted simplification
   for a personal tracker, see `formatEventWhen()` in `src/lib/i18n.ts`.
+- `reminderAt` / `reminderSentAt` (`DateTime?`) power one-shot Telegram reminders for dated
+  events. `reminderAt` is user-selected, `reminderSentAt` is written by the server timer after
+  delivery so the same reminder does not repeat. Editing a reminder to a different instant resets
+  `reminderSentAt` to null.
 - gated by `eventsFeatureEnabled()` (`src/lib/eventsFeature.ts`): always on for `ADMIN_TG_ID`,
   everyone else needs `EVENTS_FEATURE_ENABLED="1"`. Gate is checked at every write path (manual
   form via `/api/date-ideas(/[id])`, bot approve-callback creation) and at parse time (the
   multi-place LLM prompt only offers the event schema fields when the requesting chat is
   allowed, so a non-pilot user's extracted fields are always null rather than just discarded).
 - manual entry: `DateIdeaForm` shows a "When" section (native date+time inputs, start required
-  before end can be entered) only when `features.events` comes back true from `/api/me`.
+  before end can be entered) only when `features.events` comes back true from `/api/me`. The
+  date/time controls use a compact adaptive grid, not fixed `grid-cols-2`: they stack on narrow
+  edit forms and the time field stays fixed-width on wider phones. Reminder is a separate card
+  below the date section: toggle + native `<select>` with five preset offsets (`15m`, `1h`,
+  `6h`, `1d`, `2d`) from `eventStartsAt`; event time is required for reminders and past
+  reminders are rejected client-side.
 - import: `cloudflareAi.ts`'s multi-place prompt asks for `eventStartDate/Time` +
   `eventEndDate/Time` (separate YYYY-MM-DD / HH:MM strings, today's date injected so relative
   dates like "завтра"/"в эту пятницу" resolve correctly) only for a permanent-venue post is
@@ -401,7 +467,20 @@ plain evergreen place -- no separate entity, just two nullable columns on `DateI
 - UI: Ideas Storage pins any place with a future `eventStartsAt` to the top of the list (soonest
   first), ahead of whatever sort is selected -- a past event just falls back into normal sort,
   same as a plain place. Card and place-detail screen show a "When" badge
-  (`CalendarClock` icon + `formatEventWhen()`) when set.
+  (`CalendarClock` icon + `formatEventWhen()`) when set. Storage event cards use a translucent
+  glass surface with an internal centered radial-gradient light source clipped inside the rounded
+  card; there is no left-side event stripe or external glow bleeding outside the card. Future
+  event cards also show a compact countdown to the right of the date badge: more than 24 hours
+  uses days+hours, less than 24 hours uses hours+minutes.
+- delivery: `scripts/sendReminders.mjs` reads due rows (`reminderAt <= now`,
+  `reminderSentAt is null`), sends an HTML Telegram message to `telegramUserId` with title,
+  event date, reminder time, first location, price and short description, plus an inline Web App
+  button to `/place/<id>`, then writes `reminderSentAt`. Systemd unit/timer live in `deploy/`;
+  `scripts/deploy.sh` installs/enables `certified-loverboy-reminders.timer` after a deploy.
+  `REMINDERS_ENABLED=0` disables sending without code changes; `REMINDERS_BATCH_LIMIT` defaults
+  to 50 due reminders per run.
+- Prod verified 2026-07-28: `EVENTS_FEATURE_ENABLED` is absent/false in `.env`; DB rows with
+  `eventStartsAt is not null` belong only to `ADMIN_TG_ID=504196424` (1 row at verification).
 
 ## Open Risks / Follow-Ups
 
@@ -415,4 +494,5 @@ plain evergreen place -- no separate entity, just two nullable columns on `DateI
 - Instagram import is a pilot behind `INSTAGRAM_IMPORT_ENABLED` — needs live testing on the
   server (yt-dlp/ffmpeg installed, real reel links) before opening it up beyond `ADMIN_TG_ID`.
 - Timed events is a pilot behind `EVENTS_FEATURE_ENABLED` — needs live testing (manual entry +
-  bot import against real event posts) before opening it up beyond `ADMIN_TG_ID`.
+  bot import against real event posts, plus reminder delivery from the systemd timer) before
+  opening it up beyond `ADMIN_TG_ID`.

@@ -2,9 +2,9 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ChevronDown, Pencil, Trash2, Plus, X, Link as LinkIcon, Upload, PencilLine, FileUp, Navigation, MapPin, CalendarClock, Map as MapIcon } from "lucide-react";
+import { ChevronDown, Plus, X, Link as LinkIcon, Upload, PencilLine, FileUp, Navigation, MapPin, CalendarClock, Map as MapIcon } from "lucide-react";
 import { apiFetch } from "@/lib/apiClient";
-import { dateIdeaToInput, type DateIdea, type DateIdeaInput } from "@/lib/types";
+import { type DateIdea, type DateIdeaInput } from "@/lib/types";
 import DateIdeaForm from "@/components/DateIdeaForm";
 import ImportReviewSheet, { type ReviewItem } from "@/components/ImportReviewSheet";
 import MultiSelectFilter from "@/components/MultiSelectFilter";
@@ -19,8 +19,8 @@ import {
   pill,
   pillBlue,
   eventBadgeColors,
+  eventCountdownBadge,
   eventCardGlow,
-  eventStripe,
   iconButton,
   pageHeading,
   mutedText,
@@ -35,7 +35,9 @@ import {
 import { metroPastelTone, metroStations, metroLineTone, sortStationsByLine } from "@/lib/metro";
 import { useLang, useT } from "@/hooks/useLang";
 import { trackClientEvent } from "@/lib/clientAnalytics";
-import { awayText, formatEventWhen, type StringKey } from "@/lib/i18n";
+import { awayText, formatEventCountdown, formatEventWhen, loadingPhrases, type StringKey } from "@/lib/i18n";
+import BlobLoader from "@/components/BlobLoader";
+import LoadingCaptions from "@/components/LoadingCaptions";
 
 type Sort = "newest" | "title" | "nearby";
 
@@ -88,11 +90,11 @@ export default function StorageScreen() {
   const [linkInput, setLinkInput] = useState("");
   const [linkImporting, setLinkImporting] = useState(false);
   const [linkError, setLinkError] = useState<string | null>(null);
-  const [editing, setEditing] = useState<DateIdea | null>(null);
   const [openFilter, setOpenFilter] = useState<"tags" | "metro" | "sort" | null>(null);
   const sortRef = useRef<HTMLDivElement>(null);
   const sortLabel = t(sortOptions.find((option) => option.value === sort)?.labelKey ?? "sortDefaultLabel");
   const [userLocation, setUserLocation] = useState<LatLng | null>(() => loadSavedLocation());
+  const [currentTimeMs, setCurrentTimeMs] = useState(0);
   const [locatingMe, setLocatingMe] = useState(false);
   const [locationError, setLocationError] = useState<string | null>(null);
   const [manualLocationInput, setManualLocationInput] = useState("");
@@ -124,6 +126,16 @@ export default function StorageScreen() {
     document.addEventListener("mousedown", onClickOutside);
     return () => document.removeEventListener("mousedown", onClickOutside);
   }, [openFilter]);
+
+  useEffect(() => {
+    const updateCurrentTime = () => setCurrentTimeMs(Date.now());
+    const frame = window.requestAnimationFrame(updateCurrentTime);
+    const timer = window.setInterval(updateCurrentTime, 60_000);
+    return () => {
+      window.cancelAnimationFrame(frame);
+      window.clearInterval(timer);
+    };
+  }, []);
 
   const allTags = useMemo(() => {
     const set = new Set<string>();
@@ -159,9 +171,8 @@ export default function StorageScreen() {
     }
     // Upcoming events float to the top regardless of the chosen sort, soonest first -- a past
     // event (already happened) just falls back into the regular sort, same as a plain place.
-    const now = Date.now();
     const upcomingStartsAt = (idea: DateIdea) =>
-      idea.eventStartsAt && new Date(idea.eventStartsAt).getTime() >= now ? new Date(idea.eventStartsAt).getTime() : null;
+      idea.eventStartsAt && new Date(idea.eventStartsAt).getTime() >= currentTimeMs ? new Date(idea.eventStartsAt).getTime() : null;
     result = [...result].sort((a, b) => {
       const aEvent = upcomingStartsAt(a);
       const bEvent = upcomingStartsAt(b);
@@ -172,7 +183,7 @@ export default function StorageScreen() {
       return b.createdAt.localeCompare(a.createdAt);
     });
     return result;
-  }, [ideas, tagFilters, metroFilters, sort, distanceById]);
+  }, [ideas, tagFilters, metroFilters, sort, distanceById, currentTimeMs]);
 
   function updateTagFilters(next: string[]) {
     setTagFilters(next);
@@ -187,6 +198,12 @@ export default function StorageScreen() {
   function selectAddMode(mode: "manual" | "import" | "link") {
     setAddMode(mode);
     trackClientEvent("storage_add_mode_selected", { mode });
+  }
+
+  function collapseAddFlow() {
+    setAddMode("none");
+    setLinkInput("");
+    setLinkError(null);
   }
 
   function openPlace(id: string) {
@@ -257,22 +274,13 @@ export default function StorageScreen() {
       return next;
     });
     setImportItems([]);
+    setLinkInput("");
+    setLinkError(null);
   }
 
   async function createIdea(input: DateIdeaInput) {
     await apiFetch("/api/date-ideas", { method: "POST", body: JSON.stringify({ ...input, source: "manual" }) });
-    setAddMode("none");
-    await reload();
-  }
-
-  async function updateIdea(id: string, input: DateIdeaInput) {
-    await apiFetch(`/api/date-ideas/${id}`, { method: "PATCH", body: JSON.stringify(input) });
-    setEditing(null);
-    await reload();
-  }
-
-  async function remove(id: string) {
-    await apiFetch(`/api/date-ideas/${id}`, { method: "DELETE" });
+    collapseAddFlow();
     await reload();
   }
 
@@ -286,18 +294,26 @@ export default function StorageScreen() {
         source: file.name,
         origin: "file_import" as const,
         // Markdown files never describe a one-time event -- only link imports do.
-        parsed: { ...parseDateMarkdown(await file.text()), eventStartsAt: null, eventEndsAt: null },
+        parsed: { ...parseDateMarkdown(await file.text()), eventStartsAt: null, eventEndsAt: null, reminderAt: null },
       }))
     );
     trackClientEvent("storage_file_import_selected", { filesCount: newItems.length });
     setImportItems((prev) => [...prev, ...newItems]);
+    collapseAddFlow();
     e.target.value = "";
   }
 
   function dismissImportItem(id: string) {
     const item = importItems.find((candidate) => candidate.id === id);
     trackClientEvent("storage_import_draft_removed", { origin: item?.origin ?? "unknown" });
-    setImportItems((prev) => prev.filter((i) => i.id !== id));
+    const nextItems = importItems.filter((i) => i.id !== id);
+    setImportItems(nextItems);
+    if (nextItems.length === 0) collapseAddFlow();
+  }
+
+  function closeImportReview() {
+    setImportItems([]);
+    collapseAddFlow();
   }
 
   // A share action (Yandex Maps, Instagram, Telegram) often copies a title/caption alongside the
@@ -329,7 +345,7 @@ export default function StorageScreen() {
         parsed,
       }));
       setImportItems((prev) => [...prev, ...newItems]);
-      setLinkInput("");
+      collapseAddFlow();
     } catch (err) {
       setLinkError(err instanceof Error ? err.message : t("couldntParseLink"));
     } finally {
@@ -341,6 +357,7 @@ export default function StorageScreen() {
     const origin = importItems.find((item) => item.id === id)?.origin ?? "link_in_app";
     await apiFetch("/api/date-ideas", { method: "POST", body: JSON.stringify({ ...input, source: origin }) });
     dismissImportItem(id);
+    collapseAddFlow();
     await reload();
   }
 
@@ -483,7 +500,7 @@ export default function StorageScreen() {
             )}
           </div>
 
-          {addMode === "manual" && <DateIdeaForm onSubmit={createIdea} onCancel={() => setAddMode("none")} />}
+          {addMode === "manual" && <DateIdeaForm onSubmit={createIdea} onCancel={collapseAddFlow} />}
 
           {addMode === "link" && (
             <div className="flex flex-col gap-2 rounded-[22px] border border-[var(--app-outline)]/10 bg-[var(--app-yellow)] p-4 shadow-[0_2px_0_rgba(28,26,23,0.08)]">
@@ -539,15 +556,10 @@ export default function StorageScreen() {
       {!ideas && <p className={mutedText}>{t("loadingEllipsis")}</p>}
 
       <div className="flex flex-col gap-3">
-        {filtered.map((idea) =>
-          editing?.id === idea.id ? (
-            <DateIdeaForm
-              key={idea.id}
-              initial={dateIdeaToInput(idea)}
-              onSubmit={(input) => updateIdea(idea.id, input)}
-              onCancel={() => setEditing(null)}
-            />
-          ) : (
+        {filtered.map((idea) => {
+          const eventCountdown = idea.eventStartsAt ? formatEventCountdown(lang, idea.eventStartsAt, currentTimeMs) : null;
+
+          return (
             <div
               key={idea.id}
               role="button"
@@ -558,57 +570,35 @@ export default function StorageScreen() {
               }}
               className={`${card} ${
                 idea.eventStartsAt
-                  ? `relative overflow-hidden bg-[var(--app-surface)] ${eventCardGlow}`
+                  ? eventCardGlow
                   : metroPastelTone(idea.locations[0]?.metro) ?? pastelTone(idea.id)
               } flex cursor-pointer flex-col gap-2.5 transition active:scale-[0.99]`}
             >
-              {idea.eventStartsAt && <div className={eventStripe} />}
               {idea.eventStartsAt && (
-                <div className={`inline-flex w-fit items-center gap-1.5 rounded-full px-2.5 py-1 text-[12px] font-bold ${eventBadgeColors}`}>
-                  <CalendarClock size={13} />
-                  {formatEventWhen(lang, idea.eventStartsAt, idea.eventEndsAt)}
+                <div className="flex min-w-0 items-start justify-between gap-2">
+                  <div className={`inline-flex min-w-0 items-center gap-1.5 rounded-full px-2.5 py-1 text-[12px] font-bold ${eventBadgeColors}`}>
+                    <CalendarClock className="shrink-0" size={13} />
+                    <span className="truncate">{formatEventWhen(lang, idea.eventStartsAt, idea.eventEndsAt)}</span>
+                  </div>
+                  {eventCountdown && <div className={eventCountdownBadge}>{eventCountdown}</div>}
                 </div>
               )}
               <div className="flex justify-between items-center gap-2">
                 <h2 className="flex items-center gap-1.5 text-[19px] font-semibold leading-[1.05]">
                   <span>{idea.title}</span>
                 </h2>
-                <div className="flex gap-1 shrink-0">
-                  {idea.locations.some((loc) => loc.lat != null && loc.lng != null) && (
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        showOnMap(idea);
-                      }}
-                      aria-label={t("showOnMapAria")}
-                      className={`${iconButton} bg-[var(--app-overlay)] text-[var(--app-ink)] ring-1 ring-[var(--app-outline)]/10`}
-                    >
-                      <MapIcon size={16} />
-                    </button>
-                  )}
+                {idea.locations.some((loc) => loc.lat != null && loc.lng != null) && (
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
-                      trackClientEvent("storage_place_edit_opened", { placeId: idea.id });
-                      setEditing(idea);
+                      showOnMap(idea);
                     }}
-                    aria-label={t("editAria")}
+                    aria-label={t("showOnMapAria")}
                     className={`${iconButton} bg-[var(--app-overlay)] text-[var(--app-ink)] ring-1 ring-[var(--app-outline)]/10`}
                   >
-                    <Pencil size={16} />
+                    <MapIcon size={16} />
                   </button>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      trackClientEvent("storage_place_delete_clicked", { placeId: idea.id });
-                      remove(idea.id);
-                    }}
-                    aria-label={t("deleteAria")}
-                    className={`${iconButton} bg-[var(--app-overlay)] text-red-500 ring-1 ring-[var(--app-outline)]/10`}
-                  >
-                    <Trash2 size={16} />
-                  </button>
-                </div>
+                )}
               </div>
               {idea.locations.length > 0 && (
                 <div className="flex flex-col gap-1">
@@ -621,7 +611,7 @@ export default function StorageScreen() {
                             key={station}
                             className="inline-flex items-center gap-1 text-[13px] font-semibold text-[var(--app-ink)]"
                           >
-                            <span className={`size-2 shrink-0 rounded-full ${metroLineTone(station) ?? "bg-[var(--app-muted)]"}`} />
+                            <span className={`size-2.5 shrink-0 rounded-full shadow-[0_0_8px_rgba(28,26,23,0.12)] ring-1 ring-white/70 ${metroLineTone(station) ?? "bg-[var(--app-muted)]"}`} />
                             {station}
                           </span>
                         ))}
@@ -661,8 +651,8 @@ export default function StorageScreen() {
                 </div>
               )}
             </div>
-          )
-        )}
+          );
+        })}
         {ideas && filtered.length === 0 && (
           <p className={`${card} ${mutedText}`}>{t("nothingYet")}</p>
         )}
@@ -670,9 +660,9 @@ export default function StorageScreen() {
 
       {linkImporting && (
         <div className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-3 bg-[var(--app-canvas)]/90 backdrop-blur-sm">
-          <div className="size-10 animate-spin rounded-full border-4 border-[var(--app-outline)]/15 border-t-[var(--app-ink)]" />
+          <BlobLoader size={104} />
           <p className="text-[15px] font-semibold text-[var(--app-ink)]">{t("readingLinkOverlay")}</p>
-          <p className={mutedText}>{t("aiLookingUp")}</p>
+          <LoadingCaptions key={lang} phrases={loadingPhrases(lang)} />
         </div>
       )}
 
@@ -680,7 +670,7 @@ export default function StorageScreen() {
         items={importItems}
         onAdd={saveImportItem}
         onSkip={dismissImportItem}
-        onClose={() => setImportItems([])}
+        onClose={closeImportReview}
       />
     </div>
   );

@@ -16,40 +16,50 @@
   --app-ink: #1c1a17;
   --app-muted: #716c63;
   --app-outline: #1c1a17;
-  --app-yellow: #ffe27a;
+  --app-yellow: #efd47c;
   --app-mint: #dbe8b7;
   --app-pink: #f5b7d7;
   --app-blue: #bcccf0;
   --app-lilac: #d9cdf1;
-  --app-coral: #f4b4a7;
-  --metro-red: #f3b9b5;
-  --metro-green: #bee0c0;
-  --metro-orange: #f8d49b;
-  --metro-gray: #d4d7d4;
-  --metro-blue: #b9cdf0;
-  --metro-azure: #b3e2ec;
-  --metro-brown: #d9c2a8;
-  --metro-purple: #dcb9ec;
-  --metro-yellow: #f3e6a0;
-  --metro-mint: #cbe8a3;
-  --metro-teal: #a9d9d2;
-  --metro-turquoise: #9fe0d6;
-  --metro-tan: #e3cca3;
-  --metro-pink: #f0bcd4;
+  --app-coral: #f0a477;
+  --metro-red: #e53935;
+  --metro-green: #20a957;
+  --metro-orange: #f28a20;
+  --metro-gray: #8f96a3;
+  --metro-blue: #1f7eea;
+  --metro-azure: #16b9ee;
+  --metro-brown: #a56432;
+  --metro-purple: #9a45b5;
+  --metro-yellow: #ffd43b;
+  --metro-mint: #8cc63f;
+  --metro-teal: #12aaa8;
+  --metro-turquoise: #00c7b1;
+  --metro-tan: #d1a35b;
+  --metro-pink: #ec5aa6;
+  --metro-mcc: #e53935;
+  --metro-mcd1: #f28a20;
+  --metro-mcd2: #ec5aa6;
+  --metro-mcd3: #e95b2d;
+  --metro-mcd4: #20a957;
   --metro-red-pale: #f9e0de;
   --metro-green-pale: #e2f0e3;
-  --metro-orange-pale: #fbe8d0;
+  --metro-orange-pale: #f8dfc3;
   --metro-gray-pale: #eaebea;
   --metro-blue-pale: #dde6f8;
   --metro-azure-pale: #dcf1f6;
   --metro-brown-pale: #edded0;
   --metro-purple-pale: #f0ddf7;
-  --metro-yellow-pale: #f9f0d0;
+  --metro-yellow-pale: #f5ebc8;
   --metro-mint-pale: #e4f3d2;
   --metro-teal-pale: #d9eeeb;
   --metro-turquoise-pale: #d3f2ed;
   --metro-tan-pale: #f1e5d1;
   --metro-pink-pale: #f9dee9;
+  --metro-mcc-pale: #f9e0de;
+  --metro-mcd1-pale: #f8dfc3;
+  --metro-mcd2-pale: #f9dee9;
+  --metro-mcd3-pale: #f6ddcf;
+  --metro-mcd4-pale: #e2f0e3;
   --app-overlay: rgb(255 255 255 / 0.65);
   --app-subtle-overlay: rgb(255 255 255 / 0.5);
   --content-top-gap: 44px;
@@ -103,4 +113,62 @@ textarea {
 
 .panel-appear {
   animation: panel-appear 0.2s ease-out;
+}
+
+@keyframes blob-orbit {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes blob-orbit-reverse {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(-360deg);
+  }
+}
+
+@keyframes blob-breathe {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.08);
+  }
+}
+
+@keyframes blob-caption-swap {
+  0%,
+  8% {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  16%,
+  84% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  92%,
+  100% {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+
+.blob-loader-orbit {
+  animation: blob-orbit 7s linear infinite;
+}
+
+.blob-loader-orbit-reverse {
+  animation: blob-orbit-reverse 9s linear infinite;
+}
+
+.blob-loader-core {
+  animation: blob-breathe 2.6s ease-in-out infinite;
 }

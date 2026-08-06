@@ -1,0 +1,11 @@
+[Unit]
+Description=Run certified-loverboy event reminders every minute
+
+[Timer]
+OnBootSec=1m
+OnUnitActiveSec=1m
+AccuracySec=10s
+Unit=certified-loverboy-reminders.service
+
+[Install]
+WantedBy=timers.target

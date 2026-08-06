@@ -1,4 +1,5 @@
 import type { DateIdea } from "@/lib/types";
+import { normalizeMetroValue } from "@/lib/metro";
 
 type ExportableIdea = Pick<DateIdea, "title" | "description" | "priceNote" | "tags" | "locations" | "links">;
 
@@ -11,11 +12,12 @@ export function serializeDateIdeaMarkdown(idea: ExportableIdea): string {
   if (idea.priceNote) lines.push(`Цена: ${idea.priceNote}`);
 
   for (const loc of idea.locations) {
-    const hasData = loc.address || loc.metro || loc.url || loc.lat != null || loc.lng != null;
+    const metro = normalizeMetroValue(loc.metro);
+    const hasData = loc.address || metro || loc.url || loc.lat != null || loc.lng != null;
     if (!hasData) continue;
     lines.push("", "Место:");
     if (loc.address) lines.push(`Адрес: ${loc.address}`);
-    if (loc.metro) lines.push(`Метро: ${loc.metro}`);
+    if (metro) lines.push(`Метро: ${metro}`);
     if (loc.lat != null && loc.lng != null) lines.push(`Координаты: ${loc.lat}, ${loc.lng}`);
     if (loc.url) lines.push(`Ссылка: ${loc.url}`);
   }

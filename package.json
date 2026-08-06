@@ -10,7 +10,8 @@
     "backfill:added-from-codex": "node scripts/backfillAddedFromCodexLocations.mjs",
     "backfill:owner-telegram-id": "node scripts/backfillOwnerTelegramId.mjs",
     "backup:db": "node scripts/backupDb.mjs",
-    "backup:status": "node scripts/backupDb.mjs status"
+    "backup:status": "node scripts/backupDb.mjs status",
+    "reminders:send": "node scripts/sendReminders.mjs"
   },
   "dependencies": {
     "@maplibre/maplibre-gl-leaflet": "^0.1.3",

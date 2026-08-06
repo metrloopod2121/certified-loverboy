@@ -14,8 +14,11 @@ import {
   stripTrailingPunctuation,
 } from "@/lib/coords";
 import { DEFAULT_LANG, t, formatEventWhen, type Lang } from "@/lib/i18n";
+import { normalizeMetroValue } from "@/lib/metro";
 
 const execFile = promisify(execFileCallback);
+
+export type ParsedPlaceLink = { label: string | null; url: string };
 
 export type ParsedFromLink = Omit<
   ExtractedIdea,
@@ -23,7 +26,7 @@ export type ParsedFromLink = Omit<
 > & {
   lat: number | null;
   lng: number | null;
-  links: { label: string | null; url: string }[];
+  links: ParsedPlaceLink[];
   eventStartsAt: string | null;
   eventEndsAt: string | null;
 };
@@ -62,18 +65,45 @@ export function isMapsProviderLink(raw: string): boolean {
 
 /** Turns the model's raw `otherLinks` strings into the place's link list — trimmed, deduped,
  *  dropping anything that isn't a real URL or that duplicates the map link already chosen. */
-function dedupeLinks(rawLinks: string[], exclude: string | null): { label: string | null; url: string }[] {
+function normalizedLinkKey(raw: string): string {
+  try {
+    const url = new URL(stripTrailingPunctuation(raw.trim()));
+    url.hash = "";
+    if (url.pathname !== "/") url.pathname = url.pathname.replace(/\/+$/u, "");
+    return url.toString();
+  } catch {
+    return stripTrailingPunctuation(raw.trim());
+  }
+}
+
+export function appendPlaceLink(links: ParsedPlaceLink[], link: ParsedPlaceLink | null): ParsedPlaceLink[] {
+  const url = stripTrailingPunctuation(link?.url.trim() ?? "");
+  if (!url) return links;
+  try {
+    new URL(url);
+  } catch {
+    return links;
+  }
+
+  const key = normalizedLinkKey(url);
+  if (links.some((existing) => normalizedLinkKey(existing.url) === key)) return links;
+  return [...links, { label: link?.label ?? null, url }];
+}
+
+function dedupeLinks(rawLinks: string[], exclude: string | null): ParsedPlaceLink[] {
   const seen = new Set<string>();
-  const links: { label: string | null; url: string }[] = [];
+  const links: ParsedPlaceLink[] = [];
+  const excludeKey = exclude ? normalizedLinkKey(exclude) : null;
   for (const raw of rawLinks) {
     const url = stripTrailingPunctuation(raw.trim());
-    if (!url || url === exclude || seen.has(url)) continue;
+    const key = normalizedLinkKey(url);
+    if (!url || key === excludeKey || seen.has(key)) continue;
     try {
       new URL(url);
     } catch {
       continue;
     }
-    seen.add(url);
+    seen.add(key);
     links.push({ label: null, url });
   }
   return links;
@@ -85,7 +115,7 @@ function withoutOtherLinks(
   return {
     title: idea.title,
     address: idea.address,
-    metro: idea.metro,
+    metro: normalizeMetroValue(idea.metro) || null,
     priceNote: idea.priceNote,
     tags: idea.tags,
     description: idea.description,
@@ -318,8 +348,8 @@ const YT_DLP_TIMEOUT_MS = 60_000;
  *  see docs/RESTORE.md for the one-time server setup -- and transcribes it with the configured
  *  Workers AI Whisper model. Most place-focused reels are someone talking over the shot
  *  ("зашли, взяли вот это...") rather than relying on on-screen text, so spoken audio is usually
- *  the richest signal available here. Low mp3 bitrate keeps the file (and the JSON payload to
- *  Whisper, which sends raw bytes as a JSON number array) small for a typical <90s reel. */
+ *  the richest signal available here. Low mp3 bitrate keeps the file (and the base64 JSON payload
+ *  sent to Whisper) small for a typical <90s reel. */
 async function fetchInstagramTranscript(url: string): Promise<string | null> {
   const dir = await mkdtemp(path.join(tmpdir(), "ig-"));
   try {

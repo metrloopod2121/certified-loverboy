@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import dynamic from "next/dynamic";
-import { MapPin, Plus, X, Link as LinkIcon, Check, CalendarClock } from "lucide-react";
+import { MapPin, Plus, X, Link as LinkIcon, Check, CalendarClock, Bell } from "lucide-react";
 import type { DateIdeaInput, LocationInput, PlaceLinkInput } from "@/lib/types";
 import { parseMapsLink, isYandexMapsUrl, findYandexMapsLink } from "@/lib/coords";
 import { apiFetch } from "@/lib/apiClient";
@@ -10,19 +10,23 @@ import { input, label as labelClass, buttonPrimary, buttonSecondary, buttonGhost
 import { trackClientEvent } from "@/lib/clientAnalytics";
 import { useLang, useT } from "@/hooks/useLang";
 import { useAuth } from "@/hooks/useAuth";
-import { locationsCountLabel, locationOrdinalLabel } from "@/lib/i18n";
+import { locationOrdinalLabel, type StringKey } from "@/lib/i18n";
 
-/** Splits an ISO instant into the local "yyyy-mm-dd" / "HH:mm" strings the native date/time
- *  inputs want. A time of exactly midnight is treated as "no time entered" (matches the
- *  create-side convention: unknown time is stored as midnight). */
-function splitEventIso(iso: string | null): { date: string; time: string } {
+function splitIso(iso: string | null, midnightAsEmpty: boolean): { date: string; time: string } {
   if (!iso) return { date: "", time: "" };
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return { date: "", time: "" };
   const pad = (n: number) => String(n).padStart(2, "0");
   const date = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
-  const time = d.getHours() === 0 && d.getMinutes() === 0 ? "" : `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  const time = midnightAsEmpty && d.getHours() === 0 && d.getMinutes() === 0 ? "" : `${pad(d.getHours())}:${pad(d.getMinutes())}`;
   return { date, time };
+}
+
+/** Splits an ISO instant into the local "yyyy-mm-dd" / "HH:mm" strings the native date/time
+ *  inputs want. A time of exactly midnight is treated as "no time entered" (matches the
+ *  create-side convention: unknown time is stored as midnight). */
+function splitEventIso(iso: string | null): { date: string; time: string } {
+  return splitIso(iso, true);
 }
 
 /** Combines the local date/time inputs back into a single ISO instant -- no date means no
@@ -36,6 +40,85 @@ function combineEventIso(date: string, time: string): string | null {
 }
 
 const LocationPicker = dynamic(() => import("@/components/LocationPicker"), { ssr: false });
+
+type ReminderOffsetMinutes = 15 | 60 | 360 | 1440 | 2880;
+
+const DEFAULT_REMINDER_OFFSET: ReminderOffsetMinutes = 60;
+const REMINDER_OPTIONS: { value: ReminderOffsetMinutes; labelKey: StringKey }[] = [
+  { value: 15, labelKey: "reminderBefore15m" },
+  { value: 60, labelKey: "reminderBefore1h" },
+  { value: 360, labelKey: "reminderBefore6h" },
+  { value: 1440, labelKey: "reminderBefore1d" },
+  { value: 2880, labelKey: "reminderBefore2d" },
+];
+
+function reminderOffsetFromIso(eventStartsAtIso: string | null | undefined, reminderAtIso: string | null | undefined): ReminderOffsetMinutes | null {
+  if (!eventStartsAtIso || !reminderAtIso) return null;
+  const eventMs = new Date(eventStartsAtIso).getTime();
+  const reminderMs = new Date(reminderAtIso).getTime();
+  if (!Number.isFinite(eventMs) || !Number.isFinite(reminderMs)) return null;
+
+  const diffMinutes = Math.round((eventMs - reminderMs) / 60_000);
+  return REMINDER_OPTIONS.find((option) => Math.abs(option.value - diffMinutes) <= 1)?.value ?? null;
+}
+
+function reminderIsoFromOffset(eventStartsAtIso: string | null, offsetMinutes: ReminderOffsetMinutes): string | null {
+  if (!eventStartsAtIso) return null;
+  const eventMs = new Date(eventStartsAtIso).getTime();
+  if (!Number.isFinite(eventMs)) return null;
+  return new Date(eventMs - offsetMinutes * 60_000).toISOString();
+}
+
+function reminderOffsetFromSelectValue(value: string): ReminderOffsetMinutes {
+  const parsed = Number(value);
+  return REMINDER_OPTIONS.find((option) => option.value === parsed)?.value ?? DEFAULT_REMINDER_OFFSET;
+}
+
+const eventDateTimeGrid = "grid min-w-0 grid-cols-1 gap-2 min-[380px]:grid-cols-[minmax(0,1fr)_7.75rem]";
+const eventDateTimeField = "relative min-w-0";
+const eventNativeInput =
+  "w-full min-w-0 max-w-full appearance-none rounded-xl border border-[var(--app-outline)]/15 bg-[var(--app-surface)] px-3 py-2 text-[14px] leading-tight text-[var(--app-ink)] outline-none transition [color-scheme:light] focus:border-[var(--app-ink)] focus:ring-2 focus:ring-[var(--app-yellow)]";
+const eventTimeInput = `${eventNativeInput} max-w-[7.75rem]`;
+
+function EventDateTimeInput({
+  type,
+  value,
+  onChange,
+  placeholder,
+  ariaLabel,
+  className,
+}: {
+  type: "date" | "time";
+  value: string;
+  onChange: (value: string) => void;
+  placeholder: string;
+  ariaLabel: string;
+  className: string;
+}) {
+  const [focused, setFocused] = useState(false);
+  const showPlaceholder = !value && !focused;
+
+  return (
+    <div className={eventDateTimeField}>
+      <input
+        type={type}
+        aria-label={ariaLabel}
+        placeholder={placeholder}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        onFocus={() => setFocused(true)}
+        onBlur={() => setFocused(false)}
+        className={className}
+        style={showPlaceholder ? { color: "transparent" } : undefined}
+      />
+      {showPlaceholder && (
+        <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[14px] leading-tight text-[var(--app-muted)]/55">
+          {placeholder}
+        </span>
+      )}
+    </div>
+  );
+}
 
 type LocationForm = {
   address: string;
@@ -105,10 +188,13 @@ export default function DateIdeaForm({
   const [tags, setTags] = useState(initial?.tags?.join(", ") ?? "");
   const initialEventStart = splitEventIso(initial?.eventStartsAt ?? null);
   const initialEventEnd = splitEventIso(initial?.eventEndsAt ?? null);
+  const initialReminderOffset = reminderOffsetFromIso(initial?.eventStartsAt, initial?.reminderAt);
   const [eventStartDate, setEventStartDate] = useState(initialEventStart.date);
   const [eventStartTime, setEventStartTime] = useState(initialEventStart.time);
   const [eventEndDate, setEventEndDate] = useState(initialEventEnd.date);
   const [eventEndTime, setEventEndTime] = useState(initialEventEnd.time);
+  const [reminderEnabled, setReminderEnabled] = useState(Boolean(initial?.reminderAt));
+  const [reminderOffsetMinutes, setReminderOffsetMinutes] = useState<ReminderOffsetMinutes>(initialReminderOffset ?? DEFAULT_REMINDER_OFFSET);
   const [locations, setLocations] = useState<LocationForm[]>(
     initial?.locations?.length ? initial.locations.map(toLocationForm) : [EMPTY_LOCATION]
   );
@@ -128,7 +214,19 @@ export default function DateIdeaForm({
     setEventStartTime("");
     setEventEndDate("");
     setEventEndTime("");
+    setReminderEnabled(false);
+    setReminderOffsetMinutes(DEFAULT_REMINDER_OFFSET);
     trackClientEvent("place_form_event_cleared", { mode: formMode });
+  }
+
+  function toggleReminder(enabled: boolean) {
+    setReminderEnabled(enabled);
+    trackClientEvent("place_form_reminder_toggled", { mode: formMode, enabled });
+  }
+
+  function selectReminderOffset(value: ReminderOffsetMinutes) {
+    setReminderOffsetMinutes(value);
+    trackClientEvent("place_form_reminder_offset_selected", { mode: formMode, offsetMinutes: value });
   }
 
   // A shared Yandex Maps link often carries "Title\nAddress\nhttps://..." as one block, not a
@@ -296,6 +394,28 @@ export default function DateIdeaForm({
     const effectiveEndDate = eventEndDate || (eventEndTime ? eventStartDate : "");
     const eventStartsAt = combineEventIso(eventStartDate, eventStartTime);
     const eventEndsAt = combineEventIso(effectiveEndDate, eventEndTime);
+    const reminderAt = reminderEnabled ? reminderIsoFromOffset(eventStartsAt, reminderOffsetMinutes) : null;
+
+    if (reminderEnabled && !eventStartsAt) {
+      setError(t("reminderNeedsEventDate"));
+      trackClientEvent("place_form_validation_failed", { mode: formMode, reason: "reminder_event_date" });
+      return;
+    }
+    if (reminderEnabled && !eventStartTime) {
+      setError(t("reminderNeedsEventTime"));
+      trackClientEvent("place_form_validation_failed", { mode: formMode, reason: "reminder_event_time" });
+      return;
+    }
+    if (reminderEnabled && !reminderAt) {
+      setError(t("reminderDateTimeRequired"));
+      trackClientEvent("place_form_validation_failed", { mode: formMode, reason: "reminder_offset" });
+      return;
+    }
+    if (reminderAt && new Date(reminderAt).getTime() <= Date.now()) {
+      setError(t("reminderMustBeFuture"));
+      trackClientEvent("place_form_validation_failed", { mode: formMode, reason: "reminder_past" });
+      return;
+    }
 
     setSaving(true);
     try {
@@ -305,11 +425,12 @@ export default function DateIdeaForm({
         priceNote,
         eventStartsAt,
         eventEndsAt,
+        reminderAt,
         tags: tags.split(",").map((t) => t.trim()).filter(Boolean),
         locations: resolvedLocations,
         links: dedupedLinks,
       });
-      trackClientEvent("place_form_submitted", { mode: formMode, hasEvent: eventStartsAt != null });
+      trackClientEvent("place_form_submitted", { mode: formMode, hasEvent: eventStartsAt != null, hasReminder: reminderAt != null });
     } catch (err) {
       setError(err instanceof Error ? err.message : t("couldntSave"));
       trackClientEvent("place_form_submit_failed", { mode: formMode, reason: err instanceof Error ? err.message : "unknown" });
@@ -332,74 +453,110 @@ export default function DateIdeaForm({
       </div>
 
       {eventsEnabled && (
-        <div className="flex flex-col gap-2 rounded-2xl bg-[var(--app-subtle-overlay)] p-3">
-          <span className="inline-flex items-center gap-1.5 text-[12px] font-semibold uppercase tracking-[0.06em] text-[var(--app-muted)]">
-            <CalendarClock size={14} />
-            {t("eventSectionLabel")}
-          </span>
-          <span className="text-[12px] leading-snug text-[var(--app-muted)]">{t("eventSectionHint")}</span>
+        <>
+          <div className="flex flex-col gap-2 rounded-2xl bg-[var(--app-subtle-overlay)] p-3">
+            <span className="inline-flex items-center gap-1.5 text-[12px] font-semibold uppercase tracking-[0.06em] text-[var(--app-muted)]">
+              <CalendarClock size={14} />
+              {t("eventSectionLabel")}
+            </span>
 
-          <div className="flex flex-col gap-1">
-            <span className={labelClass}>{t("eventStartLabel")}</span>
-            <div className="grid grid-cols-2 gap-2">
-              <div className="flex flex-col gap-1">
-                <span className="text-[11px] font-medium text-[var(--app-muted)]">{t("eventDateFieldLabel")}</span>
-                <input
+            <div className="flex flex-col gap-1.5">
+              <div className={eventDateTimeGrid}>
+                <EventDateTimeInput
                   type="date"
+                  ariaLabel={t("eventDateFieldLabel")}
+                  placeholder={t("eventDatePlaceholder")}
                   value={eventStartDate}
-                  onChange={(e) => setEventStartDate(e.target.value)}
-                  className={`${input} min-w-0`}
+                  onChange={setEventStartDate}
+                  className={eventNativeInput}
                 />
-              </div>
-              <div className="flex flex-col gap-1">
-                <span className="text-[11px] font-medium text-[var(--app-muted)]">{t("eventTimeFieldLabel")}</span>
-                <input
+                <EventDateTimeInput
                   type="time"
+                  ariaLabel={t("eventTimeFieldLabel")}
+                  placeholder={t("eventTimePlaceholder")}
                   value={eventStartTime}
-                  onChange={(e) => setEventStartTime(e.target.value)}
-                  className={`${input} min-w-0`}
+                  onChange={setEventStartTime}
+                  className={eventTimeInput}
                 />
               </div>
             </div>
+
+            {eventStartDate && (
+              <div className="flex flex-col gap-1">
+                <span className={labelClass}>{t("eventEndLabel")}</span>
+                <div className={eventDateTimeGrid}>
+                  <EventDateTimeInput
+                    type="date"
+                    ariaLabel={t("eventDateFieldLabel")}
+                    placeholder={t("eventDatePlaceholder")}
+                    value={eventEndDate}
+                    onChange={setEventEndDate}
+                    className={eventNativeInput}
+                  />
+                  <EventDateTimeInput
+                    type="time"
+                    ariaLabel={t("eventTimeFieldLabel")}
+                    placeholder={t("eventTimePlaceholder")}
+                    value={eventEndTime}
+                    onChange={setEventEndTime}
+                    className={eventTimeInput}
+                  />
+                </div>
+              </div>
+            )}
+
+            {(eventStartDate || eventEndDate) && (
+              <button type="button" onClick={clearEventFields} className={`${buttonGhost} self-start`}>
+                <X size={14} />
+                {t("eventClearBtn")}
+              </button>
+            )}
           </div>
 
-          {eventStartDate && (
-            <div className="flex flex-col gap-1">
-              <span className={labelClass}>{t("eventEndLabel")}</span>
-              <div className="grid grid-cols-2 gap-2">
-                <div className="flex flex-col gap-1">
-                  <span className="text-[11px] font-medium text-[var(--app-muted)]">{t("eventDateFieldLabel")}</span>
-                  <input
-                    type="date"
-                    value={eventEndDate}
-                    onChange={(e) => setEventEndDate(e.target.value)}
-                    className={`${input} min-w-0`}
-                  />
-                </div>
-                <div className="flex flex-col gap-1">
-                  <span className="text-[11px] font-medium text-[var(--app-muted)]">{t("eventTimeFieldLabel")}</span>
-                  <input
-                    type="time"
-                    value={eventEndTime}
-                    onChange={(e) => setEventEndTime(e.target.value)}
-                    className={`${input} min-w-0`}
-                  />
-                </div>
-              </div>
-            </div>
-          )}
-
-          {(eventStartDate || eventEndDate) && (
-            <button type="button" onClick={clearEventFields} className={`${buttonGhost} self-start`}>
-              <X size={14} />
-              {t("eventClearBtn")}
-            </button>
-          )}
-        </div>
+          <div className="flex flex-col gap-2 rounded-2xl bg-[var(--app-subtle-overlay)] p-3">
+            <label className="flex min-h-9 items-center justify-between gap-3">
+              <span className="inline-flex items-center gap-1.5 text-[14px] font-semibold text-[var(--app-ink)]">
+                <Bell size={15} />
+                {t("reminderLabel")}
+              </span>
+              <input
+                type="checkbox"
+                checked={reminderEnabled}
+                onChange={(e) => toggleReminder(e.target.checked)}
+                className="sr-only"
+              />
+              <span
+                className={`relative h-7 w-12 shrink-0 rounded-full transition ${
+                  reminderEnabled ? "bg-[var(--app-ink)]" : "bg-[var(--app-outline)]/18"
+                }`}
+              >
+                <span
+                  className={`absolute left-1 top-1 size-5 rounded-full bg-[var(--app-surface)] shadow-[0_1px_3px_rgba(28,26,23,0.22)] transition ${
+                    reminderEnabled ? "translate-x-5" : ""
+                  }`}
+                />
+              </span>
+            </label>
+            {reminderEnabled && (
+              <select
+                aria-label={t("reminderLabel")}
+                value={reminderOffsetMinutes}
+                onChange={(e) => selectReminderOffset(reminderOffsetFromSelectValue(e.target.value))}
+                className={`${input} appearance-auto text-[14px]`}
+              >
+                {REMINDER_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {t(option.labelKey)}
+                  </option>
+                ))}
+              </select>
+            )}
+          </div>
+        </>
       )}
 
       <div className="flex flex-col gap-3">
-        <span className={labelClass}>{locationsCountLabel(lang, locations.length)}</span>
+        <span className={labelClass}>{t("locationsLabel")}</span>
         {locations.map((loc, index) => (
           <div key={index} className="flex flex-col gap-2 rounded-2xl bg-[var(--app-subtle-overlay)] p-3">
             <div className="flex items-center justify-between">
@@ -438,15 +595,17 @@ export default function DateIdeaForm({
                 onChange={(e) => handleMapsLinkTextChange(index, e.target.value)}
                 className={input}
               />
-              <div className="flex gap-2">
+              <div className="grid grid-cols-2 gap-2">
                 <button
                   type="button"
                   onClick={() => applyMapsLink(index)}
                   disabled={!loc.mapsLink.trim() || resolvingIndex === index}
-                  className={`${buttonGhost} disabled:opacity-50`}
+                  className={`${buttonSecondary} min-w-0 px-3 py-2 text-[13px] disabled:opacity-50`}
                 >
-                  <LinkIcon size={16} />
-                  {resolvingIndex === index ? t("reading") : t("getLocationFromLink")}
+                  <LinkIcon size={16} className="shrink-0" />
+                  <span className="min-w-0 truncate whitespace-nowrap">
+                    {resolvingIndex === index ? t("reading") : t("getLocationFromLink")}
+                  </span>
                 </button>
                 <button
                   type="button"
@@ -455,10 +614,10 @@ export default function DateIdeaForm({
                     setPickerFor(next);
                     trackClientEvent("place_form_map_picker_toggled", { mode: formMode, index, open: next === index });
                   }}
-                  className={buttonGhost}
+                  className={`${buttonSecondary} min-w-0 px-3 py-2 text-[13px]`}
                 >
-                  <MapPin size={16} />
-                  {t("chooseOnMap")}
+                  <MapPin size={16} className="shrink-0" />
+                  <span className="min-w-0 truncate whitespace-nowrap">{t("chooseOnMap")}</span>
                 </button>
               </div>
               {loc.mapsLinkError && <span className="text-[12px] font-medium text-red-500">{loc.mapsLinkError}</span>}
@@ -470,14 +629,18 @@ export default function DateIdeaForm({
             {pickerFor === index && <LocationPicker lat={loc.lat} lng={loc.lng} onPick={(lat, lng) => pickOnMap(index, lat, lng)} />}
 
             {loc.lat != null && loc.lng != null && (
-              <div className="flex items-center justify-between rounded-xl bg-[var(--app-mint)]/50 px-3 py-2">
+              <div className="flex items-center justify-between gap-2 rounded-xl bg-[var(--app-mint)]/45 px-3 py-2">
                 <span className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-[var(--app-ink)]">
                   <Check size={14} />
                   {t("locationSelected")}
                 </span>
-                <button type="button" onClick={() => clearLocationPin(index)} className={buttonGhost}>
+                <button
+                  type="button"
+                  onClick={() => clearLocationPin(index)}
+                  aria-label={t("clear")}
+                  className={`${iconButton} size-7 shrink-0 bg-white/60 text-[var(--app-ink)] ring-1 ring-[var(--app-outline)]/10 active:bg-white/80`}
+                >
                   <X size={14} />
-                  {t("clear")}
                 </button>
               </div>
             )}
@@ -526,7 +689,6 @@ export default function DateIdeaForm({
       <div className="flex flex-col gap-1">
         <span className={labelClass}>{t("tagsLabel")}</span>
         <input placeholder={t("tagsPlaceholder")} value={tags} onChange={(e) => setTags(e.target.value)} className={input} />
-        <span className="text-[12px] leading-snug text-[var(--app-muted)]">{t("tagsHint")}</span>
       </div>
 
       <div className="flex flex-col gap-1">

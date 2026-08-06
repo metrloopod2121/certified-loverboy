@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { requireAuth, isAuthUser } from "@/lib/apiAuth";
 import { resolveTagIds } from "@/lib/tags";
-import { withoutMetroTags } from "@/lib/metro";
+import { normalizeMetroValue, withoutMetroTags } from "@/lib/metro";
 import { seedDemoPlacesIfEmpty } from "@/lib/demoPlaces";
 import { trackEvent } from "@/lib/analytics";
 import { eventsFeatureEnabled } from "@/lib/eventsFeature";
@@ -39,8 +39,9 @@ export async function POST(request: Request) {
 
   const body = await request.json();
   const locations: LocationInput[] = Array.isArray(body.locations) ? body.locations : [];
+  const normalizedLocations = locations.map((loc) => ({ ...loc, metro: normalizeMetroValue(loc.metro) }));
   const links: PlaceLinkInput[] = Array.isArray(body.links) ? body.links : [];
-  const tagIds = await resolveTagIds(withoutMetroTags(body.tags ?? [], locations.map((location) => location.metro)));
+  const tagIds = await resolveTagIds(withoutMetroTags(body.tags ?? [], normalizedLocations.map((location) => location.metro)));
 
   const eventsAllowed = eventsFeatureEnabled(auth.telegramId);
 
@@ -52,9 +53,10 @@ export async function POST(request: Request) {
       priceNote: body.priceNote || null,
       eventStartsAt: eventsAllowed ? parseEventDate(body.eventStartsAt) : null,
       eventEndsAt: eventsAllowed ? parseEventDate(body.eventEndsAt) : null,
+      reminderAt: eventsAllowed ? parseEventDate(body.reminderAt) : null,
       tags: { create: tagIds.map((tagId) => ({ tagId })) },
       locations: {
-        create: locations.map((loc) => ({
+        create: normalizedLocations.map((loc) => ({
           address: loc.address || null,
           metro: loc.metro || null,
           lat: loc.lat ?? null,
@@ -82,6 +84,7 @@ export async function POST(request: Request) {
       locationsCount: idea.locations.length,
       linksCount: idea.links.length,
       hasEvent: idea.eventStartsAt != null,
+      hasReminder: idea.reminderAt != null,
     },
     auth.user.username
   );

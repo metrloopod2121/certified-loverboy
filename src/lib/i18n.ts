@@ -166,7 +166,7 @@ const strings = {
     ru: "Пикник в парке, уютное кафе рядом…",
     en: "Picnic in the park, cozy café nearby…",
   },
-  eventSectionLabel: { ru: "Событие (необязательно)", en: "Event (optional)" },
+  eventSectionLabel: { ru: "Дата (опционально)", en: "Date (optional)" },
   eventSectionHint: {
     ru: "Заполни, если это разовое мероприятие с конкретной датой — концерт, спектакль, турнир и т.п.",
     en: "Fill in if this is a one-time event with a specific date — a concert, show, tournament...",
@@ -175,21 +175,46 @@ const strings = {
   eventEndLabel: { ru: "Окончание", en: "Ends" },
   eventDateFieldLabel: { ru: "Дата", en: "Date" },
   eventTimeFieldLabel: { ru: "Время", en: "Time" },
+  eventDatePlaceholder: { ru: "2026-07-29", en: "2026-07-29" },
+  eventTimePlaceholder: { ru: "19:30", en: "19:30" },
   eventClearBtn: { ru: "Убрать дату события", en: "Remove event date" },
+  reminderLabel: { ru: "Напоминание", en: "Reminder" },
+  reminderBefore15m: { ru: "За 15 мин", en: "15 min" },
+  reminderBefore1h: { ru: "За час", en: "1 hour" },
+  reminderBefore6h: { ru: "За 6 часов", en: "6 hours" },
+  reminderBefore1d: { ru: "За день", en: "1 day" },
+  reminderBefore2d: { ru: "За 2 дня", en: "2 days" },
+  reminderDateTimeRequired: {
+    ru: "Выбери, когда напомнить",
+    en: "Choose when to remind",
+  },
+  reminderNeedsEventDate: {
+    ru: "Сначала укажи дату события",
+    en: "Set the event date first",
+  },
+  reminderNeedsEventTime: {
+    ru: "Укажи время события для напоминания",
+    en: "Set the event time for reminders",
+  },
+  reminderMustBeFuture: {
+    ru: "Дата напоминания уже прошла",
+    en: "Reminder date has already passed",
+  },
   eventToday: { ru: "Сегодня", en: "Today" },
   eventTomorrow: { ru: "Завтра", en: "Tomorrow" },
   removeLocationAria: { ru: "Удалить локацию", en: "Remove location" },
   addressPlaceholder: { ru: "Улица, дом", en: "Street, building" },
   metroPlaceholder: { ru: "Метро", en: "Metro" },
   mapsLinkPlaceholder: { ru: "https://yandex.ru/maps/...", en: "https://yandex.ru/maps/..." },
-  getLocationFromLink: { ru: "Получить локацию по ссылке", en: "Get location from link" },
-  chooseOnMap: { ru: "Выбрать на карте", en: "Choose on map" },
+  locationsLabel: { ru: "Локации", en: "Locations" },
+  getLocationFromLink: { ru: "Из ссылки", en: "From link" },
+  chooseOnMap: { ru: "На карте", en: "On map" },
   onlyYandexError: { ru: "Поддерживаются только ссылки на Яндекс.Карты", en: "Only Yandex Maps links are supported" },
   noCoordsHint: {
     ru: "Не удалось прочитать координаты из ссылки — попробуй выбрать на карте",
     en: "Couldn't read coordinates from this link — try Choose on map instead",
   },
-  locationSelected: { ru: "Локация выбрана", en: "Location selected" },
+  locationSelected: { ru: "Пин выбран", en: "Pin selected" },
   clear: { ru: "Очистить", en: "Clear" },
   addLocationBtn: { ru: "Добавить локацию", en: "Add location" },
   linksLabel: { ru: "Ссылки", en: "Links" },
@@ -199,10 +224,6 @@ const strings = {
   addLinkBtn: { ru: "Добавить ссылку", en: "Add link" },
   tagsLabel: { ru: "Теги", en: "Tags" },
   tagsPlaceholder: { ru: "свидание, романтика, искусство…", en: "date, romance, art…" },
-  tagsHint: {
-    ru: "Добавь тег «date», чтобы отметить идею для свидания — оставь без него для обычного места",
-    en: "Tag it “date” to mark a date idea — leave it off for a plain venue",
-  },
   priceLabel: { ru: "Цена", en: "Price" },
   pricePlaceholder: { ru: "1500–3000 ₽", en: "1500–3000 ₽" },
   descriptionLabel: { ru: "Описание", en: "Description" },
@@ -211,6 +232,8 @@ const strings = {
   savingBtn: { ru: "Сохраняю…", en: "Saving…" },
   cancelBtn: { ru: "Отмена", en: "Cancel" },
   couldntSave: { ru: "Не удалось сохранить", en: "Couldn't save" },
+  deletingBtn: { ru: "Удаляю…", en: "Deleting…" },
+  couldntDelete: { ru: "Не удалось удалить", en: "Couldn't delete" },
 
   closeAria: { ru: "Закрыть", en: "Close" },
   untitled: { ru: "Без названия", en: "Untitled" },
@@ -228,7 +251,6 @@ const strings = {
 
   backAria: { ru: "Назад", en: "Back" },
   couldntLoadPlace: { ru: "Не удалось загрузить это место.", en: "Couldn't load this place." },
-  openLink: { ru: "Открыть ссылку", en: "Open link" },
 
   profileTitle: { ru: "Профиль", en: "Profile" },
   languageHeading: { ru: "Язык", en: "Language" },
@@ -352,4 +374,53 @@ export function formatEventWhen(lang: Lang, startsAtIso: string, endsAtIso: stri
   if (!startTime) return datePart;
   const endTime = end && !isMidnight(end) ? formatEventTimePart(end) : null;
   return endTime ? `${datePart}, ${startTime}–${endTime}` : `${datePart}, ${startTime}`;
+}
+
+export function formatEventCountdown(lang: Lang, startsAtIso: string, nowMs: number): string | null {
+  if (nowMs <= 0) return null;
+  const startMs = new Date(startsAtIso).getTime();
+  if (!Number.isFinite(startMs)) return null;
+
+  const diffMs = startMs - nowMs;
+  if (diffMs <= 0) return null;
+
+  const totalMinutes = Math.max(1, Math.ceil(diffMs / 60_000));
+  if (totalMinutes > 24 * 60) {
+    const days = Math.floor(totalMinutes / (24 * 60));
+    const hours = Math.floor((totalMinutes % (24 * 60)) / 60);
+    return lang === "ru" ? `${days} д ${hours} ч` : `${days}d ${hours}h`;
+  }
+
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  return lang === "ru" ? `${hours} ч ${minutes} мин` : `${hours}h ${minutes}m`;
+}
+
+/** Rotating captions shown under BlobLoader while the AI parses a link/post -- purely for
+ *  personality during the few-second wait, cycled by LoadingCaptions. */
+const LOADING_PHRASES: Record<Lang, string[]> = {
+  ru: [
+    "Читаю между строк…",
+    "Ищу адрес на карте…",
+    "Разбираюсь, что это за место…",
+    "Считываю цены и теги…",
+    "Проверяю, не рекламный ли это пост…",
+    "Почти нашёл нужную ссылку…",
+    "Спрашиваю у ИИ, что тут вообще происходит…",
+    "Собираю карточку места…",
+  ],
+  en: [
+    "Reading between the lines…",
+    "Looking up the address…",
+    "Figuring out what this place even is…",
+    "Picking out prices and tags…",
+    "Making sure this isn't just an ad…",
+    "Almost got the right link…",
+    "Asking the AI what's going on here…",
+    "Putting the place card together…",
+  ],
+};
+
+export function loadingPhrases(lang: Lang): string[] {
+  return LOADING_PHRASES[lang];
 }

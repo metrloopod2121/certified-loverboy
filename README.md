@@ -79,7 +79,8 @@ sudo -u loverboy bash -c 'cd /srv/web/app/certified-loverboy/app && node scripts
 ```
 
 Что важно про сервер:
-- Порт **443 — не трогать**, там VPN (Amnezia Xray, docker). Наше HTTPS — на **8443**.
+- Порт **443** на новом сервере занят nginx под этот Mini App. Никакого `:8443` больше нет.
+- Старый сервер `31.76.0.133` не использовать для деплоя этого проекта; там остались VPN-стек и отдельный `moPlaces`.
 - Владелец файлов приложения — пользователь `loverboy`, не root.
 - SQLite-база: `data/app.db`. Автобэкап — раз в сутки, см. `docs/RESTORE.md` (там же — разовая установка systemd-таймера).
 - Мониторинг расхода Cloudflare/Brave квоты + здоровья сервиса — `scripts/usageReport.mjs`, таймеры `deploy/certified-loverboy-usage-monitor-*.timer` (тоже разовая установка, см. `docs/RESTORE.md`-соседние юниты в `deploy/`).

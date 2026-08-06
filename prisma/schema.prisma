@@ -21,6 +21,10 @@ model DateIdea {
   /// "is this an event" flag: presence of eventStartsAt alone is the signal.
   eventStartsAt    DateTime?
   eventEndsAt      DateTime?
+  /// Optional one-shot Telegram reminder for a dated event. `reminderSentAt` is set by the
+  /// server reminder timer after delivery so the same reminder is not sent repeatedly.
+  reminderAt       DateTime?
+  reminderSentAt   DateTime?
   tags             TagsOnDateIdeas[]
   locations        Location[]
   links            PlaceLink[]
@@ -28,6 +32,7 @@ model DateIdea {
   updatedAt        DateTime          @updatedAt
 
   @@index([telegramUserId])
+  @@index([reminderSentAt, reminderAt])
 }
 
 model Location {

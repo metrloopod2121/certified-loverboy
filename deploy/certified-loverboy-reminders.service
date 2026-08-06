@@ -1,0 +1,11 @@
+[Unit]
+Description=Send certified-loverboy event reminders
+After=network-online.target certified-loverboy.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=loverboy
+Group=loverboy
+WorkingDirectory=/srv/web/app/certified-loverboy/app
+ExecStart=/usr/bin/node scripts/sendReminders.mjs

@@ -6,7 +6,7 @@ export default async function PlacePage({ params }: { params: Promise<{ id: stri
 
   return (
     <AuthGate>
-      <PlaceDetailScreen id={id} />
+      <PlaceDetailScreen key={id} id={id} />
     </AuthGate>
   );
 }

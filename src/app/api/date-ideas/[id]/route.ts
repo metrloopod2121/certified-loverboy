@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { requireAuth, isAuthUser } from "@/lib/apiAuth";
 import { resolveTagIds } from "@/lib/tags";
-import { withoutMetroTags } from "@/lib/metro";
+import { normalizeMetroValue, withoutMetroTags } from "@/lib/metro";
 import { trackEvent } from "@/lib/analytics";
 import { eventsFeatureEnabled } from "@/lib/eventsFeature";
 import type { LocationInput, PlaceLinkInput } from "@/lib/types";
@@ -11,6 +11,10 @@ function parseEventDate(value: unknown): Date | null {
   if (typeof value !== "string" || !value.trim()) return null;
   const date = new Date(value);
   return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function sameInstant(a: Date | null, b: Date | null): boolean {
+  return (a?.getTime() ?? null) === (b?.getTime() ?? null);
 }
 
 export async function GET(
@@ -44,7 +48,7 @@ export async function PATCH(
   const { id } = await params;
   const existing = await prisma.dateIdea.findUnique({
     where: { id },
-    select: { telegramUserId: true, locations: true },
+    select: { telegramUserId: true, locations: true, reminderAt: true },
   });
   if (!existing || existing.telegramUserId !== auth.telegramId) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
@@ -60,9 +64,19 @@ export async function PATCH(
   if (eventsFeatureEnabled(auth.telegramId)) {
     if ("eventStartsAt" in body) data.eventStartsAt = parseEventDate(body.eventStartsAt);
     if ("eventEndsAt" in body) data.eventEndsAt = parseEventDate(body.eventEndsAt);
+    if ("reminderAt" in body) {
+      const reminderAt = parseEventDate(body.reminderAt);
+      data.reminderAt = reminderAt;
+      if (!sameInstant(reminderAt, existing.reminderAt)) data.reminderSentAt = null;
+    } else if ("eventStartsAt" in body && data.eventStartsAt === null) {
+      data.reminderAt = null;
+      data.reminderSentAt = null;
+    }
   }
 
-  const locations: LocationInput[] | null = Array.isArray(body.locations) ? body.locations : null;
+  const locations: LocationInput[] | null = Array.isArray(body.locations)
+    ? body.locations.map((loc: LocationInput) => ({ ...loc, metro: normalizeMetroValue(loc.metro) }))
+    : null;
 
   if (Array.isArray(body.tags)) {
     const metroSource = locations ?? existing.locations;
@@ -112,11 +126,13 @@ export async function PATCH(
         ...(locations ? ["locations"] : []),
         ...(Array.isArray(body.links) ? ["links"] : []),
         ...(["eventStartsAt", "eventEndsAt"].some((key) => key in data) ? ["event"] : []),
+        ...("reminderAt" in data ? ["reminder"] : []),
       ],
       tagsCount: idea.tags.length,
       locationsCount: idea.locations.length,
       linksCount: idea.links.length,
       hasEvent: idea.eventStartsAt != null,
+      hasReminder: idea.reminderAt != null,
     },
     auth.user.username
   );

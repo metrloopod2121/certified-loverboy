@@ -35,6 +35,38 @@
 В Mini App три основных таба:
 - Ideas Storage (`/`) — список мест, фильтры tags/metro, сортировки, добавление места вручную или через ссылку (Yandex Maps / Instagram reel-post / Telegram post); у карточки с координатами есть кнопка "показать на карте" — переход на `/map?focus=<locationId>`.
 - Map (`/map`) — карта мест с координатами, фильтры tags/metro; при `?focus=<locationId>` в query карта долетает (`flyTo`) до этого пина и открывает его попап, как только маркеры подгрузятся (свой отдельный `/api/date-ideas` fetch, независимый от Storage).
+
+## Карта: нативный MapLibre GL, без Leaflet
+
+Раньше карта была на Leaflet с векторными тайлами через `@maplibre/maplibre-gl-leaflet` (мост,
+натягивающий WebGL-рендер MapLibre поверх Leaflet, который рулил жестами). На реальных
+устройствах это давало подлагивание при перетаскивании (Leaflet синхронно дёргал перерисовку
+WebGL-канвы на каждый тик движения) и баг с тачами: после pinch-zoom нужно было отпустить все
+пальцы, чтобы драг снова заработал (известная особенность Leaflet-хендлера тачей, не переходит
+из pinch обратно в drag без полного сброса touch-состояния).
+
+Переписали на `maplibre-gl` напрямую (без Leaflet вообще — своя обработка жестов у самого
+MapLibre, отполированная, единственный движок вместо двух):
+- `src/components/PlacesMap.tsx` (было `LeafletMap.tsx`) — список мест на карте + фокус-переход;
+- `src/components/LocationPicker.tsx` — клик-пикер координат в `DateIdeaForm`, тот же движок;
+- `src/components/mapInternals.tsx` — константы (`MOSCOW_CENTER` теперь `[lng, lat]`, не
+  `[lat, lng]` как у Leaflet — MapLibre использует порядок GeoJSON) и фабрики DOM-элементов
+  маркеров (`createPlaceMarkerElement`/`createPickerMarkerElement`), заменяющие Leaflet divIcon'ы;
+- `src/components/map-theme.css` (было `leaflet-theme.css`) — те же стили попапа/аттрибуции,
+  но под классы MapLibre (`.maplibregl-popup-*`, `.maplibregl-ctrl-attrib`) вместо Leaflet;
+- попап рисуется через DOM API (`textContent`, `.href = ...`), не `.setHTML()` со строкой —
+  избегает риска инъекции через пользовательские поля (адрес/название/т.д.), раз это больше не
+  JSX с авто-экранированием;
+- маркерам не нужно ждать загрузки стиля карты (в отличие от слоёв данных) — добавляются сразу
+  после создания `maplibregl.Map`;
+- ручной `invalidateSize`-хак (нужен был Leaflet, если контейнер при монтировании ещё 0×0) больше
+  не нужен — у MapLibre GL встроенный `ResizeObserver` (`trackResize`, включён по умолчанию).
+
+`leaflet`, `react-leaflet`, `@maplibre/maplibre-gl-leaflet`, `@types/leaflet` остались в
+`package.json`/lockfile как неиспользуемый хвост — вычистить их не рискнули из этой песочницы
+(нет `node_modules`, не на чем перегенерировать `package-lock.json`; удаление записей из
+`package.json` без синхронного обновления лока сломало бы `npm ci` на деплое). Прибрать в
+отдельный заход там, где реально можно прогнать `npm install`.
 - Profile (`/profile`) — язык, инфо о боте, счетчик импортов по ссылке, support, export.
 
 Текущий профиль:

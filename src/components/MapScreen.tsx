@@ -8,10 +8,10 @@ import { mutedText } from "@/lib/ui";
 import { trackClientEvent } from "@/lib/clientAnalytics";
 import MultiSelectFilter from "@/components/MultiSelectFilter";
 import { metroStations, metroLineTone, sortStationsByLine } from "@/lib/metro";
-import type { MapMarker } from "@/components/LeafletMap";
+import type { MapMarker } from "@/components/PlacesMap";
 import { useT } from "@/hooks/useLang";
 
-const LeafletMap = dynamic(() => import("@/components/LeafletMap"), { ssr: false });
+const PlacesMap = dynamic(() => import("@/components/PlacesMap"), { ssr: false });
 
 export default function MapScreen() {
   const t = useT();
@@ -91,7 +91,7 @@ export default function MapScreen() {
       style={{ marginTop: "calc(-1 * (var(--safe-top) + var(--content-top-gap)))" }}
     >
       <div className="absolute inset-0 z-0">
-        <LeafletMap markers={filtered} focusMarkerId={focusMarkerId} />
+        <PlacesMap markers={filtered} focusMarkerId={focusMarkerId} />
       </div>
 
       <div

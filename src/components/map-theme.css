@@ -1,0 +1,66 @@
+.maplibregl-popup-content {
+  background: var(--app-surface) !important;
+  color: var(--app-ink) !important;
+  border-radius: 14px !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2) !important;
+  padding: 12px 14px !important;
+  font-size: 13px;
+  line-height: 1.45;
+}
+.maplibregl-popup-content strong {
+  display: block;
+  margin-bottom: 2px;
+}
+.maplibregl-popup-close-button {
+  color: var(--app-muted) !important;
+}
+
+.maplibregl-popup-anchor-bottom .maplibregl-popup-tip,
+.maplibregl-popup-anchor-bottom-left .maplibregl-popup-tip,
+.maplibregl-popup-anchor-bottom-right .maplibregl-popup-tip {
+  border-top-color: var(--app-surface) !important;
+}
+.maplibregl-popup-anchor-top .maplibregl-popup-tip,
+.maplibregl-popup-anchor-top-left .maplibregl-popup-tip,
+.maplibregl-popup-anchor-top-right .maplibregl-popup-tip {
+  border-bottom-color: var(--app-surface) !important;
+}
+.maplibregl-popup-anchor-left .maplibregl-popup-tip {
+  border-right-color: var(--app-surface) !important;
+}
+.maplibregl-popup-anchor-right .maplibregl-popup-tip {
+  border-left-color: var(--app-surface) !important;
+}
+
+.maplibregl-ctrl-attrib {
+  background: var(--app-surface) !important;
+  color: var(--app-muted) !important;
+  border-radius: 8px 0 0 0 !important;
+  font-size: 10px !important;
+}
+.maplibregl-ctrl-attrib a {
+  color: var(--app-ink) !important;
+}
+
+.date-marker {
+  width: 16px;
+  height: 16px;
+  border-radius: 9999px;
+  background: var(--app-yellow);
+  border: 2px solid var(--app-ink);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+  cursor: pointer;
+}
+
+.date-marker--date {
+  background: var(--app-coral);
+}
+
+.date-marker--venue {
+  background: var(--app-blue);
+}
+
+.date-marker--picker {
+  width: 20px;
+  height: 20px;
+}
